@@ -6,9 +6,4 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Folder Include="DrivenAdapters\Data\" />
-    <Folder Include="DrivenAdapters\Repositories\" />
-  </ItemGroup>
-
 </Project>
