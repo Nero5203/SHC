@@ -8,6 +8,6 @@ namespace Domain.Entities.Auth
         public DateTime UpdatedAt { get; set; }
 
         public Guid UserId { get; set; }
-
+       
     }
 }
