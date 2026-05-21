@@ -1,5 +1,5 @@
 using Domain.Entities.Purchase.Enums;
-using UserEntity = Domain.Entities.User.User;
+using Domain.Entities.User;
 
 namespace Domain.Entities.Purchase
 {
@@ -8,7 +8,7 @@ namespace Domain.Entities.Purchase
         public Guid Id { get; set; }
 
         public Guid UserId { get; set; }
-        public UserEntity User { get; set; } = null!;
+        public Domain.Entities.User.User User { get; set; } = null!;
 
         public Guid? SubscriptionId { get; set; }
         public Subscription? Subscription { get; set; }

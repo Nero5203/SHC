@@ -1,7 +1,5 @@
 using Domain.Entities.Auth;
-using InvoiceEntity = Domain.Entities.Purchase.Invoice;
-using PurchaseEntity = Domain.Entities.Purchase.Purchase;
-using UserSubscriptionEntity = Domain.Entities.Purchase.UserSubscription;
+using Domain.Entities.Purchase;
 
 namespace Domain.Entities.User
 {
@@ -22,8 +20,8 @@ namespace Domain.Entities.User
         public UserCredentials Credentials { get; set; } = null!;
         public UserSettings Settings { get; set; } = new ();
 
-        public ICollection<InvoiceEntity> Invoices { get; set; } = new List<InvoiceEntity>();
-        public ICollection<PurchaseEntity> Purchases { get; set; } = new List<PurchaseEntity>();
-        public ICollection<UserSubscriptionEntity> UserSubscriptions { get; set; } = new List<UserSubscriptionEntity>();
+        public ICollection<Domain.Entities.Purchase.Invoice> Invoices { get; set; } = new List<Domain.Entities.Purchase.Invoice>();
+        public ICollection<Domain.Entities.Purchase.Purchase> Purchases { get; set; } = new List<Domain.Entities.Purchase.Purchase>();
+        public ICollection<Domain.Entities.Purchase.UserSubscription> UserSubscriptions { get; set; } = new List<Domain.Entities.Purchase.UserSubscription>();
     }
 }
