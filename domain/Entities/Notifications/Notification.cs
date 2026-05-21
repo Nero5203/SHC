@@ -1,5 +1,6 @@
+using Domain.Entities.FileStorage;
 using Domain.Entities.Notifications.Enums;
-using Domain.Entities.User;
+using Domain.Entities.Users;
 
 public class Notification
 {
@@ -21,7 +22,8 @@ public class Notification
 
    
     public Guid? FileId { get; set; }
-    public File? File { get; set; }
+    public FileItem? File { get; set; }
+
 
     public Guid? FolderId { get; set; }
     public Folder? Folder { get; set; }
