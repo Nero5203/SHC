@@ -24,11 +24,7 @@ namespace Domain.Entities.LinkSharing
 
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
-        public Guid? FileId { get; set; }
-        public FileItem? File { get; set; }
-
-        public Guid? FolderId { get; set; }
-        public Folder? Folder { get; set; }
+    
 
     }
 }
