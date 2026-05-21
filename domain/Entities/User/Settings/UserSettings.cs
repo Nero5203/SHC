@@ -1,3 +1,5 @@
+using Domain.Entities.User.Settings;
+
 namespace Domain.Entities.User
 {
     public class UserSettings
