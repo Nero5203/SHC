@@ -12,6 +12,9 @@ public class Folder
     public Folder? ParentFolder { get; set; }
     public ICollection<Folder> SubFolders { get; set; } = new List<Folder>();
     public ICollection<File> Files { get; set; } = new List<File>();
+    public ICollection<SharedLink> SharedLinks { get; set; } = new List<SharedLink>();
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
+
+
 }
