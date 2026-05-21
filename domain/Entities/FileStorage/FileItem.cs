@@ -1,6 +1,14 @@
-using Domain.Entities.User;
+using Domain.Entities.Users;
+using Domain.Entities.StorageNodes;
+using Domain.Entities.LinkSharing;
 
-public class File
+
+
+
+namespace Domain.Entities.FileStorage
+{ 
+
+public class FileItem
 {
     public Guid Id { get; set; }
     public string FileName { get; set; } = null!;
@@ -17,5 +25,10 @@ public class File
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
 
-    public ICollection<SharedLink> SharedLinks { get; set; } = new List<SharedLink>();
+   public Guid StorageNodeId { get; set; }
+   public StorageNode StorageNode { get; set; } = null!;
+
+
+        public ICollection<SharedLink> SharedLinks { get; set; } = new List<SharedLink>();
+}
 }

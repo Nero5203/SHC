@@ -1,14 +1,14 @@
-using Domain.Entities.Purchase.Enums;
-using Domain.Entities.User;
+using Domain.Entities.Purchases.Enums;
+using Domain.Entities.Users;
 
-namespace Domain.Entities.Purchase
+namespace Domain.Entities.Purchases
 {
     public class Purchase
     {
         public Guid Id { get; set; }
 
         public Guid UserId { get; set; }
-        public Domain.Entities.User.User User { get; set; } = null!;
+        public User User { get; set; } = null!;
 
         public Guid? SubscriptionId { get; set; }
         public Subscription? Subscription { get; set; }

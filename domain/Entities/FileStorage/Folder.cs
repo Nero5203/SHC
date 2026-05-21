@@ -1,5 +1,10 @@
-using Domain.Entities.User;
 
+using Domain.Entities.LinkSharing;
+using Domain.Entities.Users;
+
+
+namespace Domain.Entities.FileStorage
+{ 
 public class Folder
 {
     public Guid Id { get; set; }
@@ -11,10 +16,13 @@ public class Folder
     public Guid? ParentFolderId { get; set; }
     public Folder? ParentFolder { get; set; }
     public ICollection<Folder> SubFolders { get; set; } = new List<Folder>();
-    public ICollection<File> Files { get; set; } = new List<File>();
+    public ICollection<FileItem> Files { get; set; } = new List<FileItem>();
     public ICollection<SharedLink> SharedLinks { get; set; } = new List<SharedLink>();
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
+   
 
 
+
+    }
 }

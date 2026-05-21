@@ -1,4 +1,4 @@
-namespace Domain.Entities.Purchase.Enums
+namespace Domain.Entities.Purchases.Enums
 {
     public enum InvoiceStatus
     {

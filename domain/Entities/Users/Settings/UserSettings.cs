@@ -1,6 +1,6 @@
-using Domain.Entities.User.Settings;
+using Domain.Entities.Users.Settings;
 
-namespace Domain.Entities.User
+namespace Domain.Entities.Users
 {
     public class UserSettings
     {

@@ -1,7 +1,7 @@
-using Domain.Entities.Purchase.Enums;
-using Domain.Entities.User;
+using Domain.Entities.Purchases.Enums;
+using Domain.Entities.Users;
 
-namespace Domain.Entities.Purchase
+namespace Domain.Entities.Purchases
 {
     public class Invoice
     {
@@ -10,7 +10,7 @@ namespace Domain.Entities.Purchase
         public string InvoiceNumber { get; set; } = null!;
 
         public Guid UserId { get; set; }
-        public Domain.Entities.User.User User { get; set; } = null!;
+        public User User { get; set; } = null!;
 
 
         public Guid PurchaseId { get; set; }

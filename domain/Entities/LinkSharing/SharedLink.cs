@@ -1,5 +1,10 @@
-using Domain.Entities.User;
+using Domain.Entities.Users;
+using Domain.Entities.FileStorage;
 
+
+
+namespace Domain.Entities.LinkSharing
+{ 
 public class SharedLink
 {
     public Guid Id { get; set; }
@@ -10,11 +15,10 @@ public class SharedLink
     public DateTime UpdatedAt { get; set; }
     public bool IsPublic { get; set; } = true;
     public Guid? FileId { get; set; }
-    public File? File { get; set; } = null!;
-
+    public FileItem? File { get; set; } = null!;
     public Guid? FolderId { get; set; }
     public Folder? Folder { get; set; }
-
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
+}
 }

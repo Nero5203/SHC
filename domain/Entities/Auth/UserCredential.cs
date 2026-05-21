@@ -1,4 +1,4 @@
-using Domain.Entities.User;
+using Domain.Entities.Users;
 
 namespace Domain.Entities.Auth
 {
@@ -10,6 +10,6 @@ namespace Domain.Entities.Auth
         public DateTime UpdatedAt { get; set; }
 
         public Guid UserId { get; set; }
-        public Domain.Entities.User.User User { get; set; } = null!;
+        public User User { get; set; } = null!;
     }
 }

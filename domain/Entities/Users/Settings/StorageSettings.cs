@@ -1,4 +1,4 @@
-namespace Domain.Entities.User.Settings
+namespace Domain.Entities.Users.Settings
 {
     public class StorageSettings
     {

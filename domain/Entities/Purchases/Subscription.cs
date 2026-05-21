@@ -1,6 +1,6 @@
-using Domain.Entities.Purchase.Enums;
+using Domain.Entities.Purchases.Enums;
 
-namespace Domain.Entities.Purchase
+namespace Domain.Entities.Purchases
 {
     public class Subscription
     {
