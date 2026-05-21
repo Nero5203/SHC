@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-namespace domain.Entities.LinkSharing.Enums
+namespace Domain.Entities.LinkSharing.Enums
 {
     public enum ShareTargetType
     {

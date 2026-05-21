@@ -1,6 +1,12 @@
-using Domain.Entities.User;
+using Domain.Entities.FileStorage;
+using Domain.Entities.Users;
+using Domain.Entities.LinkSharing.Enums;
 
-public class SharedLink
+
+namespace Domain.Entities.LinkSharing
+{
+
+    public class SharedLink
 {
     public Guid Id { get; set; }
     public string TokenUrl { get; set; } = null!;
@@ -18,5 +24,11 @@ public class SharedLink
 
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
-}
+        public Guid? FileId { get; set; }
+        public FileItem? File { get; set; }
+
+        public Guid? FolderId { get; set; }
+        public Folder? Folder { get; set; }
+
+    }
 }
