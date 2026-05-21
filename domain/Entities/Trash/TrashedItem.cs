@@ -14,12 +14,11 @@ namespace Domain.Entities.Trash
         //snapshot data
         public string Name { get; set; } = null!;
         public string? OriginalPath { get; set; }
-        public Guid OriginalParentId { get; set; }
+        public Guid? OriginalParentId { get; set; }
         public long? Size { get; set; }
 
         //deletion metadata
         public DateTime DeletedAt { get; set; }
-        public Guid DeletedBy { get; set; }
 
         //restore metadata
         public DateTime? RestoredAt { get; set; }
