@@ -18,7 +18,7 @@ namespace Domain.Entities.Users
         public DateTime UpdatedAt { get; set; }
 
         public UserCredentials Credentials { get; set; } = null!;
-        public UserSettings Settings { get; set; } = new ();
+        public UserSetting Settings { get; set; } = new ();
 
         public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
         public ICollection<Purchase> Purchases { get; set; } = new List<Purchase>();

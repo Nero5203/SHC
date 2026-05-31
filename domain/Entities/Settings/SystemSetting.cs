@@ -5,7 +5,7 @@ using domain.Entities.Settings.Enums;
 namespace Domain.Entities.Settings
 {
    
-    public class SystemSettings
+    public class SystemSetting
     {
         public Guid Id { get; set; } = Guid.NewGuid();
 

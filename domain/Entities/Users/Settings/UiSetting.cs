@@ -1,6 +1,6 @@
 namespace Domain.Entities.Users.Settings
 {
-    public class UiSettings
+    public class UiSetting
     {
         public string Theme { get; set; } = "light";
         public string Language { get; set; } = "en";

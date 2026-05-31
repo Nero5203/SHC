@@ -1,6 +1,6 @@
 namespace Domain.Entities.Users.Settings
 {
-    public class PrivacySettings
+    public class PrivacySetting
     {
         public bool AllowLinkDownload { get; set; } = true;
         public bool ShowActivityStatus { get; set; } = true;

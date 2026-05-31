@@ -1,6 +1,6 @@
 namespace Domain.Entities.Users.Settings
 {
-    public class StorageSettings
+    public class StorageSetting
     {
         //upload behavior
         public string UploadStrategy { get; set; } = "Balanced";

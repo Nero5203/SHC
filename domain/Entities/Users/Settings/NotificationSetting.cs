@@ -1,6 +1,6 @@
 namespace Domain.Entities.Users.Settings
 {
-    public class NotificationSettings
+    public class NotificationSetting
     {
         public bool EmailNotifications { get; set; } = true;
         public bool PushNotifications { get; set; } = true;
