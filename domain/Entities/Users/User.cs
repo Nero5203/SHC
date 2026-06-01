@@ -1,3 +1,4 @@
+using Domain.Entities.AI;
 using Domain.Entities.Auth;
 using Domain.Entities.Purchases;
 
@@ -23,5 +24,6 @@ namespace Domain.Entities.Users
         public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
         public ICollection<Purchase> Purchases { get; set; } = new List<Purchase>();
         public ICollection<UserSubscription> UserSubscriptions { get; set; } = new List<UserSubscription>();
+        public ICollection<AISuggestion> AISuggestions { get; set; } = new List<AISuggestion>();
     }
 }
