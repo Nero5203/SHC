@@ -179,7 +179,35 @@ namespace adapters.DrivenAdapters.Data
          .HasForeignKey(n => n.UserId)
          .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<AuditLog>()
+            .HasOne<User>() 
+            .WithMany(u => u.AuditLogs)
+             .HasForeignKey(al => al.SubjectId)
+             .OnDelete(DeleteBehavior.SetNull);
 
+            modelBuilder.Entity<AuditLog>()
+          .HasOne<Role>()
+         .WithMany(r => r.AuditLogs)
+         .HasForeignKey(al => al.SubjectId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Permission>()
+            .HasOne<User>()
+            .WithMany(u => u.Permissions)
+             .HasForeignKey(p => p.SubjectId)
+             .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Permission>()
+          .HasOne<Role>()
+            .WithMany(r => r.Permissions)
+             .HasForeignKey(p => p.SubjectId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Permission>()
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(p => p.GrantedByUserId)
+            .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

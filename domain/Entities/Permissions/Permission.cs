@@ -34,7 +34,7 @@ namespace SHC.Domain.Entities.Permissions
             AccessLevel accessLevel,
             Guid? grantedByUserId)
         {
-            Id = Guid.NewGuid();
+            PermissionId = Guid.NewGuid();
             SubjectId = subjectId;
             SubjectType = subjectType;
             ResourceId = resourceId;

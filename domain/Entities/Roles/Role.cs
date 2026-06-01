@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
-using Domain.Entities.Users; // Assuming User entity is here
+using Domain.Entities.Users;
+using SHC.Domain.Entities.Permissions; // Assuming User entity is here
 
 namespace Domain.Entities.Roles
 {
@@ -15,7 +16,8 @@ namespace Domain.Entities.Roles
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-       
+       public ICollection<Permission> Permissions { get; set; } = new List<Permission>();   
+        public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
     }
 }

@@ -2,6 +2,7 @@ using Domain.Entities.AI;
 using Domain.Entities.Auth;
 using Domain.Entities.LinkSharing;
 using Domain.Entities.Purchases;
+using SHC.Domain.Entities.Permissions;
 
 namespace Domain.Entities.Users
 {
@@ -23,6 +24,8 @@ namespace Domain.Entities.Users
         public UserSetting Settings { get; set; } = new ();
 
 
+        public ICollection<Permission> Permissions { get; set; } = new List<Permission>();
+        public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
         public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
         public ICollection<SharedLink> SharedLinks { get; set; } = new List<SharedLink>();
         public ICollection<FileStorage.FileItem> FileItems { get; set; } = new List<FileStorage.FileItem>();

@@ -1,4 +1,7 @@
 using System;
+using System.Diagnostics.Contracts;
+using Domain.Entities.Roles;
+using Domain.Entities.Users;
 using SHC.Domain.Entities.Permissions.Enums;
 
 namespace SHC.Domain.Entities.Permissions
@@ -27,6 +30,11 @@ namespace SHC.Domain.Entities.Permissions
         // Flexible payload
         public string PayloadJson { get; private set; } = string.Empty;
 
+        public Guid? UserId { get; set; }
+        public User? User { get; set; }
+
+        public Guid? RoleId { get; set; }
+        public Role? Role { get; set; }
         // EF Core Constructor
         private AuditLog() { }
 
@@ -42,7 +50,7 @@ namespace SHC.Domain.Entities.Permissions
             bool isSuccess,
             string payloadJson = "{}")
         {
-            Id = Guid.NewGuid();
+            AuditLogId = Guid.NewGuid();
             TimestampUtc = DateTime.UtcNow;
             SubjectId = subjectId;
             SubjectType = subjectType;
