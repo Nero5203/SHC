@@ -155,6 +155,31 @@ namespace adapters.DrivenAdapters.Data
           .HasForeignKey<AIFileInsight>(ai => ai.FileItemId)
           .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<SharedLink>()
+             .HasOne(sl => sl.User)
+            .WithMany(u => u.SharedLinks)
+            .HasForeignKey(sl => sl.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<SharedLink>()
+            .HasOne(sl => sl.FileItem)
+             .WithMany(fi => fi.SharedLinks)
+              .HasForeignKey(sl => sl.FileItemId)
+              .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<SharedLink>()
+            .HasOne<Folder>() 
+             .WithMany(f => f.SharedLinks)
+              .HasForeignKey(sl => sl.TargetId)
+              .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Notification>()
+            .HasOne(n => n.User)
+         .WithMany(u => u.Notifications)
+         .HasForeignKey(n => n.UserId)
+         .OnDelete(DeleteBehavior.Cascade);
+
+
         }
     }
 }

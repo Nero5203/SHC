@@ -1,5 +1,6 @@
 using Domain.Entities.AI;
 using Domain.Entities.Auth;
+using Domain.Entities.LinkSharing;
 using Domain.Entities.Purchases;
 
 namespace Domain.Entities.Users
@@ -22,6 +23,8 @@ namespace Domain.Entities.Users
         public UserSetting Settings { get; set; } = new ();
 
 
+        public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+        public ICollection<SharedLink> SharedLinks { get; set; } = new List<SharedLink>();
         public ICollection<FileStorage.FileItem> FileItems { get; set; } = new List<FileStorage.FileItem>();
         public ICollection<FileStorage.Folder> Folders { get; set; } = new List<FileStorage.Folder>();
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
