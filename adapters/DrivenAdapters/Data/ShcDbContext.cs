@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Domain.Entities.AI;
 using Domain.Entities.Auth;
 using Domain.Entities.FileStorage;
 using Domain.Entities.LinkSharing;
@@ -93,6 +94,67 @@ namespace adapters.DrivenAdapters.Data
             modelBuilder.Entity<UserSetting>().OwnsOne(x => x.StorageSettings);
             modelBuilder.Entity<UserSetting>().OwnsOne(x => x.NotificationSettings);
             modelBuilder.Entity<UserSetting>().OwnsOne(x => x.PrivacySettings);
+
+            modelBuilder.Entity<RefreshToken>()
+             .HasOne(rt => rt.User)
+            .WithMany(u => u.RefreshTokens)
+             .HasForeignKey(rt => rt.UserId)
+             .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserCredential>()
+            .HasOne(uc => uc.User)
+             .WithOne(u => u.UserCredentials)
+             .HasForeignKey<UserCredential>(uc => uc.UserId)
+             .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Folder>()
+                .HasOne(f => f.User)
+                .WithMany(u => u.Folders)
+                .HasForeignKey(f => f.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Folder>()
+            .HasOne(f => f.ParentFolder)
+           .WithMany(f => f.SubFolders)
+            .HasForeignKey(f => f.ParentFolderId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<FileItem>()
+              .HasOne(fi => fi.Folder)
+             .WithMany(f => f.Files)
+             .HasForeignKey(fi => fi.FolderId)
+             .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<FileItem>()
+            .HasOne(fi => fi.User)
+            .WithMany(u => u.FileItems)
+            .HasForeignKey(fi => fi.UserId)
+          .OnDelete(DeleteBehavior.Cascade);
+
+             modelBuilder.Entity<FileItem>()
+             .HasOne(fi => fi.StorageNode)
+             .WithMany(sn => sn.FileItems)
+             .HasForeignKey(fi => fi.StorageNodeId)
+             .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<FileItem>()
+             .HasMany(fi => fi.SharedLinks)
+             .WithOne(sl => sl.FileItem)
+              .HasForeignKey(sl => sl.FileItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<FileItem>()
+            .HasMany(fi => fi.AISuggestions)
+            .WithOne(ai => ai.FileItem)
+           .HasForeignKey(ai => ai.FileItemId)
+          .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<FileItem>()
+         .HasOne(fi => fi.AIFileInsight)
+          .WithOne(ai => ai.FileItem)
+          .HasForeignKey<AIFileInsight>(ai => ai.FileItemId)
+          .OnDelete(DeleteBehavior.Cascade);
+
         }
     }
 }

@@ -24,7 +24,7 @@ namespace Domain.Entities.StorageNodes
         public DateTime UpdatedAt { get; set; }
         public DateTime? LastHeartbeatAt { get; set; }
 
-        public ICollection<FileItem> Files { get; set; } = new List<FileItem>();
+        public ICollection<FileItem> FileItems { get; set; } = new List<FileItem>();
 
 
     }
