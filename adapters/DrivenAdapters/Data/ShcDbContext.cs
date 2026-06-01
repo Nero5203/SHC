@@ -232,6 +232,30 @@ namespace adapters.DrivenAdapters.Data
          .WithOne(s => s.Purchase)
          .HasForeignKey<Purchase>(p => p.SubscriptionId)
          .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Subscription>()
+            .HasOne(s => s.SubscriptionPlan)
+         .WithMany(sp => sp.Subscriptions)
+         .HasForeignKey(s => s.SubscriptionPlanId)
+         .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Subscription>()
+            .HasOne(s => s.Purchase)
+            .WithOne(p => p.Subscription)
+            .HasForeignKey<Subscription>(s => s.PurchaseId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserSubscription>()
+            .HasOne(us => us.User)
+             .WithMany(u => u.UserSubscriptions)
+            .HasForeignKey(us => us.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserSubscription>()
+             .HasOne(us => us.Subscription)
+             .WithMany(s => s.UserSubscriptions)
+             .HasForeignKey(us => us.SubscriptionId)
+             .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
