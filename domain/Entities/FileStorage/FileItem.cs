@@ -1,3 +1,4 @@
+using Domain.Entities.AI;
 using Domain.Entities.Users;
 using Domain.Entities.StorageNodes;
 using Domain.Entities.LinkSharing;
@@ -28,5 +29,7 @@ namespace Domain.Entities.FileStorage
         public StorageNode StorageNode { get; set; } = null!;
 
         public ICollection<SharedLink> SharedLinks { get; set; } = new List<SharedLink>();
+        public ICollection<AISuggestion> AISuggestions { get; set; } = new List<AISuggestion>();
+        public AIFileInsight? AIFileInsight { get; set; }
     }
 }
