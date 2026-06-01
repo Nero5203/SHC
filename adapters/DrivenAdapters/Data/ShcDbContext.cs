@@ -282,6 +282,58 @@ namespace adapters.DrivenAdapters.Data
                 .WithOne()
                 .HasForeignKey(p => p.SubjectId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // ⚙️ SystemSetting configuration
+            modelBuilder.Entity<SystemSetting>()
+                .HasKey(ss => ss.SystemSettingId);
+
+            modelBuilder.Entity<SystemSetting>()
+                .Property(ss => ss.AllowedFileExtensions)
+                .HasMaxLength(512);
+
+            modelBuilder.Entity<SystemSetting>()
+                .Property(ss => ss.RegistrationMode)
+                .HasConversion<int>(); 
+
+            modelBuilder.Entity<SystemSetting>()
+                .Property(ss => ss.CreatedAt)
+                .IsRequired();
+
+            modelBuilder.Entity<SystemSetting>()
+                .Property(ss => ss.UpdatedAt)
+                .IsRequired();
+
+
+            // 🗄️ StorageNode configuration
+            modelBuilder.Entity<StorageNode>()
+                .HasKey(sn => sn.StorageNodeId);
+
+            modelBuilder.Entity<StorageNode>()
+                .Property(sn => sn.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            modelBuilder.Entity<StorageNode>()
+                .Property(sn => sn.Hostname)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            modelBuilder.Entity<StorageNode>()
+                .Property(sn => sn.IpAddress)
+                .IsRequired()
+                .HasMaxLength(45); // IPv6 compatible
+
+            modelBuilder.Entity<StorageNode>()
+                .Property(sn => sn.Status)
+                .HasConversion<int>(); // store enum as int
+
+            // 🔗 StorageNode → FileItem (1:N)
+            modelBuilder.Entity<StorageNode>()
+                .HasMany(sn => sn.FileItems)
+                .WithOne(fi => fi.StorageNode)
+                .HasForeignKey(fi => fi.StorageNodeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
         }
     }
 }
