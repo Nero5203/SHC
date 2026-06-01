@@ -27,8 +27,8 @@ namespace Domain.Entities.FileStorage
         public User User { get; set; } = null!;
         public Guid StorageNodeId { get; set; }
         public StorageNode StorageNode { get; set; } = null!;
-
-        public ICollection<SharedLink> SharedLinks { get; set; } = new List<SharedLink>();
+        
+        public ICollection <Notification> Notifications { get; set; } = new List<Notification>();
         public ICollection<AISuggestion> AISuggestions { get; set; } = new List<AISuggestion>();
         public AIFileInsight? AIFileInsight { get; set; }
     }

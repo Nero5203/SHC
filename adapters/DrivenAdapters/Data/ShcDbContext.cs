@@ -82,7 +82,7 @@ namespace adapters.DrivenAdapters.Data
             modelBuilder.Entity<Purchase>().HasKey(p => p.PurchaseId);
             modelBuilder.Entity<Subscription>().HasKey(s => s.SubscriptionId);
             modelBuilder.Entity<SubscriptionPlan>().HasKey(sp => sp.SubscriptionPlanId);
-            modelBuilder.Entity<UserSubscription>().HasKey(us => us.UserSubscriptionId);
+            modelBuilder.Entity<UserSubscription>().HasKey(us => new { us.UserId, us.SubscriptionId });
             modelBuilder.Entity<Role>().HasKey(r => r.RoleId);
             modelBuilder.Entity<UserRole>().HasKey(ur => new { ur.UserId, ur.RoleId });
             modelBuilder.Entity<SystemSetting>().HasKey(ss => ss.SystemSettingId);
@@ -95,18 +95,27 @@ namespace adapters.DrivenAdapters.Data
             modelBuilder.Entity<UserSetting>().OwnsOne(x => x.NotificationSettings);
             modelBuilder.Entity<UserSetting>().OwnsOne(x => x.PrivacySettings);
 
+            // 🔐 Auth & Security
             modelBuilder.Entity<RefreshToken>()
-             .HasOne(rt => rt.User)
-            .WithMany(u => u.RefreshTokens)
-             .HasForeignKey(rt => rt.UserId)
-             .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(rt => rt.User)
+                .WithMany(u => u.RefreshTokens)
+                .HasForeignKey(rt => rt.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<UserCredential>()
-            .HasOne(uc => uc.User)
-             .WithOne(u => u.UserCredentials)
-             .HasForeignKey<UserCredential>(uc => uc.UserId)
-             .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(uc => uc.User)
+                .WithOne(u => u.UserCredentials)
+                .HasForeignKey<UserCredential>(uc => uc.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
+            // ⚙️ User Settings
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.UserSettings)
+                .WithOne()
+                .HasForeignKey<UserSetting>(us => us.UserSettingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // 📁 Storage: Folders & Files
             modelBuilder.Entity<Folder>()
                 .HasOne(f => f.User)
                 .WithMany(u => u.Folders)
@@ -114,154 +123,170 @@ namespace adapters.DrivenAdapters.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Folder>()
-            .HasOne(f => f.ParentFolder)
-           .WithMany(f => f.SubFolders)
-            .HasForeignKey(f => f.ParentFolderId)
-            .OnDelete(DeleteBehavior.Restrict);
+                .HasOne(f => f.ParentFolder)
+                .WithMany(f => f.SubFolders)
+                .HasForeignKey(f => f.ParentFolderId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<FileItem>()
-              .HasOne(fi => fi.Folder)
-             .WithMany(f => f.Files)
-             .HasForeignKey(fi => fi.FolderId)
-             .OnDelete(DeleteBehavior.SetNull);
+                .HasOne(fi => fi.Folder)
+                .WithMany(f => f.FileItems)
+                .HasForeignKey(fi => fi.FolderId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<FileItem>()
-            .HasOne(fi => fi.User)
-            .WithMany(u => u.FileItems)
-            .HasForeignKey(fi => fi.UserId)
-          .OnDelete(DeleteBehavior.Cascade);
-
-             modelBuilder.Entity<FileItem>()
-             .HasOne(fi => fi.StorageNode)
-             .WithMany(sn => sn.FileItems)
-             .HasForeignKey(fi => fi.StorageNodeId)
-             .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(fi => fi.User)
+                .WithMany(u => u.FileItems)
+                .HasForeignKey(fi => fi.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<FileItem>()
-             .HasMany(fi => fi.SharedLinks)
-             .WithOne(sl => sl.FileItem)
-              .HasForeignKey(sl => sl.FileItemId)
-            .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(fi => fi.StorageNode)
+                .WithMany(sn => sn.FileItems)
+                .HasForeignKey(fi => fi.StorageNodeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+    
+            modelBuilder.Entity<FileItem>()
+                .HasMany(fi => fi.AISuggestions)
+                .WithOne(ai => ai.FileItem)
+                .HasForeignKey(ai => ai.FileItemId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<FileItem>()
-            .HasMany(fi => fi.AISuggestions)
-            .WithOne(ai => ai.FileItem)
-           .HasForeignKey(ai => ai.FileItemId)
-          .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(fi => fi.AIFileInsight)
+                .WithOne(ai => ai.FileItem)
+                .HasForeignKey<AIFileInsight>(ai => ai.FileItemId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<FileItem>()
-         .HasOne(fi => fi.AIFileInsight)
-          .WithOne(ai => ai.FileItem)
-          .HasForeignKey<AIFileInsight>(ai => ai.FileItemId)
-          .OnDelete(DeleteBehavior.Cascade);
-
+            // 🔗 Shared Links
             modelBuilder.Entity<SharedLink>()
-             .HasOne(sl => sl.User)
-            .WithMany(u => u.SharedLinks)
-            .HasForeignKey(sl => sl.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(sl => sl.User)
+                .WithMany(u => u.SharedLinks)
+                .HasForeignKey(sl => sl.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
+            // Polymorphic target mapping
+            // SharedLink → FileItem
             modelBuilder.Entity<SharedLink>()
-            .HasOne(sl => sl.FileItem)
-             .WithMany(fi => fi.SharedLinks)
-              .HasForeignKey(sl => sl.FileItemId)
-              .OnDelete(DeleteBehavior.SetNull);
+                .HasOne<FileItem>() // no navigation property in SharedLink
+                .WithMany()
+                .HasForeignKey(sl => sl.TargetId)
+                .OnDelete(DeleteBehavior.SetNull);
 
+            // SharedLink → Folder
             modelBuilder.Entity<SharedLink>()
-            .HasOne<Folder>() 
-             .WithMany(f => f.SharedLinks)
-              .HasForeignKey(sl => sl.TargetId)
-              .OnDelete(DeleteBehavior.SetNull);
+                .HasOne<Folder>() // no navigation property in SharedLink
+                .WithMany()
+                .HasForeignKey(sl => sl.TargetId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+
+            // 🔔 Notifications
+            modelBuilder.Entity<Notification>()
+                .HasOne(n => n.User)
+                .WithMany(u => u.Notifications)
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Notification>()
-            .HasOne(n => n.User)
-         .WithMany(u => u.Notifications)
-         .HasForeignKey(n => n.UserId)
-         .OnDelete(DeleteBehavior.Cascade);
+    .HasOne(n => n.FileItems)
+    .WithMany(fi => fi.Notifications)
+    .HasForeignKey(n => n.FileId)
+    .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Notification>()
+                .HasOne(n => n.Folder)
+                .WithMany(f => f.Notifications)
+                .HasForeignKey(n => n.FolderId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // 🧾 Audit Logs
+            modelBuilder.Entity<AuditLog>()
+                .HasOne<User>()
+                .WithMany(u => u.AuditLogs)
+                .HasForeignKey(al => al.SubjectId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<AuditLog>()
-            .HasOne<User>() 
-            .WithMany(u => u.AuditLogs)
-             .HasForeignKey(al => al.SubjectId)
-             .OnDelete(DeleteBehavior.SetNull);
+                .HasOne<Role>()
+                .WithMany(r => r.AuditLogs)
+                .HasForeignKey(al => al.SubjectId)
+                .OnDelete(DeleteBehavior.SetNull);
 
-            modelBuilder.Entity<AuditLog>()
-          .HasOne<Role>()
-         .WithMany(r => r.AuditLogs)
-         .HasForeignKey(al => al.SubjectId)
-            .OnDelete(DeleteBehavior.SetNull);
+            // 🔐 Permissions
+            modelBuilder.Entity<Permission>()
+                .HasOne<User>()
+                .WithMany(u => u.Permissions)
+                .HasForeignKey(p => p.SubjectId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<Permission>()
-            .HasOne<User>()
-            .WithMany(u => u.Permissions)
-             .HasForeignKey(p => p.SubjectId)
-             .OnDelete(DeleteBehavior.SetNull);
+                .HasOne<Role>()
+                .WithMany(r => r.Permissions)
+                .HasForeignKey(p => p.SubjectId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<Permission>()
-          .HasOne<Role>()
-            .WithMany(r => r.Permissions)
-             .HasForeignKey(p => p.SubjectId)
-            .OnDelete(DeleteBehavior.SetNull);
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(p => p.GrantedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
 
-            modelBuilder.Entity<Permission>()
-            .HasOne<User>()
-            .WithMany()
-            .HasForeignKey(p => p.GrantedByUserId)
-            .OnDelete(DeleteBehavior.SetNull);
+            // 💳 Purchases & Invoices
+            modelBuilder.Entity<Invoice>()
+                .HasOne(i => i.Purchase)
+                .WithOne(p => p.Invoice)
+                .HasForeignKey<Invoice>(i => i.PurchaseId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Invoice>()
-         .HasOne(i => i.Purchase)
-         .WithOne(p => p.Invoice)
-         .HasForeignKey<Invoice>(i => i.PurchaseId)
-         .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<Invoice>()
-         .HasOne(i => i.User)
-         .WithMany(u => u.Invoices)
-         .HasForeignKey(i => i.UserId)
-         .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(i => i.User)
+                .WithMany(u => u.Invoices)
+                .HasForeignKey(i => i.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Purchase>()
-    .HasOne(p => p.User)
-    .WithMany(u => u.Purchases)
-    .HasForeignKey(p => p.UserId)
-    .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(p => p.User)
+                .WithMany(u => u.Purchases)
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<Purchase>()
-          .HasOne(p => p.Subscription)
-         .WithOne(s => s.Purchase)
-         .HasForeignKey<Purchase>(p => p.SubscriptionId)
-         .OnDelete(DeleteBehavior.SetNull);
+            // 📦 Subscriptions
+            modelBuilder.Entity<Subscription>()
+                .HasOne(s => s.SubscriptionPlan)
+                .WithMany(sp => sp.Subscriptions)
+                .HasForeignKey(s => s.SubscriptionPlanId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Subscription>()
-            .HasOne(s => s.SubscriptionPlan)
-         .WithMany(sp => sp.Subscriptions)
-         .HasForeignKey(s => s.SubscriptionPlanId)
-         .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<Subscription>()
-            .HasOne(s => s.Purchase)
-            .WithOne(p => p.Subscription)
-            .HasForeignKey<Subscription>(s => s.PurchaseId)
-            .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(s => s.Purchase)
+                .WithOne(p => p.Subscription) // Purchase has exactly one Subscription
+                .HasForeignKey<Subscription>(s => s.PurchaseId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<UserSubscription>()
-            .HasOne(us => us.User)
-             .WithMany(u => u.UserSubscriptions)
-            .HasForeignKey(us => us.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+                .HasKey(us => new { us.UserId, us.SubscriptionId }); // composite key
 
             modelBuilder.Entity<UserSubscription>()
-             .HasOne(us => us.Subscription)
-             .WithMany(s => s.UserSubscriptions)
-             .HasForeignKey(us => us.SubscriptionId)
-             .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(us => us.User)
+                .WithMany(u => u.UserSubscriptions)
+                .HasForeignKey(us => us.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<UserSubscription>()
+                .HasOne(us => us.Subscription)
+                .WithMany(s => s.UserSubscriptions)
+                .HasForeignKey(us => us.SubscriptionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+
+            // 👥 Roles
             modelBuilder.Entity<UserRole>()
-            .HasOne(ur => ur.User)
-             .WithMany(u => u.UserRoles)
-            .HasForeignKey(ur => ur.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(ur => ur.User)
+                .WithMany(u => u.UserRoles)
+                .HasForeignKey(ur => ur.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<UserRole>()
                 .HasOne(ur => ur.Role)
@@ -269,29 +294,26 @@ namespace adapters.DrivenAdapters.Data
                 .HasForeignKey(ur => ur.RoleId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-          
             modelBuilder.Entity<Role>()
                 .HasMany(r => r.AuditLogs)
                 .WithOne()
                 .HasForeignKey(al => al.SubjectId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            
             modelBuilder.Entity<Role>()
                 .HasMany(r => r.Permissions)
                 .WithOne()
                 .HasForeignKey(p => p.SubjectId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            // ⚙️ SystemSetting configuration
-
+            // ⚙️ System Settings
             modelBuilder.Entity<SystemSetting>()
                 .Property(ss => ss.AllowedFileExtensions)
                 .HasMaxLength(512);
 
             modelBuilder.Entity<SystemSetting>()
                 .Property(ss => ss.RegistrationMode)
-                .HasConversion<int>(); 
+                .HasConversion<int>();
 
             modelBuilder.Entity<SystemSetting>()
                 .Property(ss => ss.CreatedAt)
@@ -301,9 +323,7 @@ namespace adapters.DrivenAdapters.Data
                 .Property(ss => ss.UpdatedAt)
                 .IsRequired();
 
-
-            // 🗄️ StorageNode configuration
-
+            // 🗄️ Storage Nodes
             modelBuilder.Entity<StorageNode>()
                 .Property(sn => sn.Name)
                 .IsRequired()
@@ -317,21 +337,19 @@ namespace adapters.DrivenAdapters.Data
             modelBuilder.Entity<StorageNode>()
                 .Property(sn => sn.IpAddress)
                 .IsRequired()
-                .HasMaxLength(45); // IPv6 compatible
+                .HasMaxLength(45);
 
             modelBuilder.Entity<StorageNode>()
                 .Property(sn => sn.Status)
-                .HasConversion<int>(); // store enum as int
+                .HasConversion<int>();
 
-           
             modelBuilder.Entity<StorageNode>()
                 .HasMany(sn => sn.FileItems)
                 .WithOne(fi => fi.StorageNode)
                 .HasForeignKey(fi => fi.StorageNodeId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-
-            // 🗑️ TrashedItem configuration
+            // 🗑️ Trash
             modelBuilder.Entity<TrashedItem>()
                 .Property(ti => ti.ItemType)
                 .IsRequired()
@@ -346,117 +364,12 @@ namespace adapters.DrivenAdapters.Data
                 .Property(ti => ti.OriginalPath)
                 .HasMaxLength(512);
 
-           
             modelBuilder.Entity<TrashedItem>()
                 .HasOne<User>()
                 .WithMany(u => u.TrashedItems)
                 .HasForeignKey(ti => ti.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<User>()
-            .HasOne(u => u.UserSettings)
-             .WithOne()
-             .HasForeignKey<UserSetting>(us => us.UserSettingId)
-             .OnDelete(DeleteBehavior.Cascade);
-
-
-       
-            modelBuilder.Entity<User>()
-                .HasOne(u => u.UserCredentials)
-                .WithOne()
-                .HasForeignKey<UserCredential>(uc => uc.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            
-            modelBuilder.Entity<User>()
-                .HasOne(u => u.UserSettings)
-                .WithOne()
-                .HasForeignKey<UserSetting>(us => us.UserSettingId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.TrashedItems)
-                .WithOne()
-                .HasForeignKey(ti => ti.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-           
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.UserRoles)
-                .WithOne(ur => ur.User)
-                .HasForeignKey(ur => ur.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-        
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.Permissions)
-                .WithOne()
-                .HasForeignKey(p => p.SubjectId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.AuditLogs)
-                .WithOne()
-                .HasForeignKey(al => al.SubjectId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-         
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.Notifications)
-                .WithOne(n => n.User)
-                .HasForeignKey(n => n.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.SharedLinks)
-                .WithOne(sl => sl.User)
-                .HasForeignKey(sl => sl.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-           
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.Folders)
-                .WithOne(f => f.User)
-                .HasForeignKey(f => f.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-           
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.FileItems)
-                .WithOne(fi => fi.User)
-                .HasForeignKey(fi => fi.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-           
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.Purchases)
-                .WithOne(p => p.User)
-                .HasForeignKey(p => p.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-           
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.Invoices)
-                .WithOne(i => i.User)
-                .HasForeignKey(i => i.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-         
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.AISuggestions)
-                .WithOne(ai => ai.User)
-                .HasForeignKey(ai => ai.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.UserSubscriptions)
-                .WithOne(us => us.User)
-                .HasForeignKey(us => us.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

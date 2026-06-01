@@ -22,7 +22,7 @@ public class Notification
 
    
     public Guid? FileId { get; set; }
-    public FileItem? File { get; set; }
+    public FileItem? FileItems { get; set; }
 
 
     public Guid? FolderId { get; set; }

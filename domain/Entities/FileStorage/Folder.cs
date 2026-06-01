@@ -16,9 +16,9 @@ public class Folder
     public Guid? ParentFolderId { get; set; }
     public Folder? ParentFolder { get; set; }
     public ICollection<Folder> SubFolders { get; set; } = new List<Folder>();
-    public ICollection<FileItem> Files { get; set; } = new List<FileItem>();
-    public ICollection<SharedLink> SharedLinks { get; set; } = new List<SharedLink>();
-    public Guid UserId { get; set; }
+    public ICollection<FileItem> FileItems { get; set; } = new List<FileItem>();
+        public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+        public Guid UserId { get; set; }
     public User User { get; set; } = null!;
    
 

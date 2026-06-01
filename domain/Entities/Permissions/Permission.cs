@@ -43,7 +43,7 @@ namespace SHC.Domain.Entities.Permissions
             GrantedAtUtc = DateTime.UtcNow;
             GrantedByUserId = grantedByUserId;
         }
-
+        
         // Simple update method
         public void UpdateAccessLevel(AccessLevel newAccessLevel)
         {
