@@ -256,6 +256,32 @@ namespace adapters.DrivenAdapters.Data
              .WithMany(s => s.UserSubscriptions)
              .HasForeignKey(us => us.SubscriptionId)
              .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserRole>()
+            .HasOne(ur => ur.User)
+             .WithMany(u => u.UserRoles)
+            .HasForeignKey(ur => ur.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserRole>()
+                .HasOne(ur => ur.Role)
+                .WithMany(r => r.UserRoles)
+                .HasForeignKey(ur => ur.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+          
+            modelBuilder.Entity<Role>()
+                .HasMany(r => r.AuditLogs)
+                .WithOne()
+                .HasForeignKey(al => al.SubjectId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            
+            modelBuilder.Entity<Role>()
+                .HasMany(r => r.Permissions)
+                .WithOne()
+                .HasForeignKey(p => p.SubjectId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }
