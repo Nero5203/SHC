@@ -208,6 +208,30 @@ namespace adapters.DrivenAdapters.Data
             .WithMany()
             .HasForeignKey(p => p.GrantedByUserId)
             .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Invoice>()
+         .HasOne(i => i.Purchase)
+         .WithOne(p => p.Invoice)
+         .HasForeignKey<Invoice>(i => i.PurchaseId)
+         .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Invoice>()
+         .HasOne(i => i.User)
+         .WithMany(u => u.Invoices)
+         .HasForeignKey(i => i.UserId)
+         .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Purchase>()
+    .HasOne(p => p.User)
+    .WithMany(u => u.Purchases)
+    .HasForeignKey(p => p.UserId)
+    .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Purchase>()
+          .HasOne(p => p.Subscription)
+         .WithOne(s => s.Purchase)
+         .HasForeignKey<Purchase>(p => p.SubscriptionId)
+         .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }
