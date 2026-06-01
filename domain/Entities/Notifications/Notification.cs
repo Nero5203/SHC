@@ -4,7 +4,7 @@ using Domain.Entities.Users;
 
 public class Notification
 {
-    public Guid Id { get; set; }
+    public Guid NotificationId { get; set; }
     public string Title { get; set; } = null!;
     public string Message { get; set; } = null!;
     public DateTime CreatedAt { get; set; }

@@ -2,7 +2,7 @@ namespace Domain.Entities.Trash
 {
     public class TrashedItem
     {
-        public Guid Id { get; set; }
+        public Guid TrashedItemId { get; set; }
 
         //owner of the trashed item
         public Guid UserId { get; set; }

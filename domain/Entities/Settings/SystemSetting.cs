@@ -7,7 +7,7 @@ namespace Domain.Entities.Settings
    
     public class SystemSetting
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public Guid SystemSettingId { get; set; } = Guid.NewGuid();
 
         // Auditing
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

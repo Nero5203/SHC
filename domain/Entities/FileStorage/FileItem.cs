@@ -10,7 +10,7 @@ namespace Domain.Entities.FileStorage
 
     public class FileItem
     {
-        public Guid Id { get; set; }
+        public Guid FileItemId { get; set; }
         public string FileName { get; set; } = null!;
         public string FileType { get; set; } = null!;
         public long FileSize { get; set; }

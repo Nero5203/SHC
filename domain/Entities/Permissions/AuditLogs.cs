@@ -5,7 +5,7 @@ namespace SHC.Domain.Entities.Permissions
 {
     public class AuditLog
     {
-        public Guid Id { get; private set; }
+        public Guid AuditLogId { get; private set; }
         public DateTime TimestampUtc { get; private set; }
 
         // Who/What performed the action?

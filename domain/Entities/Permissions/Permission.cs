@@ -5,7 +5,7 @@ namespace SHC.Domain.Entities.Permissions
 {
     public class Permission
     {
-        public Guid Id { get; private set; }
+        public Guid PermissionId { get; private set; }
 
         // The Actor
         public Guid SubjectId { get; private set; }

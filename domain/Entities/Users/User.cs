@@ -5,7 +5,7 @@ namespace Domain.Entities.Users
 {
     public class User
     {
-        public Guid Id { get; set; }
+        public Guid UserId { get; set; }
         public string Username { get; set; } = null!;
         public string FirstName { get; set; } = null!;
         public string LastName { get; set; } = null!;
@@ -17,7 +17,7 @@ namespace Domain.Entities.Users
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
-        public UserCredentials Credentials { get; set; } = null!;
+        public UserCredential Credentials { get; set; } = null!;
         public UserSetting Settings { get; set; } = new ();
 
         public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();

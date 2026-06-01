@@ -6,7 +6,7 @@ namespace Domain.Entities.StorageNodes
 {
     public class StorageNode
     {
-        public Guid Id { get; set; }
+        public Guid StorageNodeId { get; set; }
 
         public string Name { get; set; } = null!;
         public string Hostname { get; set; } = null!;

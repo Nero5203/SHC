@@ -8,7 +8,7 @@ namespace Domain.Entities.LinkSharing
 
     public class SharedLink
 {
-    public Guid Id { get; set; }
+    public Guid SharedLinkId { get; set; }
     public string TokenUrl { get; set; } = null!;
     public DateTime? ExpirationDate { get; set; }
     public bool IsActive { get; set; }

@@ -2,9 +2,9 @@ using Domain.Entities.Users;
 
 namespace Domain.Entities.Auth
 {
-    public class UserCredentials
+    public class UserCredential
     {
-        public Guid Id { get; set; }
+        public Guid UserCredentialId { get; set; }
         public string PasswordHash { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }

@@ -25,7 +25,7 @@ namespace adapters.DrivenAdapters.Data
 
         //AUTH
         public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
-        public DbSet<UserCredentials> UserCredentials { get; set; } = null!;
+        public DbSet<UserCredential> UserCredentials { get; set; } = null!;
 
         //FILE STORAGE
         public DbSet<FileItem> FileItems { get; set; } = null!;
@@ -63,15 +63,36 @@ namespace adapters.DrivenAdapters.Data
 
         // USERS & USER SETTINGS
         public DbSet<User> Users { get; set; } = null!;
-        public DbSet<NotificationSetting> NotificationSettings { get; set; } = null!;
-        public DbSet<StorageSetting> StorageSettings { get; set; } = null!;
-        public DbSet<PrivacySetting> PrivacySettings { get; set; } = null!;
-        public DbSet<UiSetting> UiSettings { get; set; } = null!;
         public DbSet<UserSetting> UserSettings { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<RefreshToken>().HasKey(rt => rt.RefreshTokenId);
+            modelBuilder.Entity<UserCredential>().HasKey(uc => uc.UserCredentialId);
+            modelBuilder.Entity<FileItem>().HasKey(fl => fl.FileItemId);
+            modelBuilder.Entity<Folder>().HasKey(f => f.FolderId);
+            modelBuilder.Entity<SharedLink>().HasKey(sl => sl.SharedLinkId);
+            modelBuilder.Entity<Notification>().HasKey(n => n.NotificationId);
+            modelBuilder.Entity<AuditLog>().HasKey(al => al.AuditLogId);
+            modelBuilder.Entity<Permission>().HasKey(p => p.PermissionId);
+            modelBuilder.Entity<Invoice>().HasKey(i => i.InvoiceId);
+            modelBuilder.Entity<Purchase>().HasKey(p => p.PurchaseId);
+            modelBuilder.Entity<Subscription>().HasKey(s => s.SubscriptionId);
+            modelBuilder.Entity<SubscriptionPlan>().HasKey(sp => sp.SubscriptionPlanId);
+            modelBuilder.Entity<UserSubscription>().HasKey(us => us.UserSubscriptionId);
+            modelBuilder.Entity<Role>().HasKey(r => r.RoleId);
+            modelBuilder.Entity<UserRole>().HasKey(ur => new { ur.UserId, ur.RoleId });
+            modelBuilder.Entity<SystemSetting>().HasKey(ss => ss.SystemSettingId);
+            modelBuilder.Entity<StorageNode>().HasKey(sn => sn.StorageNodeId);
+            modelBuilder.Entity<TrashedItem>().HasKey(ti => ti.TrashedItemId);
+            modelBuilder.Entity<User>().HasKey(u => u.UserId);
+            modelBuilder.Entity<UserSetting>().HasKey(us => us.UserSettingId);
+            modelBuilder.Entity<UserSetting>().OwnsOne(x => x.UiSettings);
+            modelBuilder.Entity<UserSetting>().OwnsOne(x => x.StorageSettings);
+            modelBuilder.Entity<UserSetting>().OwnsOne(x => x.NotificationSettings);
+            modelBuilder.Entity<UserSetting>().OwnsOne(x => x.PrivacySettings);
         }
     }
 }

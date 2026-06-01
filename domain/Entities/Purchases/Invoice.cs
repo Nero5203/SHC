@@ -5,7 +5,7 @@ namespace Domain.Entities.Purchases
 {
     public class Invoice
     {
-        public Guid Id { get; set; }
+        public Guid InvoiceId { get; set; }
 
         public string InvoiceNumber { get; set; } = null!;
 
