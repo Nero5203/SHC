@@ -284,8 +284,6 @@ namespace adapters.DrivenAdapters.Data
                 .OnDelete(DeleteBehavior.SetNull);
 
             // ⚙️ SystemSetting configuration
-            modelBuilder.Entity<SystemSetting>()
-                .HasKey(ss => ss.SystemSettingId);
 
             modelBuilder.Entity<SystemSetting>()
                 .Property(ss => ss.AllowedFileExtensions)
@@ -305,8 +303,6 @@ namespace adapters.DrivenAdapters.Data
 
 
             // 🗄️ StorageNode configuration
-            modelBuilder.Entity<StorageNode>()
-                .HasKey(sn => sn.StorageNodeId);
 
             modelBuilder.Entity<StorageNode>()
                 .Property(sn => sn.Name)
@@ -327,13 +323,140 @@ namespace adapters.DrivenAdapters.Data
                 .Property(sn => sn.Status)
                 .HasConversion<int>(); // store enum as int
 
-            // 🔗 StorageNode → FileItem (1:N)
+           
             modelBuilder.Entity<StorageNode>()
                 .HasMany(sn => sn.FileItems)
                 .WithOne(fi => fi.StorageNode)
                 .HasForeignKey(fi => fi.StorageNodeId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+
+            // 🗑️ TrashedItem configuration
+            modelBuilder.Entity<TrashedItem>()
+                .Property(ti => ti.ItemType)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            modelBuilder.Entity<TrashedItem>()
+                .Property(ti => ti.Name)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            modelBuilder.Entity<TrashedItem>()
+                .Property(ti => ti.OriginalPath)
+                .HasMaxLength(512);
+
+           
+            modelBuilder.Entity<TrashedItem>()
+                .HasOne<User>()
+                .WithMany(u => u.TrashedItems)
+                .HasForeignKey(ti => ti.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<User>()
+            .HasOne(u => u.UserSettings)
+             .WithOne()
+             .HasForeignKey<UserSetting>(us => us.UserSettingId)
+             .OnDelete(DeleteBehavior.Cascade);
+
+
+       
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.UserCredentials)
+                .WithOne()
+                .HasForeignKey<UserCredential>(uc => uc.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.UserSettings)
+                .WithOne()
+                .HasForeignKey<UserSetting>(us => us.UserSettingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.TrashedItems)
+                .WithOne()
+                .HasForeignKey(ti => ti.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+           
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.UserRoles)
+                .WithOne(ur => ur.User)
+                .HasForeignKey(ur => ur.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+        
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.Permissions)
+                .WithOne()
+                .HasForeignKey(p => p.SubjectId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.AuditLogs)
+                .WithOne()
+                .HasForeignKey(al => al.SubjectId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+         
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.Notifications)
+                .WithOne(n => n.User)
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.SharedLinks)
+                .WithOne(sl => sl.User)
+                .HasForeignKey(sl => sl.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+           
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.Folders)
+                .WithOne(f => f.User)
+                .HasForeignKey(f => f.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+           
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.FileItems)
+                .WithOne(fi => fi.User)
+                .HasForeignKey(fi => fi.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+           
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.Purchases)
+                .WithOne(p => p.User)
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+           
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.Invoices)
+                .WithOne(i => i.User)
+                .HasForeignKey(i => i.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+         
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.AISuggestions)
+                .WithOne(ai => ai.User)
+                .HasForeignKey(ai => ai.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.UserSubscriptions)
+                .WithOne(us => us.User)
+                .HasForeignKey(us => us.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

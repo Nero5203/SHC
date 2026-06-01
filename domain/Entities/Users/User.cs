@@ -3,6 +3,7 @@ using Domain.Entities.Auth;
 using Domain.Entities.LinkSharing;
 using Domain.Entities.Purchases;
 using Domain.Entities.Roles;
+using Domain.Entities.Trash;
 using SHC.Domain.Entities.Permissions;
 
 namespace Domain.Entities.Users
@@ -22,9 +23,11 @@ namespace Domain.Entities.Users
         public DateTime UpdatedAt { get; set; }
 
         public UserCredential UserCredentials { get; set; } = null!;
-        public UserSetting Settings { get; set; } = new ();
+        public UserSetting UserSettings { get; set; } = new ();
 
-        public ICollection<UserRole> UserRoles { get; set; } = new List<Role>();
+
+        public ICollection<TrashedItem> TrashedItems { get; set; } = new List<TrashedItem>();
+        public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
         public ICollection<Permission> Permissions { get; set; } = new List<Permission>();
         public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
         public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
