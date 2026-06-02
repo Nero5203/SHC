@@ -22,7 +22,6 @@ namespace Domain.Entities.Trash
 
         //restore metadata
         public DateTime? RestoredAt { get; set; }
-        public bool IsRestored { get; set; } = false;
 
         //lifecycle
         public DateTime ExpiresAt { get; set; }

@@ -98,7 +98,7 @@ namespace adapters.DrivenAdapters.Data
             // 🔐 Auth & Security
             modelBuilder.Entity<RefreshToken>()
                 .HasOne(rt => rt.User)
-                .WithMany(u => u.RefreshTokens)
+                .WithMany()
                 .HasForeignKey(rt => rt.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
@@ -118,7 +118,7 @@ namespace adapters.DrivenAdapters.Data
             // 📁 Storage: Folders & Files
             modelBuilder.Entity<Folder>()
                 .HasOne(f => f.User)
-                .WithMany(u => u.Folders)
+                .WithMany()
                 .HasForeignKey(f => f.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
@@ -136,7 +136,7 @@ namespace adapters.DrivenAdapters.Data
 
             modelBuilder.Entity<FileItem>()
                 .HasOne(fi => fi.User)
-                .WithMany(u => u.FileItems)
+                .WithMany()
                 .HasForeignKey(fi => fi.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
@@ -162,7 +162,7 @@ namespace adapters.DrivenAdapters.Data
             // 🔗 Shared Links
             modelBuilder.Entity<SharedLink>()
                 .HasOne(sl => sl.User)
-                .WithMany(u => u.SharedLinks)
+                .WithMany()
                 .HasForeignKey(sl => sl.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
@@ -185,7 +185,7 @@ namespace adapters.DrivenAdapters.Data
             // 🔔 Notifications
             modelBuilder.Entity<Notification>()
                 .HasOne(n => n.User)
-                .WithMany(u => u.Notifications)
+                .WithMany()
                 .HasForeignKey(n => n.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
@@ -204,7 +204,7 @@ namespace adapters.DrivenAdapters.Data
             // 🧾 Audit Logs
             modelBuilder.Entity<AuditLog>()
                 .HasOne<User>()
-                .WithMany(u => u.AuditLogs)
+                .WithMany()
                 .HasForeignKey(al => al.SubjectId)
                 .OnDelete(DeleteBehavior.SetNull);
 
@@ -217,7 +217,7 @@ namespace adapters.DrivenAdapters.Data
             // 🔐 Permissions
             modelBuilder.Entity<Permission>()
                 .HasOne<User>()
-                .WithMany(u => u.Permissions)
+                .WithMany()
                 .HasForeignKey(p => p.SubjectId)
                 .OnDelete(DeleteBehavior.SetNull);
 
@@ -230,7 +230,7 @@ namespace adapters.DrivenAdapters.Data
             modelBuilder.Entity<Permission>()
                 .HasOne<User>()
                 .WithMany()
-                .HasForeignKey(p => p.GrantedByUserId)
+                .HasForeignKey()
                 .OnDelete(DeleteBehavior.SetNull);
 
             // 💳 Purchases & Invoices
@@ -242,13 +242,13 @@ namespace adapters.DrivenAdapters.Data
 
             modelBuilder.Entity<Invoice>()
                 .HasOne(i => i.User)
-                .WithMany(u => u.Invoices)
+                .WithMany()
                 .HasForeignKey(i => i.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Purchase>()
                 .HasOne(p => p.User)
-                .WithMany(u => u.Purchases)
+                .WithMany()
                 .HasForeignKey(p => p.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
@@ -270,7 +270,7 @@ namespace adapters.DrivenAdapters.Data
 
             modelBuilder.Entity<UserSubscription>()
                 .HasOne(us => us.User)
-                .WithMany(u => u.UserSubscriptions)
+                .WithMany()
                 .HasForeignKey(us => us.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
@@ -284,7 +284,7 @@ namespace adapters.DrivenAdapters.Data
             // 👥 Roles
             modelBuilder.Entity<UserRole>()
                 .HasOne(ur => ur.User)
-                .WithMany(u => u.UserRoles)
+                .WithMany()
                 .HasForeignKey(ur => ur.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
@@ -366,7 +366,7 @@ namespace adapters.DrivenAdapters.Data
 
             modelBuilder.Entity<TrashedItem>()
                 .HasOne<User>()
-                .WithMany(u => u.TrashedItems)
+                .WithMany()
                 .HasForeignKey(ti => ti.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
