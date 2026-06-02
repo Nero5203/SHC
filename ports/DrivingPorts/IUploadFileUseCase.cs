@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ports.DrivenPorts
+namespace ports.DrivingPorts
 {
-    internal class Class1
+    internal interface IUploadFileUseCase
     {
     }
 }

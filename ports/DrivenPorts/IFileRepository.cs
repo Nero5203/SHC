@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ports.DrivingPorts
+namespace ports.DrivenPorts
 {
-    internal class Class1
+    internal interface IFileRepository
     {
     }
 }
