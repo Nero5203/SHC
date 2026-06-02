@@ -18,6 +18,6 @@ namespace Domain.Entities.Roles
 
        public ICollection<Permission> Permissions { get; set; } = new List<Permission>();   
         public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
-        public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+        public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
     }
 }

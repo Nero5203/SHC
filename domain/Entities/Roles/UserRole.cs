@@ -7,10 +7,10 @@ namespace Domain.Entities.Roles
     {
        
         public Guid UserId { get; set; }
-        public virtual User User { get; set; } 
+        public User User { get; set; } = null!;
 
         public Guid RoleId { get; set; }
-        public virtual Role Role { get; set; } 
+        public Role Role { get; set; } = null!;
 
         public DateTime AssignedAt { get; set; } = DateTime.UtcNow;
     }

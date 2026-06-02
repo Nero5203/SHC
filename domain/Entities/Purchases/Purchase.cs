@@ -9,6 +9,8 @@ namespace Domain.Entities.Purchases
 
         public Guid UserId { get; set; }
         public User User { get; set; } = null!;
+
+        public Guid SubscriptionId { get; set; }
         public Subscription Subscription { get; set; } = null!;
         public decimal Amount { get; set; }
         public string Currency { get; set; } = "EUR";
@@ -17,6 +19,7 @@ namespace Domain.Entities.Purchases
 
         public PurchaseStatus Status { get; set; }
 
+        public Guid? InvoiceId { get; set; }
         public Invoice? Invoice { get; set; }
     }
 }
