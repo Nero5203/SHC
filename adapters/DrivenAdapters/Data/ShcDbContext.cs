@@ -259,10 +259,10 @@ namespace adapters.DrivenAdapters.Data
                 .HasForeignKey(s => s.SubscriptionPlanId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<Subscription>()
-                .HasOne(s => s.Purchase)
-                .WithOne(p => p.Subscription) // Purchase has exactly one Subscription
-                .HasForeignKey<Subscription>(s => s.PurchaseId)
+            modelBuilder.Entity<Purchase>()
+                .HasOne(p => p.Subscription)
+                .WithMany(s => s.Purchases)
+                .HasForeignKey(p => p.SubscriptionId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<UserSubscription>()

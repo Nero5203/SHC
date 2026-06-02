@@ -20,10 +20,10 @@ namespace Domain.Entities.Purchases
 
         public bool AutoRenew { get; set; } = true;
 
-        public Guid PurchaseId { get; set; }
-        public Purchase Purchase { get; set; } = null!;
+        
         public string? ProviderSubscriptionId { get; set; }
 
         public ICollection<UserSubscription> UserSubscriptions { get; set; } = new List<UserSubscription>();
+        public ICollection<Purchase> Purchases { get; set; } = new List<Purchase>();
     }
 }
