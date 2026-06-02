@@ -20,34 +20,8 @@ namespace SHC.Domain.Entities.Permissions
 
         // Metadata
         public DateTime GrantedAtUtc { get; private set; }
-        public Guid? GrantedByUserId { get; private set; }
+        public Guid? GrantedBySubjectId { get; private set; }
+        public SubjectType GrantedBySubjectType { get; private set; }
 
-        // EF Core Constructor
-        private Permission() { }
-
-        // Master Constructor
-        public Permission(
-            Guid subjectId,
-            SubjectType subjectType,
-            Guid resourceId,
-            ResourceType resourceType,
-            AccessLevel accessLevel,
-            Guid? grantedByUserId)
-        {
-            PermissionId = Guid.NewGuid();
-            SubjectId = subjectId;
-            SubjectType = subjectType;
-            ResourceId = resourceId;
-            ResourceType = resourceType;
-            AccessLevel = accessLevel;
-            GrantedAtUtc = DateTime.UtcNow;
-            GrantedByUserId = grantedByUserId;
-        }
-        
-        // Simple update method
-        public void UpdateAccessLevel(AccessLevel newAccessLevel)
-        {
-            AccessLevel = newAccessLevel;
-        }
     }
 }
