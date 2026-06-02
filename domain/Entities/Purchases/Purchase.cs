@@ -19,7 +19,7 @@ namespace Domain.Entities.Purchases
 
         public PurchaseStatus Status { get; set; }
 
-        public Guid? InvoiceId { get; set; }
+        
         public Invoice? Invoice { get; set; }
     }
 }
