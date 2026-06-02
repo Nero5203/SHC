@@ -19,48 +19,10 @@ namespace SHC.Domain.Entities.Permissions
         public string Action { get; private set; } = string.Empty;
         public ResourceType ResourceType { get; private set; }
         public string ResourceId { get; private set; } = string.Empty;
-
-        // Contextual network data
-        public string IpAddress { get; private set; } = string.Empty;
-        public string UserAgent { get; private set; } = string.Empty;
-
         // Outcome
         public bool IsSuccess { get; private set; }
 
         // Flexible payload
         public string PayloadJson { get; private set; } = string.Empty;
-
-        public Guid? UserId { get; set; }
-        public User? User { get; set; }
-
-        public Guid? RoleId { get; set; }
-        public Role? Role { get; set; }
-        // EF Core Constructor
-        private AuditLog() { }
-
-        // Master Constructor
-        public AuditLog(
-            Guid? subjectId,
-            SubjectType subjectType,
-            string action,
-            ResourceType resourceType,
-            string resourceId,
-            string ipAddress,
-            string userAgent,
-            bool isSuccess,
-            string payloadJson = "{}")
-        {
-            AuditLogId = Guid.NewGuid();
-            TimestampUtc = DateTime.UtcNow;
-            SubjectId = subjectId;
-            SubjectType = subjectType;
-            Action = action;
-            ResourceType = resourceType;
-            ResourceId = resourceId;
-            IpAddress = ipAddress;
-            UserAgent = userAgent;
-            IsSuccess = isSuccess;
-            PayloadJson = payloadJson;
-        }
     }
 }
