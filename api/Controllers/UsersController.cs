@@ -1,6 +1,6 @@
 using api.Dto.Users;
-using application.UseCases.Users;
 using Microsoft.AspNetCore.Mvc;
+using ports.DrivingPorts;
 
 namespace api.Controllers
 {
@@ -8,17 +8,30 @@ namespace api.Controllers
     [Route("api/users")]
     public class UsersController : ControllerBase
     {
-        private readonly IUserUseCase _userUseCase;
+        private readonly IGetUserByIdUseCase _getUserByIdUseCase;
+        private readonly IGetUserSettingsUseCase _getUserSettingsUseCase;
+        private readonly IUpdateUserProfileUseCase _updateUserProfileUseCase;
+        private readonly IUpdateUserSettingsUseCase _updateUserSettingsUseCase;
+        private readonly IDeleteUserUseCase _deleteUserUseCase;
 
-        public UsersController(IUserUseCase userUseCase)
+        public UsersController(
+            IGetUserByIdUseCase getUserByIdUseCase,
+            IGetUserSettingsUseCase getUserSettingsUseCase,
+            IUpdateUserProfileUseCase updateUserProfileUseCase,
+            IUpdateUserSettingsUseCase updateUserSettingsUseCase,
+            IDeleteUserUseCase deleteUserUseCase)
         {
-            _userUseCase = userUseCase;
+            _getUserByIdUseCase = getUserByIdUseCase;
+            _getUserSettingsUseCase = getUserSettingsUseCase;
+            _updateUserProfileUseCase = updateUserProfileUseCase;
+            _updateUserSettingsUseCase = updateUserSettingsUseCase;
+            _deleteUserUseCase = deleteUserUseCase;
         }
 
         [HttpGet("{userId}")]
         public async Task<ActionResult<UserResponseDto>> GetUserById(Guid userId)
         {
-            var user = await _userUseCase.GetUserByIdAsync(userId);
+            var user = await _getUserByIdUseCase.ExecuteAsync(userId);
 
             if (user == null)
             {
@@ -46,7 +59,7 @@ namespace api.Controllers
             Guid userId,
             UpdateUserDto dto)
         {
-            var user = await _userUseCase.UpdateUserProfileAsync(
+            var user = await _updateUserProfileUseCase.ExecuteAsync(
                 userId,
                 dto.Username,
                 dto.FirstName,
@@ -78,7 +91,7 @@ namespace api.Controllers
         [HttpGet("{userId}/settings")]
         public async Task<ActionResult<UserSettingsResponseDto>> GetUserSettings(Guid userId)
         {
-            var user = await _userUseCase.GetUserSettingsAsync(userId);
+            var user = await _getUserSettingsUseCase.ExecuteAsync(userId);
 
             if (user == null)
             {
@@ -111,7 +124,7 @@ namespace api.Controllers
             Guid userId,
             UpdateUserSettingsDto dto)
         {
-            var user = await _userUseCase.UpdateUserSettingsAsync(
+            var user = await _updateUserSettingsUseCase.ExecuteAsync(
                 userId,
                 dto.Theme,
                 dto.Language,
@@ -150,7 +163,7 @@ namespace api.Controllers
         [HttpDelete("{userId}")]
         public async Task<IActionResult> DeleteUser(Guid userId)
         {
-            var deleted = await _userUseCase.DeleteUserAsync(userId);
+            var deleted = await _deleteUserUseCase.ExecuteAsync(userId);
 
             if (!deleted)
             {
