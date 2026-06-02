@@ -1,4 +1,7 @@
 using adapters.DrivenAdapters.Data;
+using application.UseCases.Users;
+using ports.DrivenPorts;
+using adapters.DrivenAdapters.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +18,11 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<ShcDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+
+
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserUseCase, UserUseCase>();
+
 
 var app = builder.Build();
 

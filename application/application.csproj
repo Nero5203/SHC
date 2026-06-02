@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\domain\domain.csproj" />
+    <ProjectReference Include="..\ports\ports.csproj" />
+  </ItemGroup>
+
 </Project>
