@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace domain.Entities.Settings.Enums
+namespace Domain.Entities.Settings.Enums
 {
     public enum RegistrationMode
     {

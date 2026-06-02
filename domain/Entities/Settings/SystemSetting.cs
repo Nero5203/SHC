@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using domain.Entities.Settings.Enums;
+using Domain.Entities.Settings.Enums;
 
 namespace Domain.Entities.Settings
 {

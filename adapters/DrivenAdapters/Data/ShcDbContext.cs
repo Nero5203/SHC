@@ -282,18 +282,7 @@ namespace adapters.DrivenAdapters.Data
                 .HasForeignKey(ur => ur.RoleId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<Role>()
-                .HasMany(r => r.AuditLogs)
-                .WithOne()
-                .HasForeignKey(al => al.SubjectId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            modelBuilder.Entity<Role>()
-                .HasMany(r => r.Permissions)
-                .WithOne()
-                .HasForeignKey(p => p.SubjectId)
-                .OnDelete(DeleteBehavior.SetNull);
-
+            
             // ⚙️ System Settings
             modelBuilder.Entity<SystemSetting>()
                 .Property(ss => ss.AllowedFileExtensions)
