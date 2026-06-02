@@ -111,8 +111,8 @@ namespace adapters.DrivenAdapters.Data
             // ⚙️ User Settings
             modelBuilder.Entity<User>()
                 .HasOne(u => u.UserSettings)
-                .WithOne()
-                .HasForeignKey<UserSetting>(us => us.UserSettingId)
+                .WithOne(us => us.User)
+                .HasForeignKey<UserSetting>(us => us.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             // 📁 Storage: Folders & Files
@@ -159,28 +159,22 @@ namespace adapters.DrivenAdapters.Data
                 .HasForeignKey<AIFileInsight>(ai => ai.FileItemId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // 🔗 Shared Links
+            modelBuilder.Entity<SharedLink>()
+                .HasKey(sl => sl.SharedLinkId);
+
+            modelBuilder.Entity<SharedLink>()
+                .Property(sl => sl.TargetId)
+                .IsRequired();
+
+            modelBuilder.Entity<SharedLink>()
+                .Property(sl => sl.TargetType)
+                .IsRequired();
+
             modelBuilder.Entity<SharedLink>()
                 .HasOne(sl => sl.User)
                 .WithMany()
                 .HasForeignKey(sl => sl.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            // Polymorphic target mapping
-            // SharedLink → FileItem
-            modelBuilder.Entity<SharedLink>()
-                .HasOne<FileItem>() // no navigation property in SharedLink
-                .WithMany()
-                .HasForeignKey(sl => sl.TargetId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            // SharedLink → Folder
-            modelBuilder.Entity<SharedLink>()
-                .HasOne<Folder>() // no navigation property in SharedLink
-                .WithMany()
-                .HasForeignKey(sl => sl.TargetId)
-                .OnDelete(DeleteBehavior.SetNull);
-
 
             // 🔔 Notifications
             modelBuilder.Entity<Notification>()
@@ -190,10 +184,10 @@ namespace adapters.DrivenAdapters.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Notification>()
-    .HasOne(n => n.FileItems)
-    .WithMany(fi => fi.Notifications)
-    .HasForeignKey(n => n.FileId)
-    .OnDelete(DeleteBehavior.SetNull);
+                .HasOne(n => n.FileItems)
+                .WithMany(fi => fi.Notifications)
+                .HasForeignKey(n => n.FileId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<Notification>()
                 .HasOne(n => n.Folder)
@@ -202,36 +196,30 @@ namespace adapters.DrivenAdapters.Data
                 .OnDelete(DeleteBehavior.SetNull);
 
             // 🧾 Audit Logs
-            modelBuilder.Entity<AuditLog>()
-                .HasOne<User>()
-                .WithMany()
-                .HasForeignKey(al => al.SubjectId)
-                .OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<AuditLog>()
-                .HasOne<Role>()
-                .WithMany(r => r.AuditLogs)
-                .HasForeignKey(al => al.SubjectId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .HasKey(al => al.AuditLogId);
+
+            modelBuilder.Entity<AuditLog>()
+                .Property(al => al.SubjectId)
+                .IsRequired();
+
+            modelBuilder.Entity<AuditLog>()
+                .Property(al => al.SubjectType)
+                .IsRequired();
 
             // 🔐 Permissions
-            modelBuilder.Entity<Permission>()
-                .HasOne<User>()
-                .WithMany()
-                .HasForeignKey(p => p.SubjectId)
-                .OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<Permission>()
-                .HasOne<Role>()
-                .WithMany(r => r.Permissions)
-                .HasForeignKey(p => p.SubjectId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .HasKey(p => p.PermissionId);
 
             modelBuilder.Entity<Permission>()
-                .HasOne<User>()
-                .WithMany()
-                .HasForeignKey()
-                .OnDelete(DeleteBehavior.SetNull);
+                .Property(p => p.SubjectId)
+                .IsRequired();
+
+            modelBuilder.Entity<Permission>()
+                .Property(p => p.SubjectType)
+                .IsRequired();
 
             // 💳 Purchases & Invoices
             modelBuilder.Entity<Invoice>()
