@@ -24,20 +24,5 @@ namespace Domain.Entities.Users
 
         public UserCredential UserCredentials { get; set; } = null!;
         public UserSetting UserSettings { get; set; } = new ();
-
-
-        public ICollection<TrashedItem> TrashedItems { get; set; } = new List<TrashedItem>();
-        public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
-        public ICollection<Permission> Permissions { get; set; } = new List<Permission>();
-        public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
-        public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
-        public ICollection<SharedLink> SharedLinks { get; set; } = new List<SharedLink>();
-        public ICollection<FileStorage.FileItem> FileItems { get; set; } = new List<FileStorage.FileItem>();
-        public ICollection<FileStorage.Folder> Folders { get; set; } = new List<FileStorage.Folder>();
-        public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
-        public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
-        public ICollection<Purchase> Purchases { get; set; } = new List<Purchase>();
-        public ICollection<UserSubscription> UserSubscriptions { get; set; } = new List<UserSubscription>();
-        public ICollection<AISuggestion> AISuggestions { get; set; } = new List<AISuggestion>();
     }
 }
