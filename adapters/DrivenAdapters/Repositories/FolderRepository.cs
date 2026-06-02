@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace application.UseCases
+namespace adapters.DrivenAdapters.Repositories
 {
-    internal class Class1
+    internal class FolderRepository
     {
     }
 }
