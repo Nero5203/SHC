@@ -1,12 +1,16 @@
 using adapters.DrivenAdapters.Data;
 using application.UseCases.Users;
 using application.UseCases.Purchases;
+using application.UseCases.LinkSharing;
 using ports.DrivenPorts;
 using ports.DrivingPorts;
 using adapters.DrivenAdapters.Repositories;
 using adapters.DrivenAdapters.Repositories.Purchases;
+using adapters.DrivenAdapters.Repositories.LinkSharing;
 using ports.DrivenPorts.Purchases;
 using ports.DrivingPorts.Purchases;
+using ports.DrivenPorts.LinkSharing;
+using ports.DrivingPorts.LinkSharing;
 using Microsoft.EntityFrameworkCore;
 using adapters.DrivenAdapters.Auth;
 using ports.DrivenPorts.Auth;
@@ -16,14 +20,6 @@ using System.Text;
 
 
 var builder = WebApplication.CreateBuilder(args);
-
-var apiKey = builder.Configuration["SendGrid:ApiKey"]?? throw new InvalidOperationException("SendGrid API key is missing.");
-
-
-builder.Services.AddScoped<IEmailSender>(_ =>
-    new SendGridEmailSender(apiKey)
-);
-
 
 // Add services to the container.
 
@@ -74,6 +70,13 @@ builder.Services.AddScoped<IGetPurchaseByIdUseCase, GetPurchaseByIdUseCase>();
 builder.Services.AddScoped<IGetPurchasesByUserIdUseCase, GetPurchasesByUserIdUseCase>();
 builder.Services.AddScoped<IUpdatePurchaseStatusUseCase, UpdatePurchaseStatusUseCase>();
 builder.Services.AddScoped<IGetInvoiceByPurchaseIdUseCase, GetInvoiceByPurchaseIdUseCase>();
+builder.Services.AddScoped<ISharedLinkRepository, SharedLinkRepository>();
+builder.Services.AddScoped<ICreateSharedLinkUseCase, CreateSharedLinkUseCase>();
+builder.Services.AddScoped<IGetSharedLinkByIdUseCase, GetSharedLinkByIdUseCase>();
+builder.Services.AddScoped<IGetSharedLinkByTokenUseCase, GetSharedLinkByTokenUseCase>();
+builder.Services.AddScoped<IGetSharedLinksByUserIdUseCase, GetSharedLinksByUserIdUseCase>();
+builder.Services.AddScoped<IUpdateSharedLinkUseCase, UpdateSharedLinkUseCase>();
+builder.Services.AddScoped<IDeactivateSharedLinkUseCase, DeactivateSharedLinkUseCase>();
 
 
 var app = builder.Build();
