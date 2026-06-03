@@ -13,7 +13,8 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var apiKey = builder.Configuration["SendGrid:ApiKey"];
+var apiKey = builder.Configuration["SendGrid:ApiKey"]?? throw new InvalidOperationException("SendGrid API key is missing.");
+
 
 builder.Services.AddScoped<IEmailSender>(_ =>
     new SendGridEmailSender(apiKey)
@@ -56,6 +57,8 @@ builder.Services.AddDbContext<ShcDbContext>(options =>
 
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ICreateUserUseCase, CreateUserUseCase>();
+builder.Services.AddScoped<IGetUserByEmailUseCase, GetUserByEmailUseCase>();
 builder.Services.AddScoped<IGetUserByIdUseCase, GetUserByIdUseCase>();
 builder.Services.AddScoped<IGetUserSettingsUseCase, GetUserSettingsUseCase>();
 builder.Services.AddScoped<IUpdateUserProfileUseCase, UpdateUserProfileUseCase>();

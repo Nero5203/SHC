@@ -5,7 +5,7 @@ namespace adapters.DrivenAdapters.Auth
 {
     public class PasswordHasherAdapter : IPasswordHasher
         {
-            private readonly PasswordHasher<object> _hasher = new();
+            private readonly PasswordHasher<object?> _hasher = new();
 
             public string HashPassword(string password)
             {
