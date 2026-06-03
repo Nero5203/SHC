@@ -1,8 +1,12 @@
 using adapters.DrivenAdapters.Data;
 using application.UseCases.Users;
+using application.UseCases.Purchases;
 using ports.DrivenPorts;
 using ports.DrivingPorts;
 using adapters.DrivenAdapters.Repositories;
+using adapters.DrivenAdapters.Repositories.Purchases;
+using ports.DrivenPorts.Purchases;
+using ports.DrivingPorts.Purchases;
 using Microsoft.EntityFrameworkCore;
 using adapters.DrivenAdapters.Auth;
 using ports.DrivenPorts.Auth;
@@ -64,6 +68,12 @@ builder.Services.AddScoped<IGetUserSettingsUseCase, GetUserSettingsUseCase>();
 builder.Services.AddScoped<IUpdateUserProfileUseCase, UpdateUserProfileUseCase>();
 builder.Services.AddScoped<IUpdateUserSettingsUseCase, UpdateUserSettingsUseCase>();
 builder.Services.AddScoped<IDeleteUserUseCase, DeleteUserUseCase>();
+builder.Services.AddScoped<IPurchaseRepository, PurchaseRepository>();
+builder.Services.AddScoped<ICreatePurchaseUseCase, CreatePurchaseUseCase>();
+builder.Services.AddScoped<IGetPurchaseByIdUseCase, GetPurchaseByIdUseCase>();
+builder.Services.AddScoped<IGetPurchasesByUserIdUseCase, GetPurchasesByUserIdUseCase>();
+builder.Services.AddScoped<IUpdatePurchaseStatusUseCase, UpdatePurchaseStatusUseCase>();
+builder.Services.AddScoped<IGetInvoiceByPurchaseIdUseCase, GetInvoiceByPurchaseIdUseCase>();
 
 
 var app = builder.Build();
