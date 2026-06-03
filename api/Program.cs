@@ -19,6 +19,10 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using adapters.DrivenAdapters.Repositories.Auth;
 using Application.UseCases.Auth;
+using application.Mappings;
+using Microsoft.Extensions.DependencyInjection;
+
+
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -58,6 +62,7 @@ builder.Services.AddDbContext<ShcDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
 
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IGetUserByEmailUseCase, GetUserByEmailUseCase>();
 builder.Services.AddScoped<IGetUserByIdUseCase, GetUserByIdUseCase>();
@@ -83,7 +88,8 @@ builder.Services.AddScoped<IUserCredentialRepository, EfUserCredentialRepository
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
 builder.Services.AddScoped<RegisterUserUseCase>();
 
-
+// Register AutoMapper
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
