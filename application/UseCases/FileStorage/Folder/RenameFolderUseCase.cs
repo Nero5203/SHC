@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ports.DrivenPorts.FileStorage
+namespace application.UseCases.FileStorage.Folder
 {
-    public interface IFileStorageRepository
+    internal class RenameFolderUseCase
     {
     }
 }

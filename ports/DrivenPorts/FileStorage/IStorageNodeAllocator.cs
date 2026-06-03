@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ports.DrivenPorts.FileStorage
 {
-    public interface IFileStorageRepository
+    internal interface IStorageNodeAllocator
     {
     }
 }

@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ports.DrivenPorts.FileStorage
+namespace adapters.DrivenAdapters.Repositories.FileStorage
 {
-    public interface IFileStorageRepository
+    internal class StorageNodeAllocator
     {
     }
 }

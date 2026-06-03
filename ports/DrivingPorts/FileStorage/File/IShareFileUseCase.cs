@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ports.DrivenPorts.FileStorage
+namespace ports.DrivingPorts.FileStorage.File
 {
-    public interface IFileStorageRepository
+    internal interface IShareFileUseCase
     {
     }
 }
