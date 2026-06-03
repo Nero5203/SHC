@@ -27,7 +27,7 @@ namespace adapters.DrivenAdapters.Repositories.Auth
             };
 
             var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_configuration["Jwt:SecretKey"]!));
+                Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
             
             var creds = new SigningCredentials(
                 key,

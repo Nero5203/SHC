@@ -1,4 +1,5 @@
 using adapters.DrivenAdapters.Data;
+using Domain.Entities.Auth;
 using Domain.Entities.Users;
 using Microsoft.EntityFrameworkCore;
 using ports.DrivenPorts;
@@ -35,6 +36,12 @@ namespace adapters.DrivenAdapters.Repositories
             return await _context.Users
                 .Include(u => u.UserSettings)
                 .FirstOrDefaultAsync(u => u.UserId == userId);
+        }
+        public async Task<UserCredential?> GetCredentialsByEmailAsync(string email)
+        {
+            return await _context.UserCredentials
+                .Include(uc => uc.User)
+                .FirstOrDefaultAsync(uc => uc.User.Email == email);
         }
 
         public async Task UpdateAsync(User user)

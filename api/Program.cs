@@ -17,6 +17,8 @@ using ports.DrivenPorts.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using adapters.DrivenAdapters.Repositories.Auth;
+using Application.UseCases.Auth;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -57,7 +59,6 @@ builder.Services.AddDbContext<ShcDbContext>(options =>
 
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<ICreateUserUseCase, CreateUserUseCase>();
 builder.Services.AddScoped<IGetUserByEmailUseCase, GetUserByEmailUseCase>();
 builder.Services.AddScoped<IGetUserByIdUseCase, GetUserByIdUseCase>();
 builder.Services.AddScoped<IGetUserSettingsUseCase, GetUserSettingsUseCase>();
@@ -77,6 +78,10 @@ builder.Services.AddScoped<IGetSharedLinkByTokenUseCase, GetSharedLinkByTokenUse
 builder.Services.AddScoped<IGetSharedLinksByUserIdUseCase, GetSharedLinksByUserIdUseCase>();
 builder.Services.AddScoped<IUpdateSharedLinkUseCase, UpdateSharedLinkUseCase>();
 builder.Services.AddScoped<IDeactivateSharedLinkUseCase, DeactivateSharedLinkUseCase>();
+builder.Services.AddScoped<ITokenGenerator, JwtTokenGenerator>();
+builder.Services.AddScoped<IUserCredentialRepository, EfUserCredentialRepository>();
+builder.Services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
+builder.Services.AddScoped<RegisterUserUseCase>();
 
 
 var app = builder.Build();
