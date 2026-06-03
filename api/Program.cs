@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using adapters.DrivenAdapters.Repositories.Auth;
+using Application.UseCases.Auth;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -79,6 +80,9 @@ builder.Services.AddScoped<IGetSharedLinksByUserIdUseCase, GetSharedLinksByUserI
 builder.Services.AddScoped<IUpdateSharedLinkUseCase, UpdateSharedLinkUseCase>();
 builder.Services.AddScoped<IDeactivateSharedLinkUseCase, DeactivateSharedLinkUseCase>();
 builder.Services.AddScoped<ITokenGenerator, JwtTokenGenerator>();
+builder.Services.AddScoped<IUserCredentialRepository, EfUserCredentialRepository>();
+builder.Services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
+builder.Services.AddScoped<RegisterUserUseCase>();
 
 
 var app = builder.Build();

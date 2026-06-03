@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using ports.DrivenPorts;
 using ports.DrivenPorts.Auth;
-using BCrypt.Net;
 using api.Dto.Auth;
+using Application.UseCases.Auth;
 
 namespace api.Controllers.Auth
 {
@@ -12,13 +12,19 @@ namespace api.Controllers.Auth
     {
         private readonly IUserRepository _userRepository;
         private readonly ITokenGenerator _tokenGenerator;
+        private readonly RegisterUserUseCase _registerUserUseCase;
+        private readonly IPasswordHasher _passwordHasher;
 
         public AuthController(
             IUserRepository userRepository,
-            ITokenGenerator tokenGenerator)
+            ITokenGenerator tokenGenerator,
+            RegisterUserUseCase registerUserUseCase,
+            IPasswordHasher passwordHasher)
         {
             _userRepository = userRepository;
             _tokenGenerator = tokenGenerator;
+            _registerUserUseCase = registerUserUseCase;
+            _passwordHasher = passwordHasher;
         }
 
         [HttpPost("login")]
@@ -38,8 +44,8 @@ namespace api.Controllers.Auth
             if (credentials == null)
                 return Unauthorized("Invalid credentials");
 
-            // 2. Validate password (BCrypt)
-            var isValidPassword = BCrypt.Net.BCrypt.Verify(
+            // 2. Validate password
+            var isValidPassword = _passwordHasher.VerifyPassword(
                 request.Password,
                 credentials.PasswordHash
             );
@@ -65,6 +71,24 @@ namespace api.Controllers.Auth
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto request)
         {
+            if (request == null ||
+                string.IsNullOrWhiteSpace(request.Email) ||
+                string.IsNullOrWhiteSpace(request.Password) ||
+                string.IsNullOrWhiteSpace(request.Username) ||
+                string.IsNullOrWhiteSpace(request.FirstName) ||
+                string.IsNullOrWhiteSpace(request.LastName))
+            {
+                return BadRequest("Required user registration fields are missing.");
+            }
+
+            await _registerUserUseCase.Execute(
+                request.Email,
+                request.Password,
+                request.Username,
+                request.FirstName,
+                request.LastName,
+                request.PhoneNumber);
+
             return Ok("User Registered Successfully");
         }
     }
