@@ -1,6 +1,6 @@
 using Domain.Entities.Users;
 using ports.DrivenPorts;
-using ports.DrivingPorts;
+using ports.DrivingPorts.Users;
 
 namespace application.UseCases.Users
 {
