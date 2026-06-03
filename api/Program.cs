@@ -2,15 +2,19 @@ using adapters.DrivenAdapters.Data;
 using application.UseCases.Users;
 using application.UseCases.Purchases;
 using application.UseCases.LinkSharing;
+using application.UseCases.StorageNodes;
 using ports.DrivenPorts;
 using ports.DrivingPorts;
 using adapters.DrivenAdapters.Repositories;
 using adapters.DrivenAdapters.Repositories.Purchases;
 using adapters.DrivenAdapters.Repositories.LinkSharing;
+using adapters.DrivenAdapters.Repositories.StorageNodes;
 using ports.DrivenPorts.Purchases;
 using ports.DrivingPorts.Purchases;
 using ports.DrivenPorts.LinkSharing;
 using ports.DrivingPorts.LinkSharing;
+using ports.DrivenPorts.StorageNodes;
+using ports.DrivingPorts.StorageNodes;
 using Microsoft.EntityFrameworkCore;
 using adapters.DrivenAdapters.Auth;
 using ports.DrivenPorts.Auth;
@@ -55,7 +59,7 @@ builder.Services.AddAuthentication(options =>
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<ShcDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+    options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 0))));
 
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -78,6 +82,14 @@ builder.Services.AddScoped<IGetSharedLinkByTokenUseCase, GetSharedLinkByTokenUse
 builder.Services.AddScoped<IGetSharedLinksByUserIdUseCase, GetSharedLinksByUserIdUseCase>();
 builder.Services.AddScoped<IUpdateSharedLinkUseCase, UpdateSharedLinkUseCase>();
 builder.Services.AddScoped<IDeactivateSharedLinkUseCase, DeactivateSharedLinkUseCase>();
+builder.Services.AddScoped<IStorageNodeRepository, StorageNodeRepository>();
+builder.Services.AddScoped<ICreateStorageNodeUseCase, CreateStorageNodeUseCase>();
+builder.Services.AddScoped<IGetStorageNodeByIdUseCase, GetStorageNodeByIdUseCase>();
+builder.Services.AddScoped<IGetStorageNodesUseCase, GetStorageNodesUseCase>();
+builder.Services.AddScoped<IGetBestAvailableStorageNodeUseCase, GetBestAvailableStorageNodeUseCase>();
+builder.Services.AddScoped<IUpdateStorageNodeUseCase, UpdateStorageNodeUseCase>();
+builder.Services.AddScoped<IUpdateStorageNodeHeartbeatUseCase, UpdateStorageNodeHeartbeatUseCase>();
+builder.Services.AddScoped<IUpdateStorageNodeStatusUseCase, UpdateStorageNodeStatusUseCase>();
 builder.Services.AddScoped<ITokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped<IUserCredentialRepository, EfUserCredentialRepository>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
