@@ -1,29 +1,18 @@
-using Domain.Entities.AI;
-using Domain.Entities.Auth;
-using Domain.Entities.LinkSharing;
-using Domain.Entities.Purchases;
-using Domain.Entities.Roles;
-using Domain.Entities.Trash;
-using SHC.Domain.Entities.Permissions;
-
-namespace Domain.Entities.Users
+namespace api.Dto.Users
 {
-    public class User
+    public class UserResponseDto
     {
         public Guid UserId { get; set; }
+
         public string Username { get; set; } = null!;
         public string FirstName { get; set; } = null!;
         public string LastName { get; set; } = null!;
         public string Email { get; set; } = null!;
-        public bool IsEmailVerified { get; set; }
-        
+
         public string? ProfilePictureUrl { get; set; }
         public string? PhoneNumber { get; set; }
 
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-
-        public UserCredential UserCredentials { get; set; } = null!;
-        public UserSetting UserSettings { get; set; } = new ();
     }
 }

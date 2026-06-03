@@ -1,7 +1,23 @@
 using adapters.DrivenAdapters.Data;
+using application.UseCases.Users;
+using ports.DrivenPorts;
+using ports.DrivingPorts;
+using adapters.DrivenAdapters.Repositories;
 using Microsoft.EntityFrameworkCore;
+using adapters.DrivenAdapters.Auth;
+using ports.DrivenPorts.Auth;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+
 
 var builder = WebApplication.CreateBuilder(args);
+
+var apiKey = builder.Configuration["SendGrid:ApiKey"];
+
+builder.Services.AddScoped<IEmailSender>(_ =>
+    new SendGridEmailSender(apiKey)
+);
 
 
 // Add services to the container.
@@ -11,10 +27,41 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+//JWT Authentication
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+    };
+});
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<ShcDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+
+
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IGetUserByIdUseCase, GetUserByIdUseCase>();
+builder.Services.AddScoped<IGetUserSettingsUseCase, GetUserSettingsUseCase>();
+builder.Services.AddScoped<IUpdateUserProfileUseCase, UpdateUserProfileUseCase>();
+builder.Services.AddScoped<IUpdateUserSettingsUseCase, UpdateUserSettingsUseCase>();
+builder.Services.AddScoped<IDeleteUserUseCase, DeleteUserUseCase>();
+
 
 var app = builder.Build();
 
@@ -27,6 +74,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
