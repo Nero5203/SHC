@@ -1,6 +1,7 @@
 using adapters.DrivenAdapters.Data;
 using application.UseCases.Users;
 using ports.DrivenPorts;
+using ports.DrivingPorts;
 using adapters.DrivenAdapters.Repositories;
 using Microsoft.EntityFrameworkCore;
 using adapters.DrivenAdapters.Auth;
@@ -30,7 +31,11 @@ builder.Services.AddDbContext<ShcDbContext>(options =>
 
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IUserUseCase, UserUseCase>();
+builder.Services.AddScoped<IGetUserByIdUseCase, GetUserByIdUseCase>();
+builder.Services.AddScoped<IGetUserSettingsUseCase, GetUserSettingsUseCase>();
+builder.Services.AddScoped<IUpdateUserProfileUseCase, UpdateUserProfileUseCase>();
+builder.Services.AddScoped<IUpdateUserSettingsUseCase, UpdateUserSettingsUseCase>();
+builder.Services.AddScoped<IDeleteUserUseCase, DeleteUserUseCase>();
 
 
 var app = builder.Build();
