@@ -37,7 +37,6 @@ namespace application.UseCases.Users
                 FirstName = firstName,
                 LastName = lastName,
                 Email = email,
-                IsEmailVerified = false,
                 ProfilePictureUrl = profilePictureUrl,
                 PhoneNumber = phoneNumber,
                 CreatedAt = now,
