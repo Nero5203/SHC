@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using ports.DrivenPorts;
 using ports.DrivenPorts.Auth;
 using BCrypt.Net;
+using api.Dto.Auth;
 
 namespace api.Controllers.Auth
 {
@@ -21,7 +22,7 @@ namespace api.Controllers.Auth
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] LoginDto request)
         {
             // 0. Validate request
             if (request == null ||
@@ -59,6 +60,12 @@ namespace api.Controllers.Auth
             {
                 accessToken = token
             });
+        }
+
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterDto request)
+        {
+            return Ok("User Registered Successfully");
         }
     }
 }

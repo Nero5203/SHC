@@ -9,6 +9,7 @@ using ports.DrivenPorts.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using adapters.DrivenAdapters.Repositories.Auth;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -57,7 +58,7 @@ builder.Services.AddScoped<IGetUserSettingsUseCase, GetUserSettingsUseCase>();
 builder.Services.AddScoped<IUpdateUserProfileUseCase, UpdateUserProfileUseCase>();
 builder.Services.AddScoped<IUpdateUserSettingsUseCase, UpdateUserSettingsUseCase>();
 builder.Services.AddScoped<IDeleteUserUseCase, DeleteUserUseCase>();
-
+builder.Services.AddScoped<ITokenGenerator, JwtTokenGenerator>();
 
 var app = builder.Build();
 
