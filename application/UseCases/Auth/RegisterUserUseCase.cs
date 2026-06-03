@@ -43,7 +43,7 @@ namespace Application.UseCases.Auth
                 Username = username,
                 FirstName = firstName,
                 LastName = lastName,
-                PhoneNumber = phoneNumber,
+                PhoneNumber = phoneNumber
             };
 
             var credential = new UserCredential

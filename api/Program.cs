@@ -1,8 +1,16 @@
 using adapters.DrivenAdapters.Data;
 using application.UseCases.Users;
+using application.UseCases.Purchases;
+using application.UseCases.LinkSharing;
 using ports.DrivenPorts;
 using ports.DrivingPorts;
 using adapters.DrivenAdapters.Repositories;
+using adapters.DrivenAdapters.Repositories.Purchases;
+using adapters.DrivenAdapters.Repositories.LinkSharing;
+using ports.DrivenPorts.Purchases;
+using ports.DrivingPorts.Purchases;
+using ports.DrivenPorts.LinkSharing;
+using ports.DrivingPorts.LinkSharing;
 using Microsoft.EntityFrameworkCore;
 using adapters.DrivenAdapters.Auth;
 using ports.DrivenPorts.Auth;
@@ -13,7 +21,6 @@ using adapters.DrivenAdapters.Repositories.Auth;
 
 
 var builder = WebApplication.CreateBuilder(args);
-
 
 // Add services to the container.
 
@@ -58,7 +65,20 @@ builder.Services.AddScoped<IGetUserSettingsUseCase, GetUserSettingsUseCase>();
 builder.Services.AddScoped<IUpdateUserProfileUseCase, UpdateUserProfileUseCase>();
 builder.Services.AddScoped<IUpdateUserSettingsUseCase, UpdateUserSettingsUseCase>();
 builder.Services.AddScoped<IDeleteUserUseCase, DeleteUserUseCase>();
-builder.Services.AddScoped<ITokenGenerator, JwtTokenGenerator>();
+builder.Services.AddScoped<IPurchaseRepository, PurchaseRepository>();
+builder.Services.AddScoped<ICreatePurchaseUseCase, CreatePurchaseUseCase>();
+builder.Services.AddScoped<IGetPurchaseByIdUseCase, GetPurchaseByIdUseCase>();
+builder.Services.AddScoped<IGetPurchasesByUserIdUseCase, GetPurchasesByUserIdUseCase>();
+builder.Services.AddScoped<IUpdatePurchaseStatusUseCase, UpdatePurchaseStatusUseCase>();
+builder.Services.AddScoped<IGetInvoiceByPurchaseIdUseCase, GetInvoiceByPurchaseIdUseCase>();
+builder.Services.AddScoped<ISharedLinkRepository, SharedLinkRepository>();
+builder.Services.AddScoped<ICreateSharedLinkUseCase, CreateSharedLinkUseCase>();
+builder.Services.AddScoped<IGetSharedLinkByIdUseCase, GetSharedLinkByIdUseCase>();
+builder.Services.AddScoped<IGetSharedLinkByTokenUseCase, GetSharedLinkByTokenUseCase>();
+builder.Services.AddScoped<IGetSharedLinksByUserIdUseCase, GetSharedLinksByUserIdUseCase>();
+builder.Services.AddScoped<IUpdateSharedLinkUseCase, UpdateSharedLinkUseCase>();
+builder.Services.AddScoped<IDeactivateSharedLinkUseCase, DeactivateSharedLinkUseCase>();
+
 
 var app = builder.Build();
 
