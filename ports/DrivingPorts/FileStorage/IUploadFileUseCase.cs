@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ports.DrivingPorts
+namespace ports.DrivingPorts.FileStorage
 {
     internal interface IUploadFileUseCase
     {

@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace adapters.DrivenAdapters.Repositories
+namespace application.UseCases.FileStorage
 {
-    internal class FileRepository
+    internal class UploadFileUseCase
     {
     }
 }

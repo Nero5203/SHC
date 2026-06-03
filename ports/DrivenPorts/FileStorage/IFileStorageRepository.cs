@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace application.UseCases
+namespace ports.DrivenPorts.FileStorage
 {
-    internal class UploadFileUseCase
+    internal interface IFileStorageRepository
     {
     }
 }
