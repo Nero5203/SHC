@@ -78,6 +78,7 @@ builder.Services.AddScoped<IGetSharedLinkByTokenUseCase, GetSharedLinkByTokenUse
 builder.Services.AddScoped<IGetSharedLinksByUserIdUseCase, GetSharedLinksByUserIdUseCase>();
 builder.Services.AddScoped<IUpdateSharedLinkUseCase, UpdateSharedLinkUseCase>();
 builder.Services.AddScoped<IDeactivateSharedLinkUseCase, DeactivateSharedLinkUseCase>();
+builder.Services.AddScoped<ITokenGenerator, JwtTokenGenerator>();
 
 
 var app = builder.Build();
