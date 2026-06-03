@@ -4,6 +4,8 @@ namespace ports.DrivenPorts
 {
     public interface IUserRepository
     {
+        Task CreateAsync(User user);
+        Task<User?> GetByEmailAsync(string email);
         Task<User?> GetByIdAsync(Guid userId);
         Task<User?> GetWithSettingsByIdAsync(Guid userId);
         Task UpdateAsync(User user);

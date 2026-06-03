@@ -3,8 +3,17 @@ using application.UseCases.Users;
 using ports.DrivenPorts;
 using adapters.DrivenAdapters.Repositories;
 using Microsoft.EntityFrameworkCore;
+using adapters.DrivenAdapters.Auth;
+using ports.DrivenPorts.Auth;
+
 
 var builder = WebApplication.CreateBuilder(args);
+
+var apiKey = builder.Configuration["SendGrid:ApiKey"];
+
+builder.Services.AddScoped<IEmailSender>(_ =>
+    new SendGridEmailSender(apiKey)
+);
 
 
 // Add services to the container.
