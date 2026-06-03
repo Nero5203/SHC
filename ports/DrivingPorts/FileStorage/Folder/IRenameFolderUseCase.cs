@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ports.DrivingPorts.FileStorage
+namespace ports.DrivingPorts.FileStorage.Folder
 {
-    internal interface IUploadFileUseCase
+    internal interface IRenameFolderUseCase
     {
     }
 }

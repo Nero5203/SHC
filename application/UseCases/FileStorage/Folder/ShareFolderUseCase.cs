@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace application.UseCases.FileStorage
+namespace application.UseCases.FileStorage.Folder
 {
-    internal class UploadFileUseCase
+    internal class ShareFolderUseCase
     {
     }
 }
