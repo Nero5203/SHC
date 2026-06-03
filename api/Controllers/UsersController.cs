@@ -10,7 +10,6 @@ namespace api.Controllers
     {
         private readonly IGetUserByIdUseCase _getUserByIdUseCase;
         private readonly IGetUserByEmailUseCase _getUserByEmailUseCase;
-        private readonly ICreateUserUseCase _createUserUseCase;
         private readonly IGetUserSettingsUseCase _getUserSettingsUseCase;
         private readonly IUpdateUserProfileUseCase _updateUserProfileUseCase;
         private readonly IUpdateUserSettingsUseCase _updateUserSettingsUseCase;
@@ -19,7 +18,6 @@ namespace api.Controllers
         public UsersController(
             IGetUserByIdUseCase getUserByIdUseCase,
             IGetUserByEmailUseCase getUserByEmailUseCase,
-            ICreateUserUseCase createUserUseCase,
             IGetUserSettingsUseCase getUserSettingsUseCase,
             IUpdateUserProfileUseCase updateUserProfileUseCase,
             IUpdateUserSettingsUseCase updateUserSettingsUseCase,
@@ -27,43 +25,10 @@ namespace api.Controllers
         {
             _getUserByIdUseCase = getUserByIdUseCase;
             _getUserByEmailUseCase = getUserByEmailUseCase;
-            _createUserUseCase = createUserUseCase;
             _getUserSettingsUseCase = getUserSettingsUseCase;
             _updateUserProfileUseCase = updateUserProfileUseCase;
             _updateUserSettingsUseCase = updateUserSettingsUseCase;
             _deleteUserUseCase = deleteUserUseCase;
-        }
-
-        [HttpPost]
-        public async Task<ActionResult<UserResponseDto>> CreateUser(CreateUserDto dto)
-        {
-            var user = await _createUserUseCase.ExecuteAsync(
-                dto.Username,
-                dto.FirstName,
-                dto.LastName,
-                dto.Email,
-                dto.ProfilePictureUrl,
-                dto.PhoneNumber);
-
-            if (user == null)
-            {
-                return Conflict("A user with this email already exists.");
-            }
-
-            var response = new UserResponseDto
-            {
-                UserId = user.UserId,
-                Username = user.Username,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Email = user.Email,
-                ProfilePictureUrl = user.ProfilePictureUrl,
-                PhoneNumber = user.PhoneNumber,
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt
-            };
-
-            return CreatedAtAction(nameof(GetUserById), new { userId = user.UserId }, response);
         }
 
         [HttpGet("by-email")]

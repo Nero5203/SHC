@@ -1,6 +1,6 @@
 using Domain.Entities.Users;
 
-namespace ports.DrivingPorts.Users
+namespace ports.DrivingPorts
 {
     public interface IUpdateUserSettingsUseCase
     {
