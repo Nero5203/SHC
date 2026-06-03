@@ -13,13 +13,6 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var apiKey = builder.Configuration["SendGrid:ApiKey"]?? throw new InvalidOperationException("SendGrid API key is missing.");
-
-
-builder.Services.AddScoped<IEmailSender>(_ =>
-    new SendGridEmailSender(apiKey)
-);
-
 
 // Add services to the container.
 

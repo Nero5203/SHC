@@ -10,18 +10,15 @@ namespace Application.UseCases.Auth
         private readonly IUserRepository _userRepo;
         private readonly IUserCredentialRepository _credentialRepo;
         private readonly IPasswordHasher _passwordHasher;
-        private readonly IEmailSender _emailSender;
 
         public RegisterUserUseCase(
             IUserRepository userRepo,
             IUserCredentialRepository credentialRepo,
-            IPasswordHasher passwordHasher,
-            IEmailSender emailSender)
+            IPasswordHasher passwordHasher)
         {
             _userRepo = userRepo;
             _credentialRepo = credentialRepo;
             _passwordHasher = passwordHasher;
-            _emailSender = emailSender;
         }
 
         public async Task Execute(
@@ -47,7 +44,6 @@ namespace Application.UseCases.Auth
                 FirstName = firstName,
                 LastName = lastName,
                 PhoneNumber = phoneNumber,
-                IsEmailVerified = false
             };
 
             var credential = new UserCredential
@@ -61,8 +57,6 @@ namespace Application.UseCases.Auth
 
             await _userRepo.CreateAsync(user);
             await _credentialRepo.CreateAsync(credential);
-
-            await _emailSender.SendEmailAsync(email, "Verify your email", "verification link");
         }
     }
 }
