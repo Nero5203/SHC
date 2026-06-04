@@ -1,4 +1,4 @@
-﻿namespace api.Dto.FileStorage.File
+namespace application.Dto.FileStorage.File
 {
     public class DeleteFileResponseDto
     {

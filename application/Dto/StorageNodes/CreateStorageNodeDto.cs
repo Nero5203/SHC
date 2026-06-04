@@ -1,4 +1,4 @@
-namespace api.Dto.StorageNodes
+namespace application.Dto.StorageNodes
 {
     public class CreateStorageNodeDto
     {

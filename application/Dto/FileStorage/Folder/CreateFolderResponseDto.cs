@@ -1,4 +1,4 @@
-﻿namespace api.Dto.FileStorage.Folder
+namespace application.Dto.FileStorage.Folder
 {
     public class CreateFolderResponseDto
     {

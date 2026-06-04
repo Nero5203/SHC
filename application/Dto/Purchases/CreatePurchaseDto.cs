@@ -1,4 +1,4 @@
-namespace api.Dto.Purchases
+namespace application.Dto.Purchases
 {
     public class CreatePurchaseDto
     {

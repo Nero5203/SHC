@@ -1,5 +1,5 @@
-﻿using api.Dto.FileStorage.File;
-using api.Dto.FileStorage.Folder;
+using application.Dto.FileStorage.File;
+using application.Dto.FileStorage.Folder;
 using AutoMapper;
 using Domain.Entities.FileStorage;
 

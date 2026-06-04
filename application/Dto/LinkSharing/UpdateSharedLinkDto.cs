@@ -1,4 +1,4 @@
-namespace api.Dto.LinkSharing
+namespace application.Dto.LinkSharing
 {
     public class UpdateSharedLinkDto
     {

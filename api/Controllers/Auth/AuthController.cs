@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using ports.DrivenPorts;
 using ports.DrivenPorts.Auth;
-using api.Dto.Auth;
+using application.Dto.Auth;
 using Application.UseCases.Auth;
 
 namespace api.Controllers.Auth

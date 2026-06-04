@@ -1,4 +1,4 @@
-﻿namespace api.Dto
+namespace application.Dto
 {
     public class Class
     {

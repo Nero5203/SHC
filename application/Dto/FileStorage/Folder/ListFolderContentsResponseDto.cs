@@ -1,6 +1,6 @@
-﻿using api.Dto.FileStorage.File;
+using application.Dto.FileStorage.File;
 
-namespace api.Dto.FileStorage.Folder
+namespace application.Dto.FileStorage.Folder
 {
     public class ListFolderContentsResponseDto
     {

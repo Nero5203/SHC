@@ -1,4 +1,4 @@
-using api.Dto.StorageNodes;
+using application.Dto.StorageNodes;
 using Domain.Entities.StorageNodes;
 using Microsoft.AspNetCore.Mvc;
 using ports.DrivingPorts.StorageNodes;

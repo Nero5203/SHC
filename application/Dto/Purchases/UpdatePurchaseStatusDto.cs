@@ -1,6 +1,6 @@
 using Domain.Entities.Purchases.Enums;
 
-namespace api.Dto.Purchases
+namespace application.Dto.Purchases
 {
     public class UpdatePurchaseStatusDto
     {

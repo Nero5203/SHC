@@ -1,6 +1,6 @@
 using Domain.Entities.StorageNodes.Enums;
 
-namespace api.Dto.StorageNodes
+namespace application.Dto.StorageNodes
 {
     public class StorageNodeResponseDto
     {

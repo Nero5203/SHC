@@ -1,4 +1,4 @@
-namespace API.Dto.Auth
+namespace application.Dto.Auth
 {
     public class ForgotPasswordDto
     {

@@ -1,4 +1,4 @@
-using api.Dto.Purchases;
+using application.Dto.Purchases;
 using Microsoft.AspNetCore.Mvc;
 using ports.DrivingPorts.Purchases;
 

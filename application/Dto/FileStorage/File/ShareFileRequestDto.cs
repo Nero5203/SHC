@@ -1,6 +1,6 @@
-﻿using domain.Entities.FileStorage.Enums;
+using domain.Entities.FileStorage.Enums;
 
-namespace api.Dto.FileStorage.File
+namespace application.Dto.FileStorage.File
 {
     public class ShareFileRequestDto
     {
