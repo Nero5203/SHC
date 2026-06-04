@@ -5,7 +5,7 @@ namespace Application.UseCases.Auth
     using ports.DrivenPorts;
     using ports.DrivenPorts.Auth;
 
-    public class RegisterUserUseCase
+    public class RegisterUserUseCase : IRegisterUserUseCase
     {
         private readonly IUserRepository _userRepo;
         private readonly IUserCredentialRepository _credentialRepo;
