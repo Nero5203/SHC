@@ -16,6 +16,7 @@ namespace api.Controllers.Auth
         private readonly IRegisterUserUseCase _registerUserUseCase;
         private readonly ILoginUserUseCase _loginUserUseCase;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly ILogoutUserUseCase _logoutUserUseCase;
         private readonly IMapper _mapper;
 
         public AuthController(
@@ -24,6 +25,7 @@ namespace api.Controllers.Auth
             IRegisterUserUseCase registerUserUseCase,
             ILoginUserUseCase loginUserUseCase,
             IPasswordHasher passwordHasher,
+            ILogoutUserUseCase logoutUserUseCase,
             IMapper mapper)
         {
             _userRepository = userRepository;
@@ -31,6 +33,7 @@ namespace api.Controllers.Auth
             _registerUserUseCase = registerUserUseCase;
             _loginUserUseCase = loginUserUseCase;
             _passwordHasher = passwordHasher;
+            _logoutUserUseCase = logoutUserUseCase;
             _mapper = mapper;
         }
 
@@ -52,6 +55,14 @@ namespace api.Controllers.Auth
             var registerUserRequest = _mapper.Map<RegisterUserRequest>(request);
             await _registerUserUseCase.RegisterUserAsync(registerUserRequest);
             return Ok("User registered successfully.");
+        }
+
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout(LogoutDto request)
+        {
+            var logoutRequest = _mapper.Map<LogoutRequest>(request);
+            await _logoutUserUseCase.LogoutUserAsync(logoutRequest);
+            return Ok("User logged out successfully.");
         }
     }
 }

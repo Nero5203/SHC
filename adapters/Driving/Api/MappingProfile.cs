@@ -17,6 +17,7 @@ namespace adapters.Driving.Api.Mapping
 
             CreateMap<RegisterDto, RegisterUserRequest>().ReverseMap();
             CreateMap<LoginDto, LoginUserRequest>().ReverseMap();
+            CreateMap<LogoutDto, LogoutRequest>().ReverseMap();
 
             // Add more mappings as needed
         }

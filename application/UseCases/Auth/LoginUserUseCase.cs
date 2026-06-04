@@ -1,3 +1,4 @@
+using application.Dto.Auth;
 using application.Ports.Driven;
 using application.Ports.Driven.Auth;
 using application.Ports.Driving.Auth;
@@ -24,7 +25,7 @@ namespace Application.UseCases.Auth
             _tokenGenerator = tokenGenerator;
         }
 
-        public async Task<string?> LoginUserAsync(LoginUserRequest request)
+        public async Task<LoginResponseDto?> LoginUserAsync(LoginUserRequest request)
         {
             var user = await _userRepo.GetByEmailAsync(request.Email);
 
@@ -45,8 +46,13 @@ namespace Application.UseCases.Auth
 
             var token = _tokenGenerator.GenerateToken(user);
 
-            return token;
-        }
+            var refreshToken = _tokenGenerator.GenerateRefreshToken();
 
+            return new LoginResponseDto
+            {
+                AcessToken = token,
+                RefreshToken = refreshToken
+            };
+        }
     }
 }

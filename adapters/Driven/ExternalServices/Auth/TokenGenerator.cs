@@ -5,14 +5,15 @@ using Domain.Entities.Users;
 using Microsoft.IdentityModel.Tokens;
 using application.Ports.Driven.Auth;
 using Microsoft.Extensions.Configuration;
+using System.Security.Cryptography;
 
 namespace adapters.Driven.ExternalServices.Auth
 {
-    public class JwtTokenGenerator : ITokenGenerator
+    public class TokenGenerator : ITokenGenerator
     {
         private readonly IConfiguration _configuration;
 
-        public JwtTokenGenerator(IConfiguration configuration)
+        public TokenGenerator(IConfiguration configuration)
         {
             _configuration = configuration;
         }
@@ -42,6 +43,11 @@ namespace adapters.Driven.ExternalServices.Auth
             );
         
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        public string GenerateRefreshToken()
+        {
+            return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
         }
     }
 }   

@@ -42,6 +42,7 @@ using adapters.Driven.Persistence.Repositories.Auth;
 using Application.UseCases.Auth;
 using adapters.Driving.Api.Mapping;
 using Microsoft.Extensions.DependencyInjection;
+using application.UseCases.Auth;
 
 
 
@@ -139,12 +140,13 @@ builder.Services.AddScoped<IGetUnreadNotificationsByUserIdUseCase, GetUnreadNoti
 builder.Services.AddScoped<IMarkNotificationAsReadUseCase, MarkNotificationAsReadUseCase>();
 builder.Services.AddScoped<IMarkAllNotificationsAsReadUseCase, MarkAllNotificationsAsReadUseCase>();
 builder.Services.AddScoped<IDeleteNotificationUseCase, DeleteNotificationUseCase>();
-builder.Services.AddScoped<ITokenGenerator, JwtTokenGenerator>();
+builder.Services.AddScoped<ITokenGenerator, TokenGenerator>();
 builder.Services.AddScoped<IUserCredentialRepository, EfUserCredentialRepository>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
 builder.Services.AddScoped<IRegisterUserUseCase, RegisterUserUseCase>();
 builder.Services.AddScoped<ILoginUserUseCase, LoginUserUseCase>();
-
+builder.Services.AddScoped<ILogoutUserUseCase, LogoutUserUseCase>();
+builder.Services.AddScoped<IRefreshTokenRepository, EfRefreshTokenRepository>();
 // Register AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 var app = builder.Build();
