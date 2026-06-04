@@ -1,7 +1,7 @@
 using Domain.Entities.Purchases;
 using Domain.Entities.Purchases.Enums;
-using ports.DrivenPorts.Purchases;
-using ports.DrivingPorts.Purchases;
+using application.Ports.Driven.Purchases;
+using application.Ports.Driving.Purchases;
 
 namespace application.UseCases.Purchases
 {

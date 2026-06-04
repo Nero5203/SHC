@@ -2,8 +2,9 @@ namespace Application.UseCases.Auth
 {
     using Domain.Entities.Auth;
     using Domain.Entities.Users;
-    using ports.DrivenPorts;
-    using ports.DrivenPorts.Auth;
+    using application.Ports.Driven;
+    using application.Ports.Driven.Auth;
+    using application.Ports.Driving.Auth;
 
     public class RegisterUserUseCase : IRegisterUserUseCase
     {

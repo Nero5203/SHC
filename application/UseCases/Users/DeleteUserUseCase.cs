@@ -1,5 +1,5 @@
-using ports.DrivenPorts;
-using ports.DrivingPorts;
+using application.Ports.Driven;
+using application.Ports.Driving;
 
 namespace application.UseCases.Users
 {

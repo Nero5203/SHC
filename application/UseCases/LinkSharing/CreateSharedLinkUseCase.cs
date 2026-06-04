@@ -1,7 +1,7 @@
 using Domain.Entities.LinkSharing;
 using Domain.Entities.LinkSharing.Enums;
-using ports.DrivenPorts.LinkSharing;
-using ports.DrivingPorts.LinkSharing;
+using application.Ports.Driven.LinkSharing;
+using application.Ports.Driving.LinkSharing;
 
 namespace application.UseCases.LinkSharing
 {

@@ -1,7 +1,7 @@
 using Domain.Entities.StorageNodes;
 using Domain.Entities.StorageNodes.Enums;
-using ports.DrivenPorts.StorageNodes;
-using ports.DrivingPorts.StorageNodes;
+using application.Ports.Driven.StorageNodes;
+using application.Ports.Driving.StorageNodes;
 
 namespace application.UseCases.StorageNodes
 {
