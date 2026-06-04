@@ -3,8 +3,8 @@ using application.Ports.Driven;
 using application.Ports.Driven.Auth;
 using application.Ports.Driving.Auth;
 using application.Dto.Auth;
-using Application.UseCases.Auth;
-
+using AutoMapper;
+using application.UseCases.Auth;
 namespace api.Controllers.Auth
 {
     [ApiController]
@@ -15,17 +15,20 @@ namespace api.Controllers.Auth
         private readonly ITokenGenerator _tokenGenerator;
         private readonly IRegisterUserUseCase _registerUserUseCase;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly IMapper _mapper;
 
         public AuthController(
             IUserRepository userRepository,
             ITokenGenerator tokenGenerator,
             IRegisterUserUseCase registerUserUseCase,
-            IPasswordHasher passwordHasher)
+            IPasswordHasher passwordHasher,
+            IMapper mapper)
         {
             _userRepository = userRepository;
             _tokenGenerator = tokenGenerator;
             _registerUserUseCase = registerUserUseCase;
             _passwordHasher = passwordHasher;
+            _mapper = mapper;
         }
 
         [HttpPost("login")]
@@ -70,27 +73,11 @@ namespace api.Controllers.Auth
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterDto request)
+        public async Task<IActionResult> Register(RegisterDto request)
         {
-            if (request == null ||
-                string.IsNullOrWhiteSpace(request.Email) ||
-                string.IsNullOrWhiteSpace(request.Password) ||
-                string.IsNullOrWhiteSpace(request.Username) ||
-                string.IsNullOrWhiteSpace(request.FirstName) ||
-                string.IsNullOrWhiteSpace(request.LastName))
-            {
-                return BadRequest("Required user registration fields are missing.");
-            }
-
-            await _registerUserUseCase.Execute(
-                request.Email,
-                request.Password,
-                request.Username,
-                request.FirstName,
-                request.LastName,
-                request.PhoneNumber);
-
-            return Ok("User Registered Successfully");
+            var registerUserRequest = _mapper.Map<RegisterUserRequest>(request);
+            await _registerUserUseCase.RegisterUserAsync(registerUserRequest);
+            return Ok("User registered successfully.");
         }
     }
 }

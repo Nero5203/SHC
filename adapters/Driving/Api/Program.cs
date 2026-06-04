@@ -24,7 +24,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using adapters.Driven.Persistence.Repositories.Auth;
 using Application.UseCases.Auth;
-using application.Mappings;
+using adapters.Driving.Api.Mapping;
 using Microsoft.Extensions.DependencyInjection;
 
 

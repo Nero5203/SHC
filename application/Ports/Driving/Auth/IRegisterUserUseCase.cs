@@ -1,13 +1,9 @@
+using application.UseCases.Auth;
+
 namespace application.Ports.Driving.Auth
 {
     public interface IRegisterUserUseCase
     {
-        Task Execute(
-            string email,
-            string password,
-            string username,
-            string firstName,
-            string lastName,
-            string phoneNumber);
+        Task RegisterUserAsync(RegisterUserRequest registerUserRequest);
     }
 }

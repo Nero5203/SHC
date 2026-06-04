@@ -1,11 +1,12 @@
+using application.Ports.Driven;
+using application.Ports.Driven.Auth;
+using application.Ports.Driving.Auth;
+using application.UseCases.Auth;
+using Domain.Entities.Auth;
+using Domain.Entities.Users;
+
 namespace Application.UseCases.Auth
 {
-    using Domain.Entities.Auth;
-    using Domain.Entities.Users;
-    using application.Ports.Driven;
-    using application.Ports.Driven.Auth;
-    using application.Ports.Driving.Auth;
-
     public class RegisterUserUseCase : IRegisterUserUseCase
     {
         private readonly IUserRepository _userRepo;
@@ -22,36 +23,31 @@ namespace Application.UseCases.Auth
             _passwordHasher = passwordHasher;
         }
 
-        public async Task Execute(
-            string email,
-            string password,
-            string username,
-            string firstName,
-            string lastName,
-            string phoneNumber)
+        public async Task RegisterUserAsync(RegisterUserRequest registerUserRequest)
         {
-            var existingUser = await _userRepo.GetByEmailAsync(email);
+            var existingUser = await _userRepo.GetByEmailAsync(registerUserRequest.Email);
 
             if (existingUser != null)
-                throw new Exception("User already exists");
+            {
+                throw new Exception("User with this email already exists.");
+            }
 
             var userId = Guid.NewGuid();
-
             var user = new User
             {
                 UserId = userId,
-                Email = email,
-                Username = username,
-                FirstName = firstName,
-                LastName = lastName,
-                PhoneNumber = phoneNumber
-            };
+                Email = registerUserRequest.Email,
+                Username = registerUserRequest.Username,
+                FirstName = registerUserRequest.FirstName,
+                LastName = registerUserRequest.LastName,
+                PhoneNumber = registerUserRequest.PhoneNumber
+            };   
 
             var credential = new UserCredential
             {
                 UserCredentialId = Guid.NewGuid(),
                 UserId = userId,
-                PasswordHash = _passwordHasher.HashPassword(password),
+                PasswordHash = _passwordHasher.HashPassword(registerUserRequest.Password),
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
