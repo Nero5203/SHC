@@ -14,6 +14,7 @@ namespace api.Controllers.Auth
         private readonly IUserRepository _userRepository;
         private readonly ITokenGenerator _tokenGenerator;
         private readonly IRegisterUserUseCase _registerUserUseCase;
+        private readonly ILoginUserUseCase _loginUserUseCase;
         private readonly IPasswordHasher _passwordHasher;
         private readonly IMapper _mapper;
 
@@ -21,55 +22,28 @@ namespace api.Controllers.Auth
             IUserRepository userRepository,
             ITokenGenerator tokenGenerator,
             IRegisterUserUseCase registerUserUseCase,
+            ILoginUserUseCase loginUserUseCase,
             IPasswordHasher passwordHasher,
             IMapper mapper)
         {
             _userRepository = userRepository;
             _tokenGenerator = tokenGenerator;
             _registerUserUseCase = registerUserUseCase;
+            _loginUserUseCase = loginUserUseCase;
             _passwordHasher = passwordHasher;
             _mapper = mapper;
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginDto request)
+        public async Task<IActionResult> Login(LoginDto request)
         {
-            // 0. Validate request
-            if (request == null ||
-                string.IsNullOrWhiteSpace(request.Email) ||
-                string.IsNullOrWhiteSpace(request.Password))
-            {
-                return BadRequest("Email and password are required.");
-            }
+            var loginRequest = _mapper.Map<LoginUserRequest>(request);
+            var token = await _loginUserUseCase.LoginUserAsync(loginRequest);
 
-            // 1. Get credentials (password hash lives here)
-            var credentials = await _userRepository.GetCredentialsByEmailAsync(request.Email);
+            if (token == null)
+                return Unauthorized("Invalid email or password.");
 
-            if (credentials == null)
-                return Unauthorized("Invalid credentials");
-
-            // 2. Validate password
-            var isValidPassword = _passwordHasher.VerifyPassword(
-                request.Password,
-                credentials.PasswordHash
-            );
-
-            if (!isValidPassword)
-                return Unauthorized("Invalid credentials");
-
-            // 3. Get full user (for JWT claims)
-            var user = await _userRepository.GetByIdAsync(credentials.UserId);
-
-            if (user == null)
-                return Unauthorized("Invalid credentials");
-
-            // 4. Generate JWT
-            var token = _tokenGenerator.GenerateToken(user);
-
-            return Ok(new
-            {
-                accessToken = token
-            });
+            return Ok(new { Token = token });
         }
 
         [HttpPost("register")]

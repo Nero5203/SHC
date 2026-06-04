@@ -5,8 +5,7 @@ namespace application.Ports.Driven.Auth
 {
     public interface IUserCredentialRepository
     {
-        Task<bool> UserExistsAsync(string email);
+        Task<UserCredential?> GetByUserIdAsync(Guid userId);
         Task CreateAsync(UserCredential credential);
-        Task<User?> GetByEmailAsync(string email);
     }
 }

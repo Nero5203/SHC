@@ -21,14 +21,10 @@ namespace adapters.Driven.Persistence.Repositories.Auth
             await _context.SaveChangesAsync();
         }
 
-        public async Task<User?> GetByEmailAsync(string email)
+        public async Task<UserCredential?> GetByUserIdAsync(Guid userId)
         {
-            return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-        }
-
-        public async Task<bool> UserExistsAsync(string email)
-        {
-            return await _context.Users.AnyAsync(u => u.Email == email);
+            return await _context.UserCredentials
+                .FirstOrDefaultAsync(uc => uc.UserId == userId);
         }
     }
 }

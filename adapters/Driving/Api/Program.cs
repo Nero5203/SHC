@@ -143,6 +143,7 @@ builder.Services.AddScoped<ITokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped<IUserCredentialRepository, EfUserCredentialRepository>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
 builder.Services.AddScoped<IRegisterUserUseCase, RegisterUserUseCase>();
+builder.Services.AddScoped<ILoginUserUseCase, LoginUserUseCase>();
 
 // Register AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));
