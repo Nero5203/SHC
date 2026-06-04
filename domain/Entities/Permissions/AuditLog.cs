@@ -8,21 +8,21 @@ namespace SHC.Domain.Entities.Permissions
 {
     public class AuditLog
     {
-        public Guid AuditLogId { get; private set; }
-        public DateTime TimestampUtc { get; private set; }
+        public Guid AuditLogId { get; set; }
+        public DateTime TimestampUtc { get; set; }
 
         // Who/What performed the action?
-        public Guid? SubjectId { get; private set; }
-        public SubjectType SubjectType { get; private set; }
+        public Guid? SubjectId { get; set; }
+        public SubjectType SubjectType { get; set; }
 
         // Categorization
-        public string Action { get; private set; } = string.Empty;
-        public ResourceType ResourceType { get; private set; }
-        public string ResourceId { get; private set; } = string.Empty;
+        public string Action { get; set; } = string.Empty;
+        public ResourceType ResourceType { get; set; }
+        public string ResourceId { get; set; } = string.Empty;
         // Outcome
-        public bool IsSuccess { get; private set; }
+        public bool IsSuccess { get; set; }
 
         // Flexible payload
-        public string PayloadJson { get; private set; } = string.Empty;
+        public string PayloadJson { get; set; } = string.Empty;
     }
 }

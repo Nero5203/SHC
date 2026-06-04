@@ -5,23 +5,23 @@ namespace SHC.Domain.Entities.Permissions
 {
     public class Permission
     {
-        public Guid PermissionId { get; private set; }
+        public Guid PermissionId { get; set; }
 
         // The Actor
-        public Guid SubjectId { get; private set; }
-        public SubjectType SubjectType { get; private set; }
+        public Guid SubjectId { get; set; }
+        public SubjectType SubjectType { get; set; }
 
         // The Target
-        public Guid ResourceId { get; private set; }
-        public ResourceType ResourceType { get; private set; }
+        public Guid ResourceId { get; set; }
+        public ResourceType ResourceType { get; set; }
 
         // The Capability
-        public AccessLevel AccessLevel { get; private set; }
+        public AccessLevel AccessLevel { get; set; }
 
         // Metadata
-        public DateTime GrantedAtUtc { get; private set; }
-        public Guid? GrantedBySubjectId { get; private set; }
-        public SubjectType GrantedBySubjectType { get; private set; }
+        public DateTime GrantedAtUtc { get; set; }
+        public Guid? GrantedBySubjectId { get; set; }
+        public SubjectType GrantedBySubjectType { get; set; }
 
     }
 }
