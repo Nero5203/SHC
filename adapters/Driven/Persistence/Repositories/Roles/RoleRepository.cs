@@ -88,6 +88,28 @@ namespace adapters.Driven.Persistence.Repositories.Roles
                 .ToListAsync();
         }
 
+        public async Task<IReadOnlyList<UserRole>> GetUserRolesWithPermissionsAsync(Guid userId)
+        {
+            return await _context.UserRoles
+                .Include(ur => ur.Role)
+                    .ThenInclude(r => r.RolePermissions)
+                    .ThenInclude(rp => rp.Permission)
+                .Where(ur => ur.UserId == userId)
+                .OrderBy(ur => ur.Role.Name)
+                .ToListAsync();
+        }
+
+        public async Task<IReadOnlyList<string>> GetUserPermissionNamesAsync(Guid userId)
+        {
+            return await _context.UserRoles
+                .Where(ur => ur.UserId == userId)
+                .SelectMany(ur => ur.Role.RolePermissions.Select(rp => rp.Permission.Name))
+                .Where(name => name != string.Empty)
+                .Distinct()
+                .OrderBy(name => name)
+                .ToListAsync();
+        }
+
         public async Task<IReadOnlyList<UserRole>> GetRoleUsersAsync(Guid roleId)
         {
             return await _context.UserRoles

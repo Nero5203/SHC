@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Domain.Entities.Authorization;
 
 namespace Domain.Entities.Roles
 {
@@ -15,5 +16,6 @@ namespace Domain.Entities.Roles
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+        public ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
     }
 }

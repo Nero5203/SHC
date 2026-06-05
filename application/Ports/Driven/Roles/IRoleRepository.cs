@@ -15,6 +15,8 @@ namespace application.Ports.Driven.Roles
         Task AssignRoleToUserAsync(UserRole userRole);
         Task RemoveRoleFromUserAsync(UserRole userRole);
         Task<IReadOnlyList<UserRole>> GetUserRolesAsync(Guid userId);
+        Task<IReadOnlyList<UserRole>> GetUserRolesWithPermissionsAsync(Guid userId);
+        Task<IReadOnlyList<string>> GetUserPermissionNamesAsync(Guid userId);
         Task<IReadOnlyList<UserRole>> GetRoleUsersAsync(Guid roleId);
     }
 }

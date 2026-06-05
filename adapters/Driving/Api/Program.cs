@@ -50,9 +50,11 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using adapters.Driven.Persistence.Repositories.Auth;
 using Application.UseCases.Auth;
-using adapters.Driving.Api.Mapping;
 using Microsoft.Extensions.DependencyInjection;
 using application.UseCases.Auth;
+using api.Authorization;
+using application.Common.Authorization;
+using Microsoft.AspNetCore.Authorization;
 
 
 
@@ -86,6 +88,54 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
     };
+});
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(AuthorizationPolicies.FileRead, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new PermissionRequirement(AuthorizationPermissions.FileRead));
+    });
+
+    options.AddPolicy(AuthorizationPolicies.FileUpload, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new PermissionRequirement(AuthorizationPermissions.FileUpload));
+    });
+
+    options.AddPolicy(AuthorizationPolicies.FileDelete, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new PermissionRequirement(AuthorizationPermissions.FileDelete));
+    });
+
+    options.AddPolicy(AuthorizationPolicies.FileShare, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new PermissionRequirement(AuthorizationPermissions.FileShare));
+    });
+
+    options.AddPolicy(AuthorizationPolicies.FolderManage, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new PermissionRequirement(
+            AuthorizationPermissions.FolderCreate,
+            AuthorizationPermissions.FolderDelete,
+            AuthorizationPermissions.FolderShare));
+    });
+
+    options.AddPolicy(AuthorizationPolicies.NodeManage, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new PermissionRequirement(AuthorizationPermissions.NodeManage));
+    });
+
+    options.AddPolicy(AuthorizationPolicies.Admin, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new PermissionRequirement(AuthorizationPermissions.SystemAdmin));
+    });
 });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -180,15 +230,18 @@ builder.Services.AddScoped<IMoveFolderUseCase, MoveFolderUseCase>();
 builder.Services.AddScoped<IDeleteFolderUseCase, DeleteFolderUseCase>();
 builder.Services.AddScoped<IArchiveFolderUseCase, ArchiveFolderUseCase>();
 builder.Services.AddScoped<IShareFolderUseCase, ShareFolderUseCase>();
-builder.Services.AddScoped<ITokenGenerator, TokenGenerator>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IUserAuthorizationService, UserAuthorizationService>();
+builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, OwnershipAuthorizationHandler>();
+builder.Services.AddScoped<ITokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped<IUserCredentialRepository, EfUserCredentialRepository>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
 builder.Services.AddScoped<IRegisterUserUseCase, RegisterUserUseCase>();
 builder.Services.AddScoped<ILoginUserUseCase, LoginUserUseCase>();
 builder.Services.AddScoped<ILogoutUserUseCase, LogoutUserUseCase>();
 builder.Services.AddScoped<IRefreshTokenRepository, EfRefreshTokenRepository>();
-// Register AutoMapper
-builder.Services.AddAutoMapper(typeof(MappingProfile));
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

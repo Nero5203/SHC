@@ -3,8 +3,8 @@ using application.Ports.Driven;
 using application.Ports.Driven.Auth;
 using application.Ports.Driving.Auth;
 using application.Dto.Auth;
-using AutoMapper;
 using application.UseCases.Auth;
+
 namespace api.Controllers.Auth
 {
     [ApiController]
@@ -17,7 +17,6 @@ namespace api.Controllers.Auth
         private readonly ILoginUserUseCase _loginUserUseCase;
         private readonly IPasswordHasher _passwordHasher;
         private readonly ILogoutUserUseCase _logoutUserUseCase;
-        private readonly IMapper _mapper;
 
         public AuthController(
             IUserRepository userRepository,
@@ -25,8 +24,7 @@ namespace api.Controllers.Auth
             IRegisterUserUseCase registerUserUseCase,
             ILoginUserUseCase loginUserUseCase,
             IPasswordHasher passwordHasher,
-            ILogoutUserUseCase logoutUserUseCase,
-            IMapper mapper)
+            ILogoutUserUseCase logoutUserUseCase)
         {
             _userRepository = userRepository;
             _tokenGenerator = tokenGenerator;
@@ -34,13 +32,17 @@ namespace api.Controllers.Auth
             _loginUserUseCase = loginUserUseCase;
             _passwordHasher = passwordHasher;
             _logoutUserUseCase = logoutUserUseCase;
-            _mapper = mapper;
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto request)
         {
-            var loginRequest = _mapper.Map<LoginUserRequest>(request);
+            var loginRequest = new LoginUserRequest
+            {
+                Email = request.Email,
+                Password = request.Password
+            };
+
             var token = await _loginUserUseCase.LoginUserAsync(loginRequest);
 
             if (token == null)
@@ -52,7 +54,16 @@ namespace api.Controllers.Auth
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterDto request)
         {
-            var registerUserRequest = _mapper.Map<RegisterUserRequest>(request);
+            var registerUserRequest = new RegisterUserRequest
+            {
+                Email = request.Email,
+                Password = request.Password,
+                Username = request.Username,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                PhoneNumber = request.PhoneNumber
+            };
+
             await _registerUserUseCase.RegisterUserAsync(registerUserRequest);
             return Ok("User registered successfully.");
         }
@@ -60,7 +71,11 @@ namespace api.Controllers.Auth
         [HttpPost("logout")]
         public async Task<IActionResult> Logout(LogoutDto request)
         {
-            var logoutRequest = _mapper.Map<LogoutRequest>(request);
+            var logoutRequest = new LogoutRequest
+            {
+                RefreshToken = request.RefreshToken
+            };
+
             await _logoutUserUseCase.LogoutUserAsync(logoutRequest);
             return Ok("User logged out successfully.");
         }

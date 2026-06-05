@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using application.Common.Authorization;
+using Domain.Entities.Authorization;
 using Domain.Entities.AI;
 using Domain.Entities.Auth;
 using Domain.Entities.FileStorage;
@@ -40,7 +42,9 @@ namespace adapters.Driven.Persistence.Data
 
         // PERMISSIONS
         public DbSet<AuditLog> AuditLogs { get; set; } = null!;
-        public DbSet<Permission> Permissions { get; set; } = null!;
+        public DbSet<SHC.Domain.Entities.Permissions.Permission> Permissions { get; set; } = null!;
+        public DbSet<Domain.Entities.Authorization.Permission> AuthorizationPermissionCatalog { get; set; } = null!;
+        public DbSet<RolePermission> RolePermissions { get; set; } = null!;
 
         // PURCHASES & SUBSCRIPTIONS
         public DbSet<Invoice> Invoices { get; set; } = null!;
@@ -77,7 +81,9 @@ namespace adapters.Driven.Persistence.Data
             modelBuilder.Entity<SharedLink>().HasKey(sl => sl.SharedLinkId);
             modelBuilder.Entity<Notification>().HasKey(n => n.NotificationId);
             modelBuilder.Entity<AuditLog>().HasKey(al => al.AuditLogId);
-            modelBuilder.Entity<Permission>().HasKey(p => p.PermissionId);
+            modelBuilder.Entity<SHC.Domain.Entities.Permissions.Permission>().HasKey(p => p.PermissionId);
+            modelBuilder.Entity<Domain.Entities.Authorization.Permission>().HasKey(p => p.PermissionId);
+            modelBuilder.Entity<RolePermission>().HasKey(rp => new { rp.RoleId, rp.PermissionId });
             modelBuilder.Entity<Invoice>().HasKey(i => i.InvoiceId);
             modelBuilder.Entity<Purchase>().HasKey(p => p.PurchaseId);
             modelBuilder.Entity<Subscription>().HasKey(s => s.SubscriptionId);
@@ -210,16 +216,47 @@ namespace adapters.Driven.Persistence.Data
 
             // 🔐 Permissions
 
-            modelBuilder.Entity<Permission>()
+            modelBuilder.Entity<SHC.Domain.Entities.Permissions.Permission>()
                 .HasKey(p => p.PermissionId);
 
-            modelBuilder.Entity<Permission>()
+            modelBuilder.Entity<SHC.Domain.Entities.Permissions.Permission>()
                 .Property(p => p.SubjectId)
                 .IsRequired();
 
-            modelBuilder.Entity<Permission>()
+            modelBuilder.Entity<SHC.Domain.Entities.Permissions.Permission>()
                 .Property(p => p.SubjectType)
                 .IsRequired();
+
+            modelBuilder.Entity<Domain.Entities.Authorization.Permission>()
+                .ToTable("AuthorizationPermissions");
+
+            modelBuilder.Entity<Domain.Entities.Authorization.Permission>()
+                .Property(p => p.Name)
+                .IsRequired()
+                .HasMaxLength(128);
+
+            modelBuilder.Entity<Domain.Entities.Authorization.Permission>()
+                .Property(p => p.Description)
+                .HasMaxLength(512);
+
+            modelBuilder.Entity<Domain.Entities.Authorization.Permission>()
+                .HasIndex(p => p.Name)
+                .IsUnique();
+
+            modelBuilder.Entity<RolePermission>()
+                .ToTable("RolePermissions");
+
+            modelBuilder.Entity<RolePermission>()
+                .HasOne(rp => rp.Role)
+                .WithMany(r => r.RolePermissions)
+                .HasForeignKey(rp => rp.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RolePermission>()
+                .HasOne(rp => rp.Permission)
+                .WithMany(p => p.RolePermissions)
+                .HasForeignKey(rp => rp.PermissionId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // 💳 Purchases & Invoices
             modelBuilder.Entity<Invoice>()
@@ -281,6 +318,8 @@ namespace adapters.Driven.Persistence.Data
                 .WithMany(r => r.UserRoles)
                 .HasForeignKey(ur => ur.RoleId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            SeedAuthorization(modelBuilder);
 
             
             // ⚙️ System Settings
@@ -347,6 +386,56 @@ namespace adapters.Driven.Persistence.Data
                 .HasForeignKey(ti => ti.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+        }
+
+        private static void SeedAuthorization(ModelBuilder modelBuilder)
+        {
+            var createdAt = new DateTime(2026, 6, 5, 0, 0, 0, DateTimeKind.Utc);
+
+            var adminRoleId = Guid.Parse("10000000-0000-0000-0000-000000000001");
+            var userRoleId = Guid.Parse("10000000-0000-0000-0000-000000000002");
+            var storageNodeOwnerRoleId = Guid.Parse("10000000-0000-0000-0000-000000000003");
+
+            modelBuilder.Entity<Role>().HasData(
+                new { RoleId = adminRoleId, Name = AuthorizationRoles.Admin, Description = "Full platform administrator.", CreatedAt = createdAt },
+                new { RoleId = userRoleId, Name = AuthorizationRoles.User, Description = "Default cloud user.", CreatedAt = createdAt },
+                new { RoleId = storageNodeOwnerRoleId, Name = AuthorizationRoles.StorageNodeOwner, Description = "Storage node owner and operator.", CreatedAt = createdAt });
+
+            var permissions = new (Guid Id, string Name, string Description)[]
+            {
+                (Guid.Parse("20000000-0000-0000-0000-000000000001"), AuthorizationPermissions.FileRead, "Read file metadata and content."),
+                (Guid.Parse("20000000-0000-0000-0000-000000000002"), AuthorizationPermissions.FileUpload, "Upload files."),
+                (Guid.Parse("20000000-0000-0000-0000-000000000003"), AuthorizationPermissions.FileDelete, "Delete files."),
+                (Guid.Parse("20000000-0000-0000-0000-000000000004"), AuthorizationPermissions.FileShare, "Share files."),
+                (Guid.Parse("20000000-0000-0000-0000-000000000005"), AuthorizationPermissions.FolderCreate, "Create folders."),
+                (Guid.Parse("20000000-0000-0000-0000-000000000006"), AuthorizationPermissions.FolderDelete, "Delete folders."),
+                (Guid.Parse("20000000-0000-0000-0000-000000000007"), AuthorizationPermissions.FolderShare, "Share folders."),
+                (Guid.Parse("20000000-0000-0000-0000-000000000008"), AuthorizationPermissions.NodeRegister, "Register storage nodes."),
+                (Guid.Parse("20000000-0000-0000-0000-000000000009"), AuthorizationPermissions.NodeManage, "Manage storage nodes."),
+                (Guid.Parse("20000000-0000-0000-0000-000000000010"), AuthorizationPermissions.UserManage, "Manage users."),
+                (Guid.Parse("20000000-0000-0000-0000-000000000011"), AuthorizationPermissions.SystemAdmin, "Administer system settings.")
+            };
+
+            modelBuilder.Entity<Domain.Entities.Authorization.Permission>().HasData(
+                permissions.Select(p => new { PermissionId = p.Id, p.Name, p.Description }));
+
+            var rolePermissions = new List<object>();
+
+            rolePermissions.AddRange(permissions.Select(p => new { RoleId = adminRoleId, PermissionId = p.Id }));
+
+            rolePermissions.AddRange(permissions
+                .Where(p => p.Name is AuthorizationPermissions.FileRead
+                    or AuthorizationPermissions.FileUpload
+                    or AuthorizationPermissions.FileShare
+                    or AuthorizationPermissions.FolderCreate
+                    or AuthorizationPermissions.FolderShare)
+                .Select(p => new { RoleId = userRoleId, PermissionId = p.Id }));
+
+            rolePermissions.AddRange(permissions
+                .Where(p => p.Name is AuthorizationPermissions.NodeRegister or AuthorizationPermissions.NodeManage)
+                .Select(p => new { RoleId = storageNodeOwnerRoleId, PermissionId = p.Id }));
+
+            modelBuilder.Entity<RolePermission>().HasData(rolePermissions);
         }
     }
 }

@@ -1,13 +1,18 @@
 using api.Requests.FileStorage;
+using api.Authorization;
+using application.Common.Authorization;
 using application.Dto.FileStorage.File;
 using application.Ports.Driving.FileStorage.File;
 using Domain.Entities.FileStorage;
 using Domain.Entities.LinkSharing;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SHC.Domain.Entities.Permissions.Enums;
 
 namespace api.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/files")]
     public class FilesController : ControllerBase
     {
@@ -19,6 +24,7 @@ namespace api.Controllers
         private readonly IMoveFileUseCase _moveFileUseCase;
         private readonly IDeleteFileUseCase _deleteFileUseCase;
         private readonly IShareFileUseCase _shareFileUseCase;
+        private readonly IAuthorizationService _authorizationService;
 
         public FilesController(
             IUploadFileUseCase uploadFileUseCase,
@@ -28,7 +34,8 @@ namespace api.Controllers
             IRenameFileUseCase renameFileUseCase,
             IMoveFileUseCase moveFileUseCase,
             IDeleteFileUseCase deleteFileUseCase,
-            IShareFileUseCase shareFileUseCase)
+            IShareFileUseCase shareFileUseCase,
+            IAuthorizationService authorizationService)
         {
             _uploadFileUseCase = uploadFileUseCase;
             _getFileByIdUseCase = getFileByIdUseCase;
@@ -38,9 +45,11 @@ namespace api.Controllers
             _moveFileUseCase = moveFileUseCase;
             _deleteFileUseCase = deleteFileUseCase;
             _shareFileUseCase = shareFileUseCase;
+            _authorizationService = authorizationService;
         }
 
         [HttpPost("upload")]
+        [Authorize(Policy = AuthorizationPolicies.FileUpload)]
         [Consumes("multipart/form-data")]
         public async Task<ActionResult<UploadFileResponseDto>> UploadFile([FromForm] UploadFileFormRequest request)
         {
@@ -74,6 +83,7 @@ namespace api.Controllers
         }
 
         [HttpGet("{fileItemId:guid}")]
+        [Authorize(Policy = AuthorizationPolicies.FileRead)]
         public async Task<ActionResult<FileDto>> GetFileById(Guid fileItemId)
         {
             var fileItem = await _getFileByIdUseCase.ExecuteAsync(fileItemId);
@@ -81,6 +91,16 @@ namespace api.Controllers
             if (fileItem == null)
             {
                 return NotFound();
+            }
+
+            var authorization = await _authorizationService.AuthorizeAsync(
+                User,
+                fileItemId,
+                new OwnershipRequirement(ResourceType.File, AccessLevel.Read));
+
+            if (!authorization.Succeeded)
+            {
+                return Forbid();
             }
 
             return Ok(MapFile(fileItem));
@@ -98,6 +118,7 @@ namespace api.Controllers
         }
 
         [HttpGet("{fileItemId:guid}/download")]
+        [Authorize(Policy = AuthorizationPolicies.FileRead)]
         public async Task<IActionResult> DownloadFile(Guid fileItemId)
         {
             var download = await _downloadFileUseCase.ExecuteAsync(fileItemId);
@@ -109,14 +130,35 @@ namespace api.Controllers
 
             var (fileItem, content) = download.Value;
 
+            var authorization = await _authorizationService.AuthorizeAsync(
+                User,
+                fileItemId,
+                new OwnershipRequirement(ResourceType.File, AccessLevel.Read));
+
+            if (!authorization.Succeeded)
+            {
+                return Forbid();
+            }
+
             return File(content, fileItem.FileType, fileItem.FileName);
         }
 
         [HttpPut("{fileItemId:guid}/rename")]
+        [Authorize(Policy = AuthorizationPolicies.FileUpload)]
         public async Task<ActionResult<RenameFileResponseDto>> RenameFile(
             Guid fileItemId,
             RenameFileRequestDto dto)
         {
+            var authorization = await _authorizationService.AuthorizeAsync(
+                User,
+                fileItemId,
+                new OwnershipRequirement(ResourceType.File, AccessLevel.Write));
+
+            if (!authorization.Succeeded)
+            {
+                return Forbid();
+            }
+
             var fileItem = await _renameFileUseCase.ExecuteAsync(fileItemId, dto.NewName);
 
             if (fileItem == null)
@@ -128,10 +170,21 @@ namespace api.Controllers
         }
 
         [HttpPut("{fileItemId:guid}/move")]
+        [Authorize(Policy = AuthorizationPolicies.FileUpload)]
         public async Task<ActionResult<MoveFileResponseDto>> MoveFile(
             Guid fileItemId,
             MoveFileRequestDto dto)
         {
+            var authorization = await _authorizationService.AuthorizeAsync(
+                User,
+                fileItemId,
+                new OwnershipRequirement(ResourceType.File, AccessLevel.Write));
+
+            if (!authorization.Succeeded)
+            {
+                return Forbid();
+            }
+
             try
             {
                 var fileItem = await _moveFileUseCase.ExecuteAsync(fileItemId, dto.TargetFolderId);
@@ -150,8 +203,19 @@ namespace api.Controllers
         }
 
         [HttpDelete("{fileItemId:guid}")]
+        [Authorize(Policy = AuthorizationPolicies.FileDelete)]
         public async Task<ActionResult<DeleteFileResponseDto>> DeleteFile(Guid fileItemId)
         {
+            var authorization = await _authorizationService.AuthorizeAsync(
+                User,
+                fileItemId,
+                new OwnershipRequirement(ResourceType.File, AccessLevel.Delete));
+
+            if (!authorization.Succeeded)
+            {
+                return Forbid();
+            }
+
             var deleted = await _deleteFileUseCase.ExecuteAsync(fileItemId);
 
             if (!deleted)
@@ -163,10 +227,21 @@ namespace api.Controllers
         }
 
         [HttpPost("{fileItemId:guid}/share")]
+        [Authorize(Policy = AuthorizationPolicies.FileShare)]
         public async Task<ActionResult<ShareFileResponseDto>> ShareFile(
             Guid fileItemId,
             ShareFileRequestDto dto)
         {
+            var authorization = await _authorizationService.AuthorizeAsync(
+                User,
+                fileItemId,
+                new OwnershipRequirement(ResourceType.File, AccessLevel.Admin));
+
+            if (!authorization.Succeeded)
+            {
+                return Forbid();
+            }
+
             var sharedLink = await _shareFileUseCase.ExecuteAsync(
                 fileItemId,
                 dto.Permission,

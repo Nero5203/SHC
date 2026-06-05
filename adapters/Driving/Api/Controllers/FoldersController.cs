@@ -1,13 +1,18 @@
+using api.Authorization;
+using application.Common.Authorization;
 using application.Dto.FileStorage.File;
 using application.Dto.FileStorage.Folder;
 using application.Ports.Driving.FileStorage.Folder;
 using Domain.Entities.FileStorage;
 using Domain.Entities.LinkSharing;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SHC.Domain.Entities.Permissions.Enums;
 
 namespace api.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/folders")]
     public class FoldersController : ControllerBase
     {
@@ -19,6 +24,7 @@ namespace api.Controllers
         private readonly IDeleteFolderUseCase _deleteFolderUseCase;
         private readonly IArchiveFolderUseCase _archiveFolderUseCase;
         private readonly IShareFolderUseCase _shareFolderUseCase;
+        private readonly IAuthorizationService _authorizationService;
 
         public FoldersController(
             ICreateFolderUseCase createFolderUseCase,
@@ -28,7 +34,8 @@ namespace api.Controllers
             IMoveFolderUseCase moveFolderUseCase,
             IDeleteFolderUseCase deleteFolderUseCase,
             IArchiveFolderUseCase archiveFolderUseCase,
-            IShareFolderUseCase shareFolderUseCase)
+            IShareFolderUseCase shareFolderUseCase,
+            IAuthorizationService authorizationService)
         {
             _createFolderUseCase = createFolderUseCase;
             _getFolderByIdUseCase = getFolderByIdUseCase;
@@ -38,9 +45,11 @@ namespace api.Controllers
             _deleteFolderUseCase = deleteFolderUseCase;
             _archiveFolderUseCase = archiveFolderUseCase;
             _shareFolderUseCase = shareFolderUseCase;
+            _authorizationService = authorizationService;
         }
 
         [HttpPost]
+        [Authorize(Policy = AuthorizationPolicies.FolderManage)]
         public async Task<ActionResult<CreateFolderResponseDto>> CreateFolder(CreateFolderRequestDto dto)
         {
             try
@@ -62,6 +71,7 @@ namespace api.Controllers
         }
 
         [HttpGet("{folderId:guid}")]
+        [Authorize(Policy = AuthorizationPolicies.FileRead)]
         public async Task<ActionResult<FolderDto>> GetFolderById(Guid folderId)
         {
             var folder = await _getFolderByIdUseCase.ExecuteAsync(folderId);
@@ -69,6 +79,16 @@ namespace api.Controllers
             if (folder == null)
             {
                 return NotFound();
+            }
+
+            var authorization = await _authorizationService.AuthorizeAsync(
+                User,
+                folderId,
+                new OwnershipRequirement(ResourceType.Folder, AccessLevel.Read));
+
+            if (!authorization.Succeeded)
+            {
+                return Forbid();
             }
 
             return Ok(MapFolder(folder));
@@ -94,10 +114,21 @@ namespace api.Controllers
         }
 
         [HttpPut("{folderId:guid}/rename")]
+        [Authorize(Policy = AuthorizationPolicies.FolderManage)]
         public async Task<ActionResult<RenameFolderResponseDto>> RenameFolder(
             Guid folderId,
             RenameFolderRequestDto dto)
         {
+            var authorization = await _authorizationService.AuthorizeAsync(
+                User,
+                folderId,
+                new OwnershipRequirement(ResourceType.Folder, AccessLevel.Write));
+
+            if (!authorization.Succeeded)
+            {
+                return Forbid();
+            }
+
             var folder = await _renameFolderUseCase.ExecuteAsync(folderId, dto.NewName);
 
             if (folder == null)
@@ -109,10 +140,21 @@ namespace api.Controllers
         }
 
         [HttpPut("{folderId:guid}/move")]
+        [Authorize(Policy = AuthorizationPolicies.FolderManage)]
         public async Task<ActionResult<MoveFolderResponseDto>> MoveFolder(
             Guid folderId,
             MoveFolderRequestDto dto)
         {
+            var authorization = await _authorizationService.AuthorizeAsync(
+                User,
+                folderId,
+                new OwnershipRequirement(ResourceType.Folder, AccessLevel.Write));
+
+            if (!authorization.Succeeded)
+            {
+                return Forbid();
+            }
+
             try
             {
                 var folder = await _moveFolderUseCase.ExecuteAsync(folderId, dto.TargetParentFolderId);
@@ -131,8 +173,19 @@ namespace api.Controllers
         }
 
         [HttpPut("{folderId:guid}/archive")]
+        [Authorize(Policy = AuthorizationPolicies.FolderManage)]
         public async Task<ActionResult<FolderDto>> ArchiveFolder(Guid folderId)
         {
+            var authorization = await _authorizationService.AuthorizeAsync(
+                User,
+                folderId,
+                new OwnershipRequirement(ResourceType.Folder, AccessLevel.Write));
+
+            if (!authorization.Succeeded)
+            {
+                return Forbid();
+            }
+
             var folder = await _archiveFolderUseCase.ExecuteAsync(folderId);
 
             if (folder == null)
@@ -144,8 +197,19 @@ namespace api.Controllers
         }
 
         [HttpDelete("{folderId:guid}")]
+        [Authorize(Policy = AuthorizationPolicies.FolderManage)]
         public async Task<ActionResult<DeleteFolderResponseDto>> DeleteFolder(Guid folderId)
         {
+            var authorization = await _authorizationService.AuthorizeAsync(
+                User,
+                folderId,
+                new OwnershipRequirement(ResourceType.Folder, AccessLevel.Delete));
+
+            if (!authorization.Succeeded)
+            {
+                return Forbid();
+            }
+
             var deleted = await _deleteFolderUseCase.ExecuteAsync(folderId);
 
             if (!deleted)
@@ -157,10 +221,21 @@ namespace api.Controllers
         }
 
         [HttpPost("{folderId:guid}/share")]
+        [Authorize(Policy = AuthorizationPolicies.FolderManage)]
         public async Task<ActionResult<ShareFolderResponseDto>> ShareFolder(
             Guid folderId,
             ShareFolderRequestDto dto)
         {
+            var authorization = await _authorizationService.AuthorizeAsync(
+                User,
+                folderId,
+                new OwnershipRequirement(ResourceType.Folder, AccessLevel.Admin));
+
+            if (!authorization.Succeeded)
+            {
+                return Forbid();
+            }
+
             var sharedLink = await _shareFolderUseCase.ExecuteAsync(
                 folderId,
                 dto.Permission,

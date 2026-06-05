@@ -1,11 +1,14 @@
+using application.Common.Authorization;
 using application.Dto.StorageNodes;
 using Domain.Entities.StorageNodes;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using application.Ports.Driving.StorageNodes;
 
 namespace api.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/storage-nodes")]
     public class StorageNodesController : ControllerBase
     {
@@ -36,6 +39,7 @@ namespace api.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = AuthorizationPolicies.NodeManage)]
         public async Task<ActionResult<StorageNodeResponseDto>> CreateStorageNode(CreateStorageNodeDto dto)
         {
             var storageNode = await _createStorageNodeUseCase.ExecuteAsync(
@@ -53,6 +57,7 @@ namespace api.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = AuthorizationPolicies.NodeManage)]
         public async Task<ActionResult<IReadOnlyList<StorageNodeResponseDto>>> GetStorageNodes()
         {
             var storageNodes = await _getStorageNodesUseCase.ExecuteAsync();
@@ -65,6 +70,7 @@ namespace api.Controllers
         }
 
         [HttpGet("{storageNodeId:guid}")]
+        [Authorize(Policy = AuthorizationPolicies.NodeManage)]
         public async Task<ActionResult<StorageNodeResponseDto>> GetStorageNodeById(Guid storageNodeId)
         {
             var storageNode = await _getStorageNodeByIdUseCase.ExecuteAsync(storageNodeId);
@@ -78,6 +84,7 @@ namespace api.Controllers
         }
 
         [HttpGet("available")]
+        [Authorize(Policy = AuthorizationPolicies.FileUpload)]
         public async Task<ActionResult<StorageNodeResponseDto>> GetBestAvailableStorageNode(
             [FromQuery] long requiredBytes)
         {
@@ -92,6 +99,7 @@ namespace api.Controllers
         }
 
         [HttpPut("{storageNodeId:guid}")]
+        [Authorize(Policy = AuthorizationPolicies.NodeManage)]
         public async Task<ActionResult<StorageNodeResponseDto>> UpdateStorageNode(
             Guid storageNodeId,
             UpdateStorageNodeDto dto)
@@ -114,6 +122,7 @@ namespace api.Controllers
         }
 
         [HttpPut("{storageNodeId:guid}/heartbeat")]
+        [Authorize(Policy = AuthorizationPolicies.NodeManage)]
         public async Task<ActionResult<StorageNodeResponseDto>> UpdateStorageNodeHeartbeat(
             Guid storageNodeId,
             StorageNodeHeartbeatDto dto)
@@ -133,6 +142,7 @@ namespace api.Controllers
         }
 
         [HttpPut("{storageNodeId:guid}/status")]
+        [Authorize(Policy = AuthorizationPolicies.NodeManage)]
         public async Task<ActionResult<StorageNodeResponseDto>> UpdateStorageNodeStatus(
             Guid storageNodeId,
             UpdateStorageNodeStatusDto dto)

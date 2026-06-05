@@ -44,7 +44,7 @@ namespace Application.UseCases.Auth
             if (!isValid)
                 throw new UnauthorizedAccessException("Invalid email or password.");
 
-            var token = _tokenGenerator.GenerateToken(user);
+            var token = await _tokenGenerator.GenerateTokenAsync(user);
 
             var refreshToken = _tokenGenerator.GenerateRefreshToken();
 

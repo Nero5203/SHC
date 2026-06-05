@@ -1,10 +1,13 @@
+using application.Common.Authorization;
 using application.Dto.Users;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using application.Ports.Driving;
 
 namespace api.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/users")]
     public class UsersController : ControllerBase
     {
@@ -84,6 +87,7 @@ namespace api.Controllers
         }
 
         [HttpPut("{userId}")]
+        [Authorize(Policy = AuthorizationPolicies.Admin)]
         public async Task<ActionResult<UserResponseDto>> UpdateUserProfile(
             Guid userId,
             UpdateUserDto dto)
@@ -190,6 +194,7 @@ namespace api.Controllers
         }
 
         [HttpDelete("{userId}")]
+        [Authorize(Roles = AuthorizationRoles.Admin)]
         public async Task<IActionResult> DeleteUser(Guid userId)
         {
             var deleted = await _deleteUserUseCase.ExecuteAsync(userId);
