@@ -1,12 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace application.Ports.Driving.FileStorage.File
 {
-    internal interface IDeleteFileUseCase
+    public interface IDeleteFileUseCase
     {
+        Task<bool> ExecuteAsync(Guid fileItemId);
     }
 }

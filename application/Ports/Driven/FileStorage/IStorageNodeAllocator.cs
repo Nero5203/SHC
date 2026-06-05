@@ -1,12 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Domain.Entities.StorageNodes;
 
 namespace application.Ports.Driven.FileStorage
 {
-    internal interface IStorageNodeAllocator
+    public interface IStorageNodeAllocator
     {
+        Task<StorageNode?> GetBestAvailableNodeAsync(long requiredBytes);
     }
 }

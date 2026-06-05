@@ -1,12 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace application.Ports.Driving.FileStorage.Folder
 {
-    internal interface IDeleteFolderUseCase
+    public interface IDeleteFolderUseCase
     {
+        Task<bool> ExecuteAsync(Guid folderId);
     }
 }

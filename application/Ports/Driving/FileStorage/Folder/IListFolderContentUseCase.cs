@@ -1,12 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Domain.Entities.FileStorage;
 
 namespace application.Ports.Driving.FileStorage.Folder
 {
-    internal interface IListFolderContentUseCase
+    public interface IListFolderContentUseCase
     {
+        Task<(IReadOnlyList<Domain.Entities.FileStorage.Folder> Folders, IReadOnlyList<FileItem> Files)?> ExecuteAsync(
+            Guid userId,
+            Guid? folderId);
     }
 }

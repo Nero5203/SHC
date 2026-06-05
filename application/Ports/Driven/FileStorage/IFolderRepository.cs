@@ -1,12 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Domain.Entities.FileStorage;
 
 namespace application.Ports.Driven.FileStorage
 {
-    internal interface IFolderRepository
+    public interface IFolderRepository
     {
+        Task CreateAsync(Folder folder);
+        Task<Folder?> GetByIdAsync(Guid folderId);
+        Task<IReadOnlyList<Folder>> GetByParentFolderIdAsync(Guid userId, Guid? parentFolderId);
+        Task<bool> IsDescendantAsync(Guid folderId, Guid possibleDescendantId);
+        Task UpdateAsync(Folder folder);
+        Task SoftDeleteTreeAsync(Folder folder);
     }
 }

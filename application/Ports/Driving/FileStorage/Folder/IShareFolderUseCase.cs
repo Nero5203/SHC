@@ -1,12 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Domain.Entities.LinkSharing;
+using domain.Entities.FileStorage.Enums;
 
 namespace application.Ports.Driving.FileStorage.Folder
 {
-    internal interface IShareFolderUseCase
+    public interface IShareFolderUseCase
     {
+        Task<SharedLink?> ExecuteAsync(Guid folderId, SharePermission permission, DateTime? expiresAt);
     }
 }

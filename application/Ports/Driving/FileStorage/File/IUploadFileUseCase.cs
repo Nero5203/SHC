@@ -1,12 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Domain.Entities.FileStorage;
 
 namespace application.Ports.Driving.FileStorage.File
 {
-    internal interface IUploadFileUseCase
+    public interface IUploadFileUseCase
     {
+        Task<FileItem> ExecuteAsync(
+            Guid userId,
+            Guid? folderId,
+            string fileName,
+            string fileType,
+            long fileSize,
+            Stream content);
     }
 }

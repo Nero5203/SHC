@@ -4,16 +4,16 @@ using Domain.Entities.FileStorage;
 
 namespace application.UseCases.FileStorage.File
 {
-    public class RenameFileUseCase : IRenameFileUseCase
+    public class GetFileByIdUseCase : IGetFileByIdUseCase
     {
         private readonly IFileRepository _fileRepository;
 
-        public RenameFileUseCase(IFileRepository fileRepository)
+        public GetFileByIdUseCase(IFileRepository fileRepository)
         {
             _fileRepository = fileRepository;
         }
 
-        public async Task<FileItem?> ExecuteAsync(Guid fileItemId, string newName)
+        public async Task<FileItem?> ExecuteAsync(Guid fileItemId)
         {
             var fileItem = await _fileRepository.GetByIdAsync(fileItemId);
 
@@ -21,11 +21,6 @@ namespace application.UseCases.FileStorage.File
             {
                 return null;
             }
-
-            fileItem.FileName = newName;
-            fileItem.UpdatedAt = DateTime.UtcNow;
-
-            await _fileRepository.UpdateAsync(fileItem);
 
             return fileItem;
         }

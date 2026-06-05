@@ -1,12 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace application.Ports.Driving.FileStorage.Folder
 {
-    internal interface ICreateFoLderUseCase
+    public interface ICreateFolderUseCase
     {
+        Task<Domain.Entities.FileStorage.Folder> ExecuteAsync(
+            Guid userId,
+            string name,
+            Guid? parentFolderId);
     }
 }

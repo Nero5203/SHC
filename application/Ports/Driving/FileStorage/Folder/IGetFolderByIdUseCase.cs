@@ -1,8 +1,6 @@
-using Domain.Entities.FileStorage;
-
 namespace application.Ports.Driving.FileStorage.Folder
 {
-    public interface IArchiveFolderUseCase
+    public interface IGetFolderByIdUseCase
     {
         Task<Domain.Entities.FileStorage.Folder?> ExecuteAsync(Guid folderId);
     }

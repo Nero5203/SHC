@@ -3,16 +3,16 @@ using application.Ports.Driving.FileStorage.Folder;
 
 namespace application.UseCases.FileStorage.Folder
 {
-    public class RenameFolderUseCase : IRenameFolderUseCase
+    public class GetFolderByIdUseCase : IGetFolderByIdUseCase
     {
         private readonly IFolderRepository _folderRepository;
 
-        public RenameFolderUseCase(IFolderRepository folderRepository)
+        public GetFolderByIdUseCase(IFolderRepository folderRepository)
         {
             _folderRepository = folderRepository;
         }
 
-        public async Task<Domain.Entities.FileStorage.Folder?> ExecuteAsync(Guid folderId, string newName)
+        public async Task<Domain.Entities.FileStorage.Folder?> ExecuteAsync(Guid folderId)
         {
             var folder = await _folderRepository.GetByIdAsync(folderId);
 
@@ -20,11 +20,6 @@ namespace application.UseCases.FileStorage.Folder
             {
                 return null;
             }
-
-            folder.Name = newName;
-            folder.UpdatedAt = DateTime.UtcNow;
-
-            await _folderRepository.UpdateAsync(folder);
 
             return folder;
         }

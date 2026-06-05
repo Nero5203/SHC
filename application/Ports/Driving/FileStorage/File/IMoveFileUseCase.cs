@@ -1,12 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Domain.Entities.FileStorage;
 
 namespace application.Ports.Driving.FileStorage.File
 {
-    internal interface IMoveFileUseCase
+    public interface IMoveFileUseCase
     {
+        Task<FileItem?> ExecuteAsync(Guid fileItemId, Guid? targetFolderId);
     }
 }
