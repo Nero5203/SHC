@@ -1,10 +1,14 @@
 using application.Dto.Subscriptions;
 using application.Ports.Driving.Subscriptions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using application.Common.Authorization;
+using application.Ports.Driving.Auth;
 
 namespace api.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/subscriptions")]
     public class SubscriptionsController : ControllerBase
     {
@@ -19,6 +23,8 @@ namespace api.Controllers
         private readonly IGetSubscriptionEntitlementsUseCase _getSubscriptionEntitlementsUseCase;
         private readonly IChangeSubscriptionPlanUseCase _changeSubscriptionPlanUseCase;
         private readonly ICancelSubscriptionUseCase _cancelSubscriptionUseCase;
+        private readonly ICurrentUserService _currentUserService;
+        private readonly IUserAuthorizationService _userAuthorizationService;
 
         public SubscriptionsController(
             ICreateSubscriptionPlanUseCase createSubscriptionPlanUseCase,
@@ -31,7 +37,9 @@ namespace api.Controllers
             IGetActiveUserSubscriptionUseCase getActiveUserSubscriptionUseCase,
             IGetSubscriptionEntitlementsUseCase getSubscriptionEntitlementsUseCase,
             IChangeSubscriptionPlanUseCase changeSubscriptionPlanUseCase,
-            ICancelSubscriptionUseCase cancelSubscriptionUseCase)
+            ICancelSubscriptionUseCase cancelSubscriptionUseCase,
+            ICurrentUserService currentUserService,
+            IUserAuthorizationService userAuthorizationService)
         {
             _createSubscriptionPlanUseCase = createSubscriptionPlanUseCase;
             _listSubscriptionPlansUseCase = listSubscriptionPlansUseCase;
@@ -44,6 +52,8 @@ namespace api.Controllers
             _getSubscriptionEntitlementsUseCase = getSubscriptionEntitlementsUseCase;
             _changeSubscriptionPlanUseCase = changeSubscriptionPlanUseCase;
             _cancelSubscriptionUseCase = cancelSubscriptionUseCase;
+            _currentUserService = currentUserService;
+            _userAuthorizationService = userAuthorizationService;
         }
 
         [HttpGet("plans")]
@@ -97,6 +107,7 @@ namespace api.Controllers
         }
 
         [HttpPost("plans")]
+        [Authorize(Policy = AuthorizationPolicies.Admin)]
         public async Task<ActionResult<SubscriptionPlanResponseDto>> CreatePlan(CreateSubscriptionPlanDto dto)
         {
             var plan = await _createSubscriptionPlanUseCase.ExecuteAsync(
@@ -128,6 +139,7 @@ namespace api.Controllers
         }
 
         [HttpPut("plans/{subscriptionPlanId:guid}")]
+        [Authorize(Policy = AuthorizationPolicies.Admin)]
         public async Task<ActionResult<SubscriptionPlanResponseDto>> UpdatePlan(Guid subscriptionPlanId, UpdateSubscriptionPlanDto dto)
         {
             var plan = await _updateSubscriptionPlanUseCase.ExecuteAsync(
@@ -167,6 +179,11 @@ namespace api.Controllers
         [HttpPost]
         public async Task<ActionResult<SubscriptionResponseDto>> CreateSubscription(CreateSubscriptionDto dto)
         {
+            if (!_userAuthorizationService.IsAdmin() && _currentUserService.UserId != dto.UserId)
+            {
+                return Forbid();
+            }
+
             var subscription = await _createSubscriptionUseCase.ExecuteAsync(
                 dto.UserId,
                 dto.SubscriptionPlanId,
@@ -203,6 +220,16 @@ namespace api.Controllers
                 return NotFound();
             }
 
+            // allow only admin or users attached to the subscription
+            if (!_userAuthorizationService.IsAdmin())
+            {
+                var currentUserId = _currentUserService.UserId;
+                if (currentUserId == null || !subscription.UserSubscriptions.Any(us => us.UserId == currentUserId))
+                {
+                    return Forbid();
+                }
+            }
+
             var response = new SubscriptionResponseDto
             {
                 SubscriptionId = subscription.SubscriptionId,
@@ -226,6 +253,11 @@ namespace api.Controllers
         [HttpGet("user/{userId:guid}")]
         public async Task<ActionResult<IReadOnlyList<SubscriptionResponseDto>>> GetSubscriptionsByUserId(Guid userId)
         {
+            if (!_userAuthorizationService.IsAdmin() && _currentUserService.UserId != userId)
+            {
+                return Forbid();
+            }
+
             var subscriptions = await _getUserSubscriptionsUseCase.ExecuteAsync(userId);
 
             var response = subscriptions.Select(subscription => new SubscriptionResponseDto
@@ -251,6 +283,11 @@ namespace api.Controllers
         [HttpGet("user/{userId:guid}/active")]
         public async Task<ActionResult<SubscriptionResponseDto>> GetActiveSubscription(Guid userId)
         {
+            if (!_userAuthorizationService.IsAdmin() && _currentUserService.UserId != userId)
+            {
+                return Forbid();
+            }
+
             var subscription = await _getActiveUserSubscriptionUseCase.ExecuteAsync(userId);
             if (subscription == null)
             {
@@ -280,6 +317,11 @@ namespace api.Controllers
         [HttpGet("user/{userId:guid}/entitlements")]
         public async Task<ActionResult<SubscriptionEntitlementResponseDto>> GetSubscriptionEntitlements(Guid userId)
         {
+            if (!_userAuthorizationService.IsAdmin() && _currentUserService.UserId != userId)
+            {
+                return Forbid();
+            }
+
             var entitlement = await _getSubscriptionEntitlementsUseCase.ExecuteAsync(userId);
             return Ok(entitlement);
         }
@@ -293,6 +335,15 @@ namespace api.Controllers
             if (subscription == null)
             {
                 return NotFound();
+            }
+
+            if (!_userAuthorizationService.IsAdmin())
+            {
+                var currentUserId = _currentUserService.UserId;
+                if (currentUserId == null || !subscription.UserSubscriptions.Any(us => us.UserId == currentUserId))
+                {
+                    return Forbid();
+                }
             }
 
             var response = new SubscriptionResponseDto
@@ -324,6 +375,15 @@ namespace api.Controllers
             if (subscription == null)
             {
                 return NotFound();
+            }
+
+            if (!_userAuthorizationService.IsAdmin())
+            {
+                var currentUserId = _currentUserService.UserId;
+                if (currentUserId == null || !subscription.UserSubscriptions.Any(us => us.UserId == currentUserId))
+                {
+                    return Forbid();
+                }
             }
 
             var response = new SubscriptionResponseDto
