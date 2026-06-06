@@ -28,10 +28,26 @@ function LoginUserPage({ onLogout }) {
 
     try {
       const result = await postJson(apiUrl, "/api/auth/login", form);
+      console.log("Login response:", result);
+
+      const accessToken = result?.token?.accessToken || result?.Token?.AccessToken || result?.Token || result?.token;
+      const refreshToken = result?.token?.refreshToken || result?.Token?.RefreshToken || result?.refreshToken || result?.RefreshToken;
+
+      if (!accessToken) {
+        throw new Error("No access token received.");
+      }
+
+      setAuthToken(accessToken);
+      if (refreshToken) {
+        setRefreshToken(refreshToken);
+      }
+
       setStatus({
         type: "success",
-        message: result?.token ? "Logged in successfully." : "Logged in successfully."
+        message: "Logged in successfully."
       });
+
+      setTimeout(() => onLogout("home"), 800);
     } catch (error) {
       setStatus({ type: "error", message: error.message });
     } finally {
