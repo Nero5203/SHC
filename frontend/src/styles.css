@@ -1354,6 +1354,23 @@ h3 {
   flex-wrap: wrap;
 }
 
+.move-control {
+  display: inline-grid;
+  grid-template-columns: minmax(120px, 170px) auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.move-control select {
+  height: 32px;
+  border: 1px solid #d8e0e8;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #263447;
+  padding: 0 8px;
+  min-width: 0;
+}
+
 .icon-button {
   min-height: 32px;
   border-radius: 6px;
@@ -1373,6 +1390,13 @@ h3 {
 .icon-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .move-control {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
 }
 
 .breadcrumb {
