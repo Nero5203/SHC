@@ -2,7 +2,7 @@ namespace application.Dto.Auth
 {
     public class LoginResponseDto
     {
-        public string AcessToken { get; set; } = null!;
+        public string AccessToken { get; set; } = null!;
         public string RefreshToken { get; set; } = null!;
     }
 }

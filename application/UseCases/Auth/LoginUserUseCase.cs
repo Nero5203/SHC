@@ -50,7 +50,7 @@ namespace Application.UseCases.Auth
 
             return new LoginResponseDto
             {
-                AcessToken = token,
+                AccessToken = token,
                 RefreshToken = refreshToken
             };
         }

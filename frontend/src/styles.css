@@ -1,0 +1,292 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #1d2635;
+  background: #edf1f5;
+  font-synthesis: none;
+  text-rendering: geometricPrecision;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #edf1f5;
+}
+
+button,
+input {
+  font: inherit;
+  letter-spacing: 0;
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+}
+
+.sidebar {
+  background: #182231;
+  color: #e7edf5;
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px 12px;
+}
+
+.brand-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: #2c8f8a;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+}
+
+.brand strong,
+.brand span {
+  display: block;
+}
+
+.brand strong {
+  font-size: 18px;
+}
+
+.brand span,
+.module-item small {
+  color: #9eabbc;
+  font-size: 12px;
+}
+
+.module-list {
+  display: grid;
+  gap: 8px;
+}
+
+.module-item {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 8px;
+  background: transparent;
+  color: #d3dbe7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.module-item.active {
+  background: #253447;
+  color: #ffffff;
+  box-shadow: inset 3px 0 0 #2c8f8a;
+}
+
+.page {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.topbar {
+  min-height: 82px;
+  background: #ffffff;
+  border-bottom: 1px solid #d9e1ea;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(260px, 420px);
+  align-items: center;
+  gap: 18px;
+  padding: 14px 24px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: #2c8f8a;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+h2 {
+  font-size: 16px;
+}
+
+.api-field,
+.register-form label {
+  display: grid;
+  gap: 6px;
+  color: #667386;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.api-field input,
+.register-form input {
+  width: 100%;
+  height: 40px;
+  border: 1px solid #d8e0e8;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #263447;
+  padding: 0 11px;
+  min-width: 0;
+}
+
+.content-grid {
+  padding: 22px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 16px;
+  align-items: start;
+}
+
+.panel {
+  background: #ffffff;
+  border: 1px solid #d9e1ea;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(24, 36, 51, 0.04);
+  padding: 18px;
+  min-width: 0;
+}
+
+.register-form {
+  display: grid;
+  gap: 18px;
+}
+
+.form-header p,
+.status-panel p {
+  margin-top: 5px;
+  color: #667386;
+  font-size: 13px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.form-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.primary-button,
+.secondary-button {
+  min-height: 40px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.primary-button {
+  background: #2f6f9f;
+  color: #ffffff;
+}
+
+.secondary-button {
+  background: #ffffff;
+  color: #344255;
+  border: 1px solid #d8e0e8;
+}
+
+.primary-button:disabled,
+.secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.status-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.status-panel.success {
+  border-color: #b8e1c8;
+}
+
+.status-panel.error {
+  border-color: #f2b8b8;
+}
+
+.status-panel.loading {
+  border-color: #b7d6ec;
+}
+
+.status-panel dl {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.status-panel div {
+  display: grid;
+  gap: 4px;
+}
+
+.status-panel dt {
+  color: #667386;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.status-panel dd {
+  margin: 0;
+  color: #263447;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 940px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .topbar,
+  .content-grid,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}

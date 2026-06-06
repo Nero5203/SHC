@@ -47,7 +47,6 @@ namespace application.UseCases.Subscriptions
 
             var userSubscription = new UserSubscription
             {
-                UserSubscriptionId = Guid.NewGuid(),
                 UserId = userId,
                 SubscriptionId = subscription.SubscriptionId,
                 IsOwner = true,

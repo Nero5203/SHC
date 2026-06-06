@@ -4,8 +4,6 @@ namespace Domain.Entities.Purchases
 {
     public class UserSubscription
     {
-        public Guid UserSubscriptionId { get; set; }
-
         public Guid UserId { get; set; }
         public User User { get; set; } = null!;
 
