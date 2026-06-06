@@ -24,15 +24,6 @@ const adminModules = [
     note: "The admin list endpoint is available now."
   },
   {
-    key: "roles",
-    title: "Roles",
-    area: "Authorization",
-    permissions: ["System.Admin"],
-    route: "/api/roles",
-    countPath: "/api/roles",
-    description: "Create roles, edit role names, and assign roles to users."
-  },
-  {
     key: "permissions",
     title: "Permissions",
     area: "Authorization",
