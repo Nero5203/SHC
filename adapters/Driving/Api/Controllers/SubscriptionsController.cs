@@ -17,6 +17,7 @@ namespace api.Controllers
         private readonly IGetSubscriptionPlanByIdUseCase _getSubscriptionPlanByIdUseCase;
         private readonly IUpdateSubscriptionPlanUseCase _updateSubscriptionPlanUseCase;
         private readonly ICreateSubscriptionUseCase _createSubscriptionUseCase;
+        private readonly IListSubscriptionsUseCase _listSubscriptionsUseCase;
         private readonly IGetSubscriptionByIdUseCase _getSubscriptionByIdUseCase;
         private readonly IGetUserSubscriptionsUseCase _getUserSubscriptionsUseCase;
         private readonly IGetActiveUserSubscriptionUseCase _getActiveUserSubscriptionUseCase;
@@ -32,6 +33,7 @@ namespace api.Controllers
             IGetSubscriptionPlanByIdUseCase getSubscriptionPlanByIdUseCase,
             IUpdateSubscriptionPlanUseCase updateSubscriptionPlanUseCase,
             ICreateSubscriptionUseCase createSubscriptionUseCase,
+            IListSubscriptionsUseCase listSubscriptionsUseCase,
             IGetSubscriptionByIdUseCase getSubscriptionByIdUseCase,
             IGetUserSubscriptionsUseCase getUserSubscriptionsUseCase,
             IGetActiveUserSubscriptionUseCase getActiveUserSubscriptionUseCase,
@@ -46,6 +48,7 @@ namespace api.Controllers
             _getSubscriptionPlanByIdUseCase = getSubscriptionPlanByIdUseCase;
             _updateSubscriptionPlanUseCase = updateSubscriptionPlanUseCase;
             _createSubscriptionUseCase = createSubscriptionUseCase;
+            _listSubscriptionsUseCase = listSubscriptionsUseCase;
             _getSubscriptionByIdUseCase = getSubscriptionByIdUseCase;
             _getUserSubscriptionsUseCase = getUserSubscriptionsUseCase;
             _getActiveUserSubscriptionUseCase = getActiveUserSubscriptionUseCase;
@@ -209,6 +212,32 @@ namespace api.Controllers
             };
 
             return CreatedAtAction(nameof(GetSubscriptionById), new { subscriptionId = subscription.SubscriptionId }, response);
+        }
+
+        [HttpGet]
+        [Authorize(Policy = AuthorizationPolicies.Admin)]
+        public async Task<ActionResult<IReadOnlyList<SubscriptionResponseDto>>> ListSubscriptions()
+        {
+            var subscriptions = await _listSubscriptionsUseCase.ExecuteAsync();
+
+            var response = subscriptions.Select(subscription => new SubscriptionResponseDto
+            {
+                SubscriptionId = subscription.SubscriptionId,
+                SubscriptionPlanId = subscription.SubscriptionPlanId,
+                PlanName = subscription.SubscriptionPlan.Name,
+                Status = subscription.Status,
+                StartedAt = subscription.StartedAt,
+                CurrentPeriodStart = subscription.CurrentPeriodStart,
+                CurrentPeriodEnd = subscription.CurrentPeriodEnd,
+                TrialEndsAt = subscription.TrialEndsAt,
+                CancelledAt = subscription.CancelledAt,
+                EndedAt = subscription.EndedAt,
+                AutoRenew = subscription.AutoRenew,
+                ProviderSubscriptionId = subscription.ProviderSubscriptionId,
+                UserIds = subscription.UserSubscriptions.Select(us => us.UserId).ToList()
+            }).ToList();
+
+            return Ok(response);
         }
 
         [HttpGet("{subscriptionId:guid}")]

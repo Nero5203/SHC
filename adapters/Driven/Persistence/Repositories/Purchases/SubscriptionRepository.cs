@@ -55,6 +55,15 @@ namespace adapters.Driven.Persistence.Repositories.Purchases
             await _context.SaveChangesAsync();
         }
 
+        public async Task<IReadOnlyList<Subscription>> GetSubscriptionsAsync()
+        {
+            return await _context.Subscriptions
+                .Include(subscription => subscription.SubscriptionPlan)
+                .Include(subscription => subscription.UserSubscriptions)
+                .OrderByDescending(subscription => subscription.StartedAt)
+                .ToListAsync();
+        }
+
         public async Task<Subscription?> GetSubscriptionByIdAsync(Guid subscriptionId)
         {
             return await _context.Subscriptions

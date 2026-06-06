@@ -577,6 +577,8 @@ h3 {
 
 .storage-admin-header,
 .purchases-admin-header,
+.subscriptions-admin-header,
+.subscription-plan-form-header,
 .settings-admin-header,
 .storage-node-form-header,
 .storage-node-card-header,
@@ -590,6 +592,8 @@ h3 {
 
 .storage-admin-header p:not(.eyebrow),
 .purchases-admin-header p:not(.eyebrow),
+.subscriptions-admin-header p:not(.eyebrow),
+.subscription-plan-form-header p,
 .settings-admin-header p:not(.eyebrow),
 .storage-node-form-header p,
 .storage-node-card-header p {
@@ -611,7 +615,22 @@ h3 {
   gap: 16px;
 }
 
+.subscriptions-admin-panel,
+.subscription-plan-list {
+  display: grid;
+  gap: 16px;
+}
+
+.subscription-plan-form {
+  border: 1px solid #edf1f5;
+  border-radius: 8px;
+  padding: 14px;
+  display: grid;
+  gap: 14px;
+}
+
 .storage-node-form-grid,
+.subscription-plan-form-grid,
 .heartbeat-form {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -619,6 +638,7 @@ h3 {
 }
 
 .storage-node-form-grid label,
+.subscription-plan-form-grid label,
 .heartbeat-form label,
 .node-actions label {
   display: grid;
@@ -629,6 +649,8 @@ h3 {
 }
 
 .storage-node-form-grid input,
+.subscription-plan-form-grid input,
+.subscription-plan-form-grid select,
 .heartbeat-form input,
 .heartbeat-form select,
 .node-actions select,
@@ -642,6 +664,150 @@ h3 {
   color: #263447;
   padding: 0 10px;
   min-width: 0;
+}
+
+.subscription-plan-form-grid .wide-field {
+  grid-column: span 2;
+}
+
+.subscription-plan-form-grid .toggle-row {
+  min-height: 40px;
+  border: 1px solid #d8e0e8;
+  border-radius: 8px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px;
+  color: #263447;
+}
+
+.subscription-plan-form-grid .toggle-row input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #2c8f8a;
+}
+
+.subscription-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.subscription-plan-card {
+  border: 1px solid #edf1f5;
+  border-radius: 8px;
+  padding: 14px;
+  display: grid;
+  gap: 14px;
+}
+
+.subscription-plan-card p {
+  margin-top: 5px;
+  color: #667386;
+  font-size: 13px;
+}
+
+.subscription-plan-card dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.subscription-plan-card dt {
+  color: #667386;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.subscription-plan-card dd {
+  margin: 3px 0 0;
+  color: #263447;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.subscription-plan-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.plan-state,
+.subscription-status {
+  min-height: 28px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.plan-state.active,
+.subscription-status.status-active,
+.subscription-status.status-trialing {
+  background: #e7f5ee;
+  color: #278452;
+}
+
+.plan-state.inactive,
+.subscription-status.status-expired,
+.subscription-status.status-cancelled {
+  background: #edf1f5;
+  color: #667386;
+}
+
+.subscription-status.status-past-due {
+  background: #fff6df;
+  color: #9a6b18;
+}
+
+.subscription-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.subscription-search-row form label {
+  display: grid;
+  gap: 6px;
+  color: #667386;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.subscription-search-row form label div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.subscription-search-row input,
+.subscription-actions select {
+  width: 100%;
+  height: 40px;
+  border: 1px solid #d8e0e8;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #263447;
+  padding: 0 10px;
+  min-width: 0;
+}
+
+.subscriptions-table {
+  min-width: 1040px;
+}
+
+.subscription-actions {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) auto;
+  gap: 8px;
+  align-items: center;
 }
 
 .purchase-search-row {
@@ -986,13 +1152,21 @@ h3 {
   .admin-dashboard-grid,
   .admin-module-grid,
   .storage-node-form-grid,
+  .subscription-plan-form-grid,
+  .subscription-plan-grid,
+  .subscription-search-row,
   .purchase-search-row,
   .settings-form-grid,
   .heartbeat-form,
   .node-detail-grid,
   .node-actions,
-  .purchase-actions {
+  .purchase-actions,
+  .subscription-actions {
     grid-template-columns: 1fr;
+  }
+
+  .subscription-plan-form-grid .wide-field {
+    grid-column: span 1;
   }
 
   .settings-form-grid .wide-field {

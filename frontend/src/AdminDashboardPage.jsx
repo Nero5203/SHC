@@ -35,6 +35,19 @@ const purchaseStatusOptions = [
   { value: "4", label: "Refunded" }
 ];
 
+const billingIntervalOptions = [
+  { value: "0", label: "Monthly" },
+  { value: "1", label: "Yearly" }
+];
+
+const subscriptionStatusOptions = [
+  { value: "0", label: "Trialing" },
+  { value: "1", label: "Active" },
+  { value: "2", label: "Past Due" },
+  { value: "3", label: "Cancelled" },
+  { value: "4", label: "Expired" }
+];
+
 const emptyStorageNodeForm = {
   storageNodeId: "",
   name: "",
@@ -43,6 +56,18 @@ const emptyStorageNodeForm = {
   port: "",
   basePath: "",
   totalCapacityBytes: ""
+};
+
+const emptySubscriptionPlanForm = {
+  subscriptionPlanId: "",
+  name: "",
+  description: "",
+  price: "",
+  currency: "EUR",
+  billingInterval: "0",
+  storageLimitBytes: "",
+  maxFileSizeBytes: "",
+  isActive: true
 };
 
 const emptySystemSettingsForm = {
@@ -146,6 +171,14 @@ function AdminDashboardPage({ onLogout }) {
   const [loadingPurchases, setLoadingPurchases] = useState(false);
   const [purchasesError, setPurchasesError] = useState("");
   const [purchaseActionKey, setPurchaseActionKey] = useState("");
+  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [subscriptionPlanForm, setSubscriptionPlanForm] = useState(emptySubscriptionPlanForm);
+  const [subscriptionUserIdSearch, setSubscriptionUserIdSearch] = useState("");
+  const [selectedPlanBySubscription, setSelectedPlanBySubscription] = useState({});
+  const [loadingSubscriptions, setLoadingSubscriptions] = useState(false);
+  const [subscriptionsError, setSubscriptionsError] = useState("");
+  const [subscriptionActionKey, setSubscriptionActionKey] = useState("");
   const [systemSettings, setSystemSettings] = useState(null);
   const [systemSettingsForm, setSystemSettingsForm] = useState(emptySystemSettingsForm);
   const [loadingSystemSettings, setLoadingSystemSettings] = useState(false);
@@ -471,6 +504,130 @@ function AdminDashboardPage({ onLogout }) {
     }
   }
 
+  const loadSubscriptionDashboard = useCallback(async () => {
+    setLoadingSubscriptions(true);
+    setSubscriptionsError("");
+
+    try {
+      const [plansData, subscriptionsData] = await Promise.all([
+        getJson(apiUrl, "/api/subscriptions/plans?activeOnly=false"),
+        getJson(apiUrl, "/api/subscriptions")
+      ]);
+
+      const safePlans = Array.isArray(plansData) ? plansData : [];
+      const safeSubscriptions = Array.isArray(subscriptionsData) ? subscriptionsData : [];
+
+      setSubscriptionPlans(safePlans);
+      setSubscriptions(safeSubscriptions);
+      setSelectedPlanBySubscription(
+        Object.fromEntries(
+          safeSubscriptions.map((subscription) => [
+            getValue(subscription, "subscriptionId", "SubscriptionId"),
+            getValue(subscription, "subscriptionPlanId", "SubscriptionPlanId")
+          ])
+        )
+      );
+    } catch (error) {
+      setSubscriptionsError(error.message);
+    } finally {
+      setLoadingSubscriptions(false);
+    }
+  }, [apiUrl]);
+
+  async function handleSaveSubscriptionPlan(event) {
+    event.preventDefault();
+    const isEditing = !!subscriptionPlanForm.subscriptionPlanId;
+    const actionKey = isEditing ? `${subscriptionPlanForm.subscriptionPlanId}:plan` : "create-plan";
+
+    setSubscriptionActionKey(actionKey);
+    setSubscriptionsError("");
+
+    const body = {
+      Name: subscriptionPlanForm.name.trim(),
+      Description: subscriptionPlanForm.description.trim() || null,
+      Price: Number(subscriptionPlanForm.price),
+      Currency: subscriptionPlanForm.currency.trim().toUpperCase(),
+      BillingInterval: Number(subscriptionPlanForm.billingInterval),
+      StorageLimitBytes: Number(subscriptionPlanForm.storageLimitBytes),
+      MaxFileSizeBytes: toNullableNumber(subscriptionPlanForm.maxFileSizeBytes),
+      IsActive: subscriptionPlanForm.isActive
+    };
+
+    try {
+      if (isEditing) {
+        await putJson(apiUrl, `/api/subscriptions/plans/${subscriptionPlanForm.subscriptionPlanId}`, body);
+      } else {
+        await postJson(apiUrl, "/api/subscriptions/plans", body);
+      }
+
+      setSubscriptionPlanForm(emptySubscriptionPlanForm);
+      await loadSubscriptionDashboard();
+    } catch (error) {
+      setSubscriptionsError(error.message);
+    } finally {
+      setSubscriptionActionKey("");
+    }
+  }
+
+  function handleEditSubscriptionPlan(plan) {
+    setSubscriptionPlanForm(mapSubscriptionPlanToForm(plan));
+  }
+
+  async function handleFindUserSubscriptions(event) {
+    event.preventDefault();
+    const userId = subscriptionUserIdSearch.trim();
+    if (!userId) return;
+
+    setLoadingSubscriptions(true);
+    setSubscriptionsError("");
+
+    try {
+      const data = await getJson(apiUrl, `/api/subscriptions/user/${userId}`);
+      const safeSubscriptions = Array.isArray(data) ? data : [];
+      setSubscriptions(safeSubscriptions);
+      setSelectedPlanBySubscription(
+        Object.fromEntries(
+          safeSubscriptions.map((subscription) => [
+            getValue(subscription, "subscriptionId", "SubscriptionId"),
+            getValue(subscription, "subscriptionPlanId", "SubscriptionPlanId")
+          ])
+        )
+      );
+    } catch (error) {
+      setSubscriptionsError(error.message);
+      setSubscriptions([]);
+    } finally {
+      setLoadingSubscriptions(false);
+    }
+  }
+
+  async function handleChangeSubscriptionPlan(subscriptionId) {
+    const subscriptionPlanId = selectedPlanBySubscription[subscriptionId];
+    if (!subscriptionPlanId) return;
+
+    const actionKey = `${subscriptionId}:change-plan`;
+    setSubscriptionActionKey(actionKey);
+    setSubscriptionsError("");
+
+    try {
+      const updatedSubscription = await putJson(apiUrl, `/api/subscriptions/${subscriptionId}/plan`, {
+        SubscriptionPlanId: subscriptionPlanId
+      });
+
+      setSubscriptions((current) =>
+        current.map((subscription) =>
+          getValue(subscription, "subscriptionId", "SubscriptionId") === subscriptionId
+            ? updatedSubscription
+            : subscription
+        )
+      );
+    } catch (error) {
+      setSubscriptionsError(error.message);
+    } finally {
+      setSubscriptionActionKey("");
+    }
+  }
+
   const loadSystemSettings = useCallback(async () => {
     setLoadingSystemSettings(true);
     setSystemSettingsError("");
@@ -626,6 +783,12 @@ function AdminDashboardPage({ onLogout }) {
   }, [activeModuleKey, loadPurchases]);
 
   useEffect(() => {
+    if (activeModuleKey === "subscriptions") {
+      loadSubscriptionDashboard();
+    }
+  }, [activeModuleKey, loadSubscriptionDashboard]);
+
+  useEffect(() => {
     if (activeModuleKey === "settings") {
       loadSystemSettings();
     }
@@ -682,7 +845,7 @@ function AdminDashboardPage({ onLogout }) {
 
         <section className="content-grid admin-dashboard-grid">
           <section className="admin-main">
-            {!["users", "storage", "purchases", "settings"].includes(activeModule?.key) && (
+            {!["users", "storage", "purchases", "subscriptions", "settings"].includes(activeModule?.key) && (
               <>
                 <div className="section-heading">
                   <h2>Authorized Modules</h2>
@@ -1189,6 +1352,265 @@ function AdminDashboardPage({ onLogout }) {
                   </div>
                 )}
               </section>
+            ) : activeModule?.key === "subscriptions" ? (
+              <section className="panel subscriptions-admin-panel">
+                <div className="subscriptions-admin-header">
+                  <div>
+                    <p className="eyebrow">Billing</p>
+                    <h2>Subscriptions</h2>
+                    <p>View subscriptions, add or edit plans, and move a subscription to another plan.</p>
+                  </div>
+                  <button className="secondary-button" disabled={loadingSubscriptions} onClick={loadSubscriptionDashboard} type="button">
+                    {loadingSubscriptions ? "Refreshing..." : "Refresh"}
+                  </button>
+                </div>
+
+                {subscriptionsError && <p className="inline-error">{subscriptionsError}</p>}
+
+                <form className="subscription-plan-form" onSubmit={handleSaveSubscriptionPlan}>
+                  <div className="subscription-plan-form-header">
+                    <div>
+                      <h3>{subscriptionPlanForm.subscriptionPlanId ? "Edit Plan" : "Add Plan"}</h3>
+                      <p>{subscriptionPlanForm.subscriptionPlanId ? "Update the selected subscription plan." : "Create a plan users can subscribe to."}</p>
+                    </div>
+                    {subscriptionPlanForm.subscriptionPlanId && (
+                      <button className="secondary-button" onClick={() => setSubscriptionPlanForm(emptySubscriptionPlanForm)} type="button">
+                        Cancel Edit
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="subscription-plan-form-grid">
+                    <label>
+                      Name
+                      <input
+                        required
+                        value={subscriptionPlanForm.name}
+                        onChange={(event) => setSubscriptionPlanForm((current) => ({ ...current, name: event.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      Price
+                      <input
+                        min="0"
+                        required
+                        step="0.01"
+                        type="number"
+                        value={subscriptionPlanForm.price}
+                        onChange={(event) => setSubscriptionPlanForm((current) => ({ ...current, price: event.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      Currency
+                      <input
+                        maxLength="3"
+                        required
+                        value={subscriptionPlanForm.currency}
+                        onChange={(event) => setSubscriptionPlanForm((current) => ({ ...current, currency: event.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      Billing Interval
+                      <select
+                        value={subscriptionPlanForm.billingInterval}
+                        onChange={(event) => setSubscriptionPlanForm((current) => ({ ...current, billingInterval: event.target.value }))}
+                      >
+                        {billingIntervalOptions.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Storage Limit Bytes
+                      <input
+                        min="1"
+                        required
+                        type="number"
+                        value={subscriptionPlanForm.storageLimitBytes}
+                        onChange={(event) => setSubscriptionPlanForm((current) => ({ ...current, storageLimitBytes: event.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      Max File Size Bytes
+                      <input
+                        min="1"
+                        type="number"
+                        value={subscriptionPlanForm.maxFileSizeBytes}
+                        onChange={(event) => setSubscriptionPlanForm((current) => ({ ...current, maxFileSizeBytes: event.target.value }))}
+                      />
+                    </label>
+                    <label className="wide-field">
+                      Description
+                      <input
+                        value={subscriptionPlanForm.description}
+                        onChange={(event) => setSubscriptionPlanForm((current) => ({ ...current, description: event.target.value }))}
+                      />
+                    </label>
+                    <label className="toggle-row">
+                      <input
+                        checked={subscriptionPlanForm.isActive}
+                        type="checkbox"
+                        onChange={(event) => setSubscriptionPlanForm((current) => ({ ...current, isActive: event.target.checked }))}
+                      />
+                      Active plan
+                    </label>
+                  </div>
+
+                  <button className="primary-button" disabled={!!subscriptionActionKey} type="submit">
+                    {subscriptionPlanForm.subscriptionPlanId
+                      ? subscriptionActionKey ? "Saving..." : "Save Plan"
+                      : subscriptionActionKey === "create-plan" ? "Adding..." : "Add Plan"}
+                  </button>
+                </form>
+
+                <section className="subscription-plan-list">
+                  <div className="section-heading">
+                    <h2>Plans</h2>
+                    <p>All active and inactive plans.</p>
+                  </div>
+                  {subscriptionPlans.length === 0 ? (
+                    <p className="empty-text">No subscription plans found.</p>
+                  ) : (
+                    <div className="subscription-plan-grid">
+                      {subscriptionPlans.map((plan) => {
+                        const planId = getValue(plan, "subscriptionPlanId", "SubscriptionPlanId");
+
+                        return (
+                          <article className="subscription-plan-card" key={planId}>
+                            <div>
+                              <h3>{getValue(plan, "name", "Name")}</h3>
+                              <p>{getValue(plan, "description", "Description") || "No description"}</p>
+                            </div>
+                            <dl>
+                              <div>
+                                <dt>Price</dt>
+                                <dd>{formatMoney(getValue(plan, "price", "Price"), getValue(plan, "currency", "Currency"))}</dd>
+                              </div>
+                              <div>
+                                <dt>Interval</dt>
+                                <dd>{getBillingIntervalLabel(plan)}</dd>
+                              </div>
+                              <div>
+                                <dt>Storage</dt>
+                                <dd>{formatBytes(Number(getValue(plan, "storageLimitBytes", "StorageLimitBytes")) || 0)}</dd>
+                              </div>
+                              <div>
+                                <dt>Max File</dt>
+                                <dd>{formatBytes(Number(getValue(plan, "maxFileSizeBytes", "MaxFileSizeBytes")) || 0)}</dd>
+                              </div>
+                            </dl>
+                            <div className="subscription-plan-card-footer">
+                              <span className={`plan-state ${getBooleanValue(plan, "isActive", "IsActive") ? "active" : "inactive"}`}>
+                                {getBooleanValue(plan, "isActive", "IsActive") ? "Active" : "Inactive"}
+                              </span>
+                              <button className="secondary-button" onClick={() => handleEditSubscriptionPlan(plan)} type="button">
+                                Edit
+                              </button>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+
+                <div className="subscription-search-row">
+                  <form onSubmit={handleFindUserSubscriptions}>
+                    <label>
+                      Find Subscriptions By User Id
+                      <div>
+                        <input
+                          value={subscriptionUserIdSearch}
+                          onChange={(event) => setSubscriptionUserIdSearch(event.target.value)}
+                        />
+                        <button className="secondary-button" type="submit">Find</button>
+                      </div>
+                    </label>
+                  </form>
+                  <button className="secondary-button" disabled={loadingSubscriptions} onClick={loadSubscriptionDashboard} type="button">
+                    Show All Subscriptions
+                  </button>
+                </div>
+
+                {loadingSubscriptions ? (
+                  <p className="loading-text">Loading subscriptions...</p>
+                ) : subscriptions.length === 0 ? (
+                  <p className="empty-text">No subscriptions found.</p>
+                ) : (
+                  <div className="users-table-wrap">
+                    <table className="users-table subscriptions-table">
+                      <thead>
+                        <tr>
+                          <th>Subscription</th>
+                          <th>Users</th>
+                          <th>Plan</th>
+                          <th>Status</th>
+                          <th>Period</th>
+                          <th>Change Plan</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {subscriptions.map((subscription) => {
+                          const subscriptionId = getValue(subscription, "subscriptionId", "SubscriptionId");
+                          const selectedPlanId = selectedPlanBySubscription[subscriptionId]
+                            ?? getValue(subscription, "subscriptionPlanId", "SubscriptionPlanId");
+
+                          return (
+                            <tr key={subscriptionId}>
+                              <td>
+                                <strong>{subscriptionId}</strong>
+                                <span>{getValue(subscription, "providerSubscriptionId", "ProviderSubscriptionId") || "No provider id"}</span>
+                              </td>
+                              <td>{getUserIdsText(subscription)}</td>
+                              <td>
+                                <strong>{getValue(subscription, "planName", "PlanName")}</strong>
+                                <span>{getValue(subscription, "subscriptionPlanId", "SubscriptionPlanId")}</span>
+                              </td>
+                              <td>
+                                <span className={`subscription-status status-${getSubscriptionStatusLabel(subscription).toLowerCase().replace(/\s/g, "-")}`}>
+                                  {getSubscriptionStatusLabel(subscription)}
+                                </span>
+                              </td>
+                              <td>
+                                <strong>{formatDate(getValue(subscription, "currentPeriodStart", "CurrentPeriodStart"))}</strong>
+                                <span>to {formatDate(getValue(subscription, "currentPeriodEnd", "CurrentPeriodEnd"))}</span>
+                              </td>
+                              <td>
+                                <div className="subscription-actions">
+                                  <select
+                                    value={selectedPlanId}
+                                    onChange={(event) => setSelectedPlanBySubscription((current) => ({
+                                      ...current,
+                                      [subscriptionId]: event.target.value
+                                    }))}
+                                  >
+                                    {subscriptionPlans.map((plan) => {
+                                      const planId = getValue(plan, "subscriptionPlanId", "SubscriptionPlanId");
+                                      return (
+                                        <option key={planId} value={planId}>
+                                          {getValue(plan, "name", "Name")}
+                                        </option>
+                                      );
+                                    })}
+                                  </select>
+                                  <button
+                                    className="primary-button"
+                                    disabled={!selectedPlanId || subscriptionActionKey === `${subscriptionId}:change-plan`}
+                                    onClick={() => handleChangeSubscriptionPlan(subscriptionId)}
+                                    type="button"
+                                  >
+                                    {subscriptionActionKey === `${subscriptionId}:change-plan` ? "Saving..." : "Change"}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
             ) : activeModule?.key === "settings" ? (
               <section className="panel settings-admin-panel">
                 <div className="settings-admin-header">
@@ -1633,6 +2055,57 @@ function getPurchaseStatusValue(purchase) {
 function getPurchaseStatusLabel(purchase) {
   const status = getPurchaseStatusValue(purchase);
   return purchaseStatusOptions.find((option) => option.value === status)?.label ?? "Pending";
+}
+
+function getBillingIntervalValue(plan) {
+  const interval = getValue(plan, "billingInterval", "BillingInterval");
+  const matchingOption = billingIntervalOptions.find((option) =>
+    option.value === interval || option.label.toLowerCase() === interval.toLowerCase()
+  );
+
+  return matchingOption?.value ?? "0";
+}
+
+function getBillingIntervalLabel(plan) {
+  const interval = getBillingIntervalValue(plan);
+  return billingIntervalOptions.find((option) => option.value === interval)?.label ?? "Monthly";
+}
+
+function getSubscriptionStatusValue(subscription) {
+  const status = getValue(subscription, "status", "Status");
+  const matchingOption = subscriptionStatusOptions.find((option) =>
+    option.value === status || option.label.toLowerCase().replace(/\s/g, "") === status.toLowerCase().replace(/\s/g, "")
+  );
+
+  return matchingOption?.value ?? "0";
+}
+
+function getSubscriptionStatusLabel(subscription) {
+  const status = getSubscriptionStatusValue(subscription);
+  return subscriptionStatusOptions.find((option) => option.value === status)?.label ?? "Trialing";
+}
+
+function mapSubscriptionPlanToForm(plan) {
+  return {
+    subscriptionPlanId: getValue(plan, "subscriptionPlanId", "SubscriptionPlanId"),
+    name: getValue(plan, "name", "Name"),
+    description: getValue(plan, "description", "Description"),
+    price: getValue(plan, "price", "Price"),
+    currency: getValue(plan, "currency", "Currency") || "EUR",
+    billingInterval: getBillingIntervalValue(plan),
+    storageLimitBytes: getValue(plan, "storageLimitBytes", "StorageLimitBytes"),
+    maxFileSizeBytes: getValue(plan, "maxFileSizeBytes", "MaxFileSizeBytes"),
+    isActive: getBooleanValue(plan, "isActive", "IsActive")
+  };
+}
+
+function getUserIdsText(subscription) {
+  const userIds = subscription?.userIds ?? subscription?.UserIds ?? [];
+  if (!Array.isArray(userIds) || userIds.length === 0) {
+    return "No users";
+  }
+
+  return userIds.join(", ");
 }
 
 function formatBytes(bytes) {

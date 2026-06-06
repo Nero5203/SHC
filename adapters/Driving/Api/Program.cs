@@ -220,6 +220,7 @@ builder.Services.AddScoped<IListSubscriptionPlansUseCase, ListSubscriptionPlansU
 builder.Services.AddScoped<IGetSubscriptionPlanByIdUseCase, GetSubscriptionPlanByIdUseCase>();
 builder.Services.AddScoped<IUpdateSubscriptionPlanUseCase, UpdateSubscriptionPlanUseCase>();
 builder.Services.AddScoped<ICreateSubscriptionUseCase, CreateSubscriptionUseCase>();
+builder.Services.AddScoped<IListSubscriptionsUseCase, ListSubscriptionsUseCase>();
 builder.Services.AddScoped<IGetSubscriptionByIdUseCase, GetSubscriptionByIdUseCase>();
 builder.Services.AddScoped<IGetUserSubscriptionsUseCase, GetUserSubscriptionsUseCase>();
 builder.Services.AddScoped<IGetActiveUserSubscriptionUseCase, GetActiveUserSubscriptionUseCase>();
