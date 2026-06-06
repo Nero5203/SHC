@@ -205,6 +205,25 @@ h2 {
   flex-wrap: wrap;
 }
 
+.form-footer-alt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #667386;
+}
+
+.form-footer-alt button {
+  background: transparent;
+  border: 0;
+  color: #2c8f8a;
+  font-weight: 800;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
 .primary-button,
 .secondary-button {
   min-height: 40px;

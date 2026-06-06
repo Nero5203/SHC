@@ -2,18 +2,14 @@ import { useState } from "react";
 import { defaultApiUrl, postJson } from "./apiClient.js";
 
 const initialForm = {
-  firstName: "",
-  lastName: "",
-  username: "",
   email: "",
-  phoneNumber: "",
   password: ""
 };
 
-function RegisterUserPage({ onLogout }) {
+function LoginUserPage({ onLogout }) {
   const [apiUrl, setApiUrl] = useState(() => localStorage.getItem("shc.apiUrl") || defaultApiUrl);
   const [form, setForm] = useState(initialForm);
-  const [status, setStatus] = useState({ type: "idle", message: "Ready to register a user." });
+  const [status, setStatus] = useState({ type: "idle", message: "Ready to log in." });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function updateApiUrl(value) {
@@ -28,16 +24,14 @@ function RegisterUserPage({ onLogout }) {
   async function handleSubmit(event) {
     event.preventDefault();
     setIsSubmitting(true);
-    setStatus({ type: "loading", message: "Registering user..." });
+    setStatus({ type: "loading", message: "Logging in..." });
 
     try {
-      const result = await postJson(apiUrl, "/api/auth/register", form);
-      setForm(initialForm);
+      const result = await postJson(apiUrl, "/api/auth/login", form);
       setStatus({
         type: "success",
-        message: typeof result === "string" && result ? result : "User registered successfully."
+        message: result?.token ? "Logged in successfully." : "Logged in successfully."
       });
-      onLogout("login");
     } catch (error) {
       setStatus({ type: "error", message: error.message });
     } finally {
@@ -57,11 +51,11 @@ function RegisterUserPage({ onLogout }) {
         </div>
 
         <nav className="module-list" aria-label="Frontend modules">
-          <button className="module-item active" type="button">
+          <button className="module-item" onClick={() => onLogout("register")} type="button">
             <span>Register User</span>
             <small>Auth</small>
           </button>
-          <button className="module-item" onClick={() => onLogout("login")} type="button">
+          <button className="module-item active" type="button">
             <span>Login</span>
             <small>Auth</small>
           </button>
@@ -72,7 +66,7 @@ function RegisterUserPage({ onLogout }) {
         <header className="topbar">
           <div>
             <p className="eyebrow">Auth Module</p>
-            <h1>Register User</h1>
+            <h1>Login</h1>
           </div>
           <label className="api-field">
             API URL
@@ -84,39 +78,12 @@ function RegisterUserPage({ onLogout }) {
           <form className="panel register-form" onSubmit={handleSubmit}>
             <div className="form-header">
               <div>
-                <h2>New Account</h2>
-                <p>Create a user through the backend auth endpoint.</p>
+                <h2>Sign In</h2>
+                <p>Log in using your account credentials.</p>
               </div>
             </div>
 
             <div className="form-grid">
-              <label>
-                First Name
-                <input
-                  value={form.firstName}
-                  onChange={(event) => updateField("firstName", event.target.value)}
-                  required
-                />
-              </label>
-
-              <label>
-                Last Name
-                <input
-                  value={form.lastName}
-                  onChange={(event) => updateField("lastName", event.target.value)}
-                  required
-                />
-              </label>
-
-              <label>
-                Username
-                <input
-                  value={form.username}
-                  onChange={(event) => updateField("username", event.target.value)}
-                  required
-                />
-              </label>
-
               <label>
                 Email
                 <input
@@ -124,15 +91,6 @@ function RegisterUserPage({ onLogout }) {
                   onChange={(event) => updateField("email", event.target.value)}
                   required
                   type="email"
-                />
-              </label>
-
-              <label>
-                Phone Number
-                <input
-                  value={form.phoneNumber}
-                  onChange={(event) => updateField("phoneNumber", event.target.value)}
-                  required
                 />
               </label>
 
@@ -149,15 +107,15 @@ function RegisterUserPage({ onLogout }) {
 
             <div className="form-footer">
               <button className="primary-button" disabled={isSubmitting} type="submit">
-                {isSubmitting ? "Registering..." : "Register User"}
+                {isSubmitting ? "Logging in..." : "Login"}
               </button>
               <button className="secondary-button" disabled={isSubmitting} type="button" onClick={() => setForm(initialForm)}>
                 Clear
               </button>
               <span className="form-footer-alt">
-                Already have an account?{" "}
-                <button type="button" onClick={() => onLogout("login")}>
-                  Login
+                Don't have an account?{" "}
+                <button type="button" onClick={() => onLogout("register")}>
+                  Register
                 </button>
               </span>
             </div>
@@ -169,7 +127,7 @@ function RegisterUserPage({ onLogout }) {
             <dl>
               <div>
                 <dt>Endpoint</dt>
-                <dd>POST /api/auth/register</dd>
+                <dd>POST /api/auth/login</dd>
               </div>
               <div>
                 <dt>Backend</dt>
@@ -183,4 +141,4 @@ function RegisterUserPage({ onLogout }) {
   );
 }
 
-export default RegisterUserPage;
+export default LoginUserPage;
