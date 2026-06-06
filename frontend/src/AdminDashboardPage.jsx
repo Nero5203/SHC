@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   clearAuth,
   defaultApiUrl,
+  deleteJson,
   getJson,
   getPermissionsFromToken,
   getRolesFromToken,
@@ -82,6 +83,13 @@ function AdminDashboardPage({ onLogout }) {
   const [activeModuleKey, setActiveModuleKey] = useState("users");
   const [counts, setCounts] = useState({});
   const [loadingCounts, setLoadingCounts] = useState(false);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [availableRoles, setAvailableRoles] = useState([]);
+  const [userRoleMap, setUserRoleMap] = useState({});
+  const [selectedRoleByUser, setSelectedRoleByUser] = useState({});
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [usersError, setUsersError] = useState("");
+  const [roleActionKey, setRoleActionKey] = useState("");
 
   const roles = getRolesFromToken();
   const permissions = getPermissionsFromToken();
@@ -102,6 +110,76 @@ function AdminDashboardPage({ onLogout }) {
   function updateApiUrl(value) {
     setApiUrl(value);
     localStorage.setItem("shc.apiUrl", value);
+  }
+
+  const loadUsersWithRoles = useCallback(async () => {
+    setLoadingUsers(true);
+    setUsersError("");
+
+    try {
+      const [users, roleList] = await Promise.all([
+        getJson(apiUrl, "/api/users"),
+        getJson(apiUrl, "/api/roles")
+      ]);
+
+      const safeUsers = Array.isArray(users) ? users : [];
+      const safeRoles = Array.isArray(roleList) ? roleList : [];
+
+      setAdminUsers(safeUsers);
+      setAvailableRoles(safeRoles);
+
+      const userRoleEntries = await Promise.all(
+        safeUsers.map(async (user) => {
+          const userId = getValue(user, "userId", "UserId");
+          if (!userId) return ["", []];
+
+          try {
+            const userRoles = await getJson(apiUrl, `/api/roles/user/${userId}`);
+            return [userId, Array.isArray(userRoles) ? userRoles : []];
+          } catch (error) {
+            return [userId, []];
+          }
+        })
+      );
+
+      setUserRoleMap(Object.fromEntries(userRoleEntries.filter(([userId]) => userId)));
+    } catch (error) {
+      setUsersError(error.message);
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, [apiUrl]);
+
+  async function handleAssignRole(userId) {
+    const roleId = selectedRoleByUser[userId];
+    if (!roleId) return;
+
+    const actionKey = `${userId}:${roleId}:assign`;
+    setRoleActionKey(actionKey);
+
+    try {
+      await postJson(apiUrl, `/api/roles/${roleId}/users/${userId}`, {});
+      setSelectedRoleByUser((current) => ({ ...current, [userId]: "" }));
+      await loadUsersWithRoles();
+    } catch (error) {
+      setUsersError(error.message);
+    } finally {
+      setRoleActionKey("");
+    }
+  }
+
+  async function handleRemoveRole(userId, roleId) {
+    const actionKey = `${userId}:${roleId}:remove`;
+    setRoleActionKey(actionKey);
+
+    try {
+      await deleteJson(apiUrl, `/api/roles/${roleId}/users/${userId}`);
+      await loadUsersWithRoles();
+    } catch (error) {
+      setUsersError(error.message);
+    } finally {
+      setRoleActionKey("");
+    }
   }
 
   async function handleLogout() {
@@ -162,6 +240,12 @@ function AdminDashboardPage({ onLogout }) {
     };
   }, [apiUrl, visibleModules]);
 
+  useEffect(() => {
+    if (activeModuleKey === "users") {
+      loadUsersWithRoles();
+    }
+  }, [activeModuleKey, loadUsersWithRoles]);
+
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -213,31 +297,154 @@ function AdminDashboardPage({ onLogout }) {
 
         <section className="content-grid admin-dashboard-grid">
           <section className="admin-main">
-            <div className="section-heading">
-              <h2>Authorized Modules</h2>
-              <p>These are the backend areas your token allows you to use.</p>
-            </div>
+            {activeModule?.key !== "users" && (
+              <>
+                <div className="section-heading">
+                  <h2>Authorized Modules</h2>
+                  <p>These are the backend areas your token allows you to use.</p>
+                </div>
 
-            <div className="admin-module-grid">
-              {visibleModules.map((module) => (
-                <article
-                  className={`panel module-card ${activeModule?.key === module.key ? "selected" : ""}`}
-                  key={module.key}
-                >
+                <div className="admin-module-grid">
+                  {visibleModules.map((module) => (
+                    <article
+                      className={`panel module-card ${activeModule?.key === module.key ? "selected" : ""}`}
+                      key={module.key}
+                    >
+                      <div>
+                        <span className="module-area">{module.area}</span>
+                        <h2>{module.title}</h2>
+                        <p>{module.description}</p>
+                      </div>
+                      <div className="module-meta">
+                        <span>{module.route}</span>
+                        <strong>{formatCount(counts[module.key], loadingCounts)}</strong>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {activeModule?.key === "users" ? (
+              <section className="panel users-admin-panel">
+                <div className="users-admin-header">
                   <div>
-                    <span className="module-area">{module.area}</span>
-                    <h2>{module.title}</h2>
-                    <p>{module.description}</p>
+                    <p className="eyebrow">Accounts</p>
+                    <h2>Users</h2>
+                    <p>View registered users, see their current roles, and assign or remove roles.</p>
                   </div>
-                  <div className="module-meta">
-                    <span>{module.route}</span>
-                    <strong>{formatCount(counts[module.key], loadingCounts)}</strong>
-                  </div>
-                </article>
-              ))}
-            </div>
+                  <button className="secondary-button" disabled={loadingUsers} onClick={loadUsersWithRoles} type="button">
+                    {loadingUsers ? "Refreshing..." : "Refresh"}
+                  </button>
+                </div>
 
-            {activeModule && (
+                {usersError && <p className="inline-error">{usersError}</p>}
+
+                {loadingUsers ? (
+                  <p className="loading-text">Loading users...</p>
+                ) : adminUsers.length === 0 ? (
+                  <p className="empty-text">No users found.</p>
+                ) : (
+                  <div className="users-table-wrap">
+                    <table className="users-table">
+                      <thead>
+                        <tr>
+                          <th>User</th>
+                          <th>Email</th>
+                          <th>Roles</th>
+                          <th>Assign Role</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {adminUsers.map((user) => {
+                          const userId = getValue(user, "userId", "UserId");
+                          const userRoles = userRoleMap[userId] ?? [];
+                          const assignedRoleIds = new Set(
+                            userRoles.map((role) => getValue(role, "roleId", "RoleId"))
+                          );
+                          const assignableRoles = availableRoles.filter((role) =>
+                            !assignedRoleIds.has(getValue(role, "roleId", "RoleId"))
+                          );
+                          const selectedRoleId = selectedRoleByUser[userId] ?? "";
+
+                          return (
+                            <tr key={userId}>
+                              <td>
+                                <strong>{getUserDisplayName(user)}</strong>
+                                <span>{getValue(user, "username", "Username")}</span>
+                              </td>
+                              <td>{getValue(user, "email", "Email")}</td>
+                              <td>
+                                <div className="role-chip-list">
+                                  {userRoles.length > 0 ? (
+                                    userRoles.map((role) => {
+                                      const roleId = getValue(role, "roleId", "RoleId");
+                                      const roleName = getValue(role, "roleName", "RoleName");
+                                      const isRemoving = roleActionKey === `${userId}:${roleId}:remove`;
+
+                                      return (
+                                        <span className="role-chip" key={roleId}>
+                                          {roleName}
+                                          <button
+                                            aria-label={`Remove ${roleName}`}
+                                            disabled={isRemoving}
+                                            onClick={() => handleRemoveRole(userId, roleId)}
+                                            type="button"
+                                          >
+                                            {isRemoving ? "..." : "x"}
+                                          </button>
+                                        </span>
+                                      );
+                                    })
+                                  ) : (
+                                    <span className="muted-text">No role</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td>
+                                <div className="role-assign-control">
+                                  <select
+                                    value={selectedRoleId}
+                                    onChange={(event) =>
+                                      setSelectedRoleByUser((current) => ({
+                                        ...current,
+                                        [userId]: event.target.value
+                                      }))
+                                    }
+                                  >
+                                    <option value="">
+                                      {assignableRoles.length > 0 ? "Choose role" : "All roles assigned"}
+                                    </option>
+                                    {assignableRoles.map((role) => {
+                                      const roleId = getValue(role, "roleId", "RoleId");
+                                      const roleName = getValue(role, "name", "Name");
+
+                                      return (
+                                        <option key={roleId} value={roleId}>
+                                          {roleName}
+                                        </option>
+                                      );
+                                    })}
+                                  </select>
+                                  <button
+                                    className="primary-button"
+                                    disabled={!selectedRoleId || roleActionKey === `${userId}:${selectedRoleId}:assign`}
+                                    onClick={() => handleAssignRole(userId)}
+                                    type="button"
+                                  >
+                                    {roleActionKey === `${userId}:${selectedRoleId}:assign` ? "Saving..." : "Assign"}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            ) : activeModule && (
               <section className="panel module-detail">
                 <div>
                   <p className="eyebrow">{activeModule.area}</p>
@@ -301,6 +508,24 @@ function cleanDisplayName(value) {
   }
 
   return text;
+}
+
+function getValue(source, ...keys) {
+  for (const key of keys) {
+    const value = source?.[key];
+    if (value !== undefined && value !== null && String(value).trim()) {
+      return String(value).trim();
+    }
+  }
+
+  return "";
+}
+
+function getUserDisplayName(user) {
+  const firstName = getValue(user, "firstName", "FirstName");
+  const lastName = getValue(user, "lastName", "LastName");
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
+  return fullName || getValue(user, "username", "Username") || getValue(user, "email", "Email") || "User";
 }
 
 export default AdminDashboardPage;
