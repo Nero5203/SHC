@@ -315,6 +315,165 @@ h2 {
   gap: 16px;
 }
 
+.sidebar-footer {
+  margin-top: auto;
+  display: grid;
+  gap: 8px;
+}
+
+.admin-dashboard-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+}
+
+.admin-main {
+  display: grid;
+  gap: 16px;
+}
+
+.section-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.section-heading p {
+  color: #667386;
+  font-size: 13px;
+}
+
+.admin-module-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.module-card {
+  min-height: 172px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.module-card.selected {
+  border-color: #2c8f8a;
+  box-shadow: inset 3px 0 0 #2c8f8a;
+}
+
+.module-area {
+  color: #2c8f8a;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.module-card h2 {
+  margin-top: 6px;
+}
+
+.module-card p,
+.module-detail p {
+  margin-top: 8px;
+  color: #667386;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.module-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #667386;
+  font-size: 12px;
+}
+
+.module-meta span {
+  overflow-wrap: anywhere;
+}
+
+.module-meta strong {
+  min-width: 58px;
+  min-height: 28px;
+  border-radius: 8px;
+  background: #eef6f6;
+  color: #2c8f8a;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 8px;
+  text-align: center;
+}
+
+.module-detail {
+  display: grid;
+  gap: 12px;
+}
+
+.module-detail dl {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.module-detail div {
+  display: grid;
+  gap: 4px;
+}
+
+.module-detail dt {
+  color: #667386;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.module-detail dd {
+  margin: 0;
+  color: #263447;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.pill-list,
+.permission-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.pill-list span,
+.permission-list span {
+  min-height: 28px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.pill-list span {
+  background: #eef6f6;
+  color: #2c8f8a;
+}
+
+.permission-list span {
+  background: #edf1f5;
+  color: #344255;
+}
+
+.pill-list.compact,
+.permission-list.compact {
+  margin-top: 10px;
+  gap: 6px;
+}
+
+@media (max-width: 940px) {
+  .admin-dashboard-grid,
+  .admin-module-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .profile-card h2,
 .storage-card h2,
 .notifications-header h2 {

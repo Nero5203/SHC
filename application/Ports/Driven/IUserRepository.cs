@@ -8,8 +8,9 @@ namespace application.Ports.Driven
         Task CreateAsync(User user);
         Task<User?> GetByEmailAsync(string email);
         Task<User?> GetByIdAsync(Guid userId);
+        Task<IReadOnlyList<User>> GetAllAsync();
         Task<User?> GetWithSettingsByIdAsync(Guid userId);
-            Task<UserCredential?> GetCredentialsByEmailAsync(string email);
+        Task<UserCredential?> GetCredentialsByEmailAsync(string email);
 
         Task UpdateAsync(User user);
         Task DeleteAsync(User user);

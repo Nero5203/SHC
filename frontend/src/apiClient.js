@@ -80,20 +80,62 @@ export function isAuthenticated() {
   return !!getAuthToken();
 }
 
-export function getUserIdFromToken() {
-  const token = getAuthToken();
+export function decodeTokenPayload(token = getAuthToken()) {
   if (!token) return null;
 
   try {
     const payload = token.split(".")[1];
-    const decoded = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
-    return decoded.nameid
-      || decoded.sub
-      || decoded[ClaimTypes.NameIdentifier]
-      || decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(base64.length + ((4 - base64.length % 4) % 4), "=");
+    return JSON.parse(atob(padded));
   } catch (error) {
     return null;
   }
+}
+
+export function getUserIdFromToken(token = getAuthToken()) {
+  const decoded = decodeTokenPayload(token);
+  if (!decoded) return null;
+
+  return decoded.nameid
+    || decoded.sub
+    || decoded[ClaimTypes.NameIdentifier];
+}
+
+export function getUserNameFromToken(token = getAuthToken()) {
+  const decoded = decodeTokenPayload(token);
+  if (!decoded) return "";
+
+  return decoded[ClaimTypes.Name]
+    || decoded.name
+    || decoded.unique_name
+    || decoded[ClaimTypes.Email]
+    || decoded.email
+    || "";
+}
+
+export function getRolesFromToken(token = getAuthToken()) {
+  return getClaimValues(decodeTokenPayload(token), ClaimTypes.Role, "role", "roles");
+}
+
+export function getPermissionsFromToken(token = getAuthToken()) {
+  return getClaimValues(decodeTokenPayload(token), "permission", "permissions");
+}
+
+export function hasRole(role, token = getAuthToken()) {
+  return getRolesFromToken(token).some((value) => sameText(value, role));
+}
+
+export function hasPermission(permission, token = getAuthToken()) {
+  return getPermissionsFromToken(token).some((value) => sameText(value, permission));
+}
+
+export function isAdminToken(token = getAuthToken()) {
+  return hasRole("Admin", token) || hasPermission("System.Admin", token);
+}
+
+export function getDashboardPageFromToken(token = getAuthToken()) {
+  return isAdminToken(token) ? "admin" : "home";
 }
 
 export function extractTokens(loginResponse) {
@@ -117,8 +159,28 @@ export function extractTokens(loginResponse) {
 export const ClaimTypes = {
   NameIdentifier: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier",
   Email: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
-  Name: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"
+  Name: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name",
+  Role: "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
 };
+
+function getClaimValues(payload, ...claimNames) {
+  if (!payload) return [];
+
+  return claimNames
+    .flatMap((claimName) => normalizeClaimValue(payload[claimName]))
+    .filter((value) => typeof value === "string" && value.trim())
+    .map((value) => value.trim());
+}
+
+function normalizeClaimValue(value) {
+  if (Array.isArray(value)) return value;
+  if (value === undefined || value === null) return [];
+  return [value];
+}
+
+function sameText(left, right) {
+  return String(left).toLowerCase() === String(right).toLowerCase();
+}
 
 async function handleResponse(response) {
   const contentType = response.headers.get("content-type") ?? "";

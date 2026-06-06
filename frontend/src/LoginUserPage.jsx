@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { defaultApiUrl, extractTokens, postJson, setAuthToken, setRefreshToken } from "./apiClient.js";
+import {
+  defaultApiUrl,
+  extractTokens,
+  getDashboardPageFromToken,
+  postJson,
+  setAuthToken,
+  setRefreshToken
+} from "./apiClient.js";
 
 const initialForm = {
   email: "",
@@ -39,12 +46,16 @@ function LoginUserPage({ onLogout }) {
         setRefreshToken(refreshToken);
       }
 
+      const nextPage = getDashboardPageFromToken(accessToken);
+
       setStatus({
         type: "success",
-        message: "Logged in successfully."
+        message: nextPage === "admin"
+          ? "Logged in successfully. Opening admin dashboard..."
+          : "Logged in successfully. Opening your dashboard..."
       });
 
-      setTimeout(() => onLogout("home"), 800);
+      setTimeout(() => onLogout(nextPage), 800);
     } catch (error) {
       setStatus({ type: "error", message: error.message });
     } finally {

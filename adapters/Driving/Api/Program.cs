@@ -197,6 +197,7 @@ builder.Services.AddDbContext<ShcDbContext>(options =>
 StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IGetAllUsersUseCase, GetAllUsersUseCase>();
 builder.Services.AddScoped<IGetUserByEmailUseCase, GetUserByEmailUseCase>();
 builder.Services.AddScoped<IGetUserByIdUseCase, GetUserByIdUseCase>();
 builder.Services.AddScoped<IGetUserSettingsUseCase, GetUserSettingsUseCase>();

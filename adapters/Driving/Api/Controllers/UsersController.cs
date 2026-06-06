@@ -11,6 +11,7 @@ namespace api.Controllers
     [Route("api/users")]
     public class UsersController : ControllerBase
     {
+        private readonly IGetAllUsersUseCase _getAllUsersUseCase;
         private readonly IGetUserByIdUseCase _getUserByIdUseCase;
         private readonly IGetUserByEmailUseCase _getUserByEmailUseCase;
         private readonly IGetUserSettingsUseCase _getUserSettingsUseCase;
@@ -19,6 +20,7 @@ namespace api.Controllers
         private readonly IDeleteUserUseCase _deleteUserUseCase;
 
         public UsersController(
+            IGetAllUsersUseCase getAllUsersUseCase,
             IGetUserByIdUseCase getUserByIdUseCase,
             IGetUserByEmailUseCase getUserByEmailUseCase,
             IGetUserSettingsUseCase getUserSettingsUseCase,
@@ -26,12 +28,26 @@ namespace api.Controllers
             IUpdateUserSettingsUseCase updateUserSettingsUseCase,
             IDeleteUserUseCase deleteUserUseCase)
         {
+            _getAllUsersUseCase = getAllUsersUseCase;
             _getUserByIdUseCase = getUserByIdUseCase;
             _getUserByEmailUseCase = getUserByEmailUseCase;
             _getUserSettingsUseCase = getUserSettingsUseCase;
             _updateUserProfileUseCase = updateUserProfileUseCase;
             _updateUserSettingsUseCase = updateUserSettingsUseCase;
             _deleteUserUseCase = deleteUserUseCase;
+        }
+
+        [HttpGet]
+        [Authorize(Policy = AuthorizationPolicies.Admin)]
+        public async Task<ActionResult<IReadOnlyList<UserResponseDto>>> GetAllUsers()
+        {
+            var users = await _getAllUsersUseCase.ExecuteAsync();
+
+            var response = users
+                .Select(MapUser)
+                .ToList();
+
+            return Ok(response);
         }
 
         [HttpGet("by-email")]
@@ -44,20 +60,7 @@ namespace api.Controllers
                 return NotFound();
             }
 
-            var response = new UserResponseDto
-            {
-                UserId = user.UserId,
-                Username = user.Username,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Email = user.Email,
-                ProfilePictureUrl = user.ProfilePictureUrl,
-                PhoneNumber = user.PhoneNumber,
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt
-            };
-
-            return Ok(response);
+            return Ok(MapUser(user));
         }
 
         [HttpGet("{userId:guid}")]
@@ -70,20 +73,7 @@ namespace api.Controllers
                 return NotFound();
             }
 
-            var response = new UserResponseDto
-            {
-                UserId = user.UserId,
-                Username = user.Username,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Email = user.Email,
-                ProfilePictureUrl = user.ProfilePictureUrl,
-                PhoneNumber = user.PhoneNumber,
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt
-            };
-
-            return Ok(response);
+            return Ok(MapUser(user));
         }
 
         [HttpPut("{userId}")]
@@ -105,20 +95,7 @@ namespace api.Controllers
                 return NotFound();
             }
 
-            var response = new UserResponseDto
-            {
-                UserId = user.UserId,
-                Username = user.Username,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Email = user.Email,
-                ProfilePictureUrl = user.ProfilePictureUrl,
-                PhoneNumber = user.PhoneNumber,
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt
-            };
-
-            return Ok(response);
+            return Ok(MapUser(user));
         }
 
         [HttpGet("{userId}/settings")]
@@ -205,6 +182,22 @@ namespace api.Controllers
             }
 
             return NoContent();
+        }
+
+        private static UserResponseDto MapUser(Domain.Entities.Users.User user)
+        {
+            return new UserResponseDto
+            {
+                UserId = user.UserId,
+                Username = user.Username,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                ProfilePictureUrl = user.ProfilePictureUrl,
+                PhoneNumber = user.PhoneNumber,
+                CreatedAt = user.CreatedAt,
+                UpdatedAt = user.UpdatedAt
+            };
         }
     }
 }

@@ -5,9 +5,21 @@ import {
   putJson,
   defaultApiUrl,
   getUserIdFromToken,
+  getUserNameFromToken,
+  getPermissionsFromToken,
+  getRolesFromToken,
   clearAuth,
   isAuthenticated
 } from "./apiClient.js";
+
+const userDashboardModules = [
+  { title: "My Files", area: "Storage", permissions: ["File.Read"], fallbackUser: true },
+  { title: "Upload Files", area: "Storage", permissions: ["File.Upload"] },
+  { title: "Folders", area: "Storage", permissions: ["Folder.Create"] },
+  { title: "Link Sharing", area: "Sharing", permissions: ["File.Share", "Folder.Share"] },
+  { title: "Notifications", area: "Activity", permissions: [], fallbackUser: true },
+  { title: "Subscription", area: "Billing", permissions: [], fallbackUser: true }
+];
 
 function formatBytes(bytes) {
   if (bytes === 0) return "0 B";
@@ -25,6 +37,29 @@ function formatDate(dateString) {
     day: "numeric",
     year: "numeric"
   });
+}
+
+function getProfileValue(profile, ...keys) {
+  if (!profile) return "";
+
+  for (const key of keys) {
+    const value = profile[key];
+    if (value !== undefined && value !== null && String(value).trim()) {
+      return String(value).trim();
+    }
+  }
+
+  return "";
+}
+
+function getProfileDisplayName(profile, fallbackName) {
+  const firstName = getProfileValue(profile, "firstName", "FirstName");
+  const lastName = getProfileValue(profile, "lastName", "LastName");
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
+  const username = getProfileValue(profile, "username", "Username");
+  const email = getProfileValue(profile, "email", "Email");
+
+  return fullName || username || email || fallbackName;
 }
 
 function UserHomePage({ onLogout }) {
@@ -50,6 +85,17 @@ function UserHomePage({ onLogout }) {
   const [creatingFolder, setCreatingFolder] = useState(false);
 
   const userId = getUserIdFromToken();
+  const tokenUserName = getUserNameFromToken() || "User";
+  const userDisplayName = getProfileDisplayName(profile, tokenUserName);
+  const userEmail = getProfileValue(profile, "email", "Email");
+  const roles = getRolesFromToken();
+  const permissions = getPermissionsFromToken();
+  const permissionSet = new Set(permissions.map((permission) => permission.toLowerCase()));
+  const hasUserRole = roles.some((role) => role.toLowerCase() === "user" || role.toLowerCase() === "admin");
+  const authorizedModules = userDashboardModules.filter((module) =>
+    module.permissions.some((permission) => permissionSet.has(permission.toLowerCase()))
+    || (module.fallbackUser && hasUserRole)
+  );
 
   function updateApiUrl(value) {
     setApiUrl(value);
@@ -244,7 +290,7 @@ function UserHomePage({ onLogout }) {
         <header className="topbar">
           <div>
             <p className="eyebrow">Dashboard</p>
-            <h1>{profile ? `Welcome, ${profile.FirstName || profile.Username}` : "My Dashboard"}</h1>
+            <h1>Welcome, {userDisplayName}</h1>
           </div>
           <label className="api-field">
             API URL
@@ -318,11 +364,11 @@ function UserHomePage({ onLogout }) {
                 ) : profile ? (
                   <div className="profile-info">
                     <div className="profile-avatar">
-                      {(profile.FirstName?.[0] || profile.Username?.[0] || "U").toUpperCase()}
+                      {userDisplayName[0].toUpperCase()}
                     </div>
                     <div>
-                      <strong>{profile.FirstName && profile.LastName ? `${profile.FirstName} ${profile.LastName}` : profile.Username}</strong>
-                      <p>{profile.Email}</p>
+                      <strong>{userDisplayName}</strong>
+                      <p>{userEmail}</p>
                     </div>
                   </div>
                 ) : (
@@ -347,6 +393,18 @@ function UserHomePage({ onLogout }) {
                     )}
                   </div>
                 )}
+              </div>
+
+              <div className="panel access-card">
+                <h2>Your Access</h2>
+                <div className="pill-list compact">
+                  {roles.length > 0 ? roles.map((role) => <span key={role}>{role}</span>) : <span>No role in token</span>}
+                </div>
+                <div className="permission-list compact">
+                  {authorizedModules.length > 0
+                    ? authorizedModules.map((module) => <span key={module.title}>{module.title}</span>)
+                    : <span>No dashboard modules found</span>}
+                </div>
               </div>
             </aside>
           </section>

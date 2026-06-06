@@ -31,6 +31,13 @@ namespace adapters.Driven.Persistence.Repositories
                 .FirstOrDefaultAsync(u => u.UserId == userId);
         }
 
+        public async Task<IReadOnlyList<User>> GetAllAsync()
+        {
+            return await _context.Users
+                .OrderBy(u => u.Username)
+                .ToListAsync();
+        }
+
         public async Task<User?> GetWithSettingsByIdAsync(Guid userId)
         {
             return await _context.Users
