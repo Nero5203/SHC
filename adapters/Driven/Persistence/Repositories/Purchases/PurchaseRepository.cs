@@ -21,6 +21,13 @@ namespace adapters.Driven.Persistence.Repositories.Purchases
             await _context.SaveChangesAsync();
         }
 
+        public async Task<IReadOnlyList<Purchase>> GetAllAsync()
+        {
+            return await _context.Purchases
+                .OrderByDescending(p => p.PurchasedAt)
+                .ToListAsync();
+        }
+
         public async Task<Purchase?> GetByIdAsync(Guid purchaseId)
         {
             return await _context.Purchases
@@ -31,6 +38,7 @@ namespace adapters.Driven.Persistence.Repositories.Purchases
         {
             return await _context.Purchases
                 .Where(p => p.UserId == userId)
+                .OrderByDescending(p => p.PurchasedAt)
                 .ToListAsync();
         }
 

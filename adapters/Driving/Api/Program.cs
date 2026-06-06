@@ -206,6 +206,7 @@ builder.Services.AddScoped<IUpdateUserSettingsUseCase, UpdateUserSettingsUseCase
 builder.Services.AddScoped<IDeleteUserUseCase, DeleteUserUseCase>();
 builder.Services.AddScoped<IPurchaseRepository, PurchaseRepository>();
 builder.Services.AddScoped<ICreatePurchaseUseCase, CreatePurchaseUseCase>();
+builder.Services.AddScoped<IGetAllPurchasesUseCase, GetAllPurchasesUseCase>();
 builder.Services.AddScoped<IGetPurchaseByIdUseCase, GetPurchaseByIdUseCase>();
 builder.Services.AddScoped<IGetPurchasesByUserIdUseCase, GetPurchasesByUserIdUseCase>();
 builder.Services.AddScoped<IUpdatePurchaseStatusUseCase, UpdatePurchaseStatusUseCase>();
@@ -219,6 +220,7 @@ builder.Services.AddScoped<IListSubscriptionPlansUseCase, ListSubscriptionPlansU
 builder.Services.AddScoped<IGetSubscriptionPlanByIdUseCase, GetSubscriptionPlanByIdUseCase>();
 builder.Services.AddScoped<IUpdateSubscriptionPlanUseCase, UpdateSubscriptionPlanUseCase>();
 builder.Services.AddScoped<ICreateSubscriptionUseCase, CreateSubscriptionUseCase>();
+builder.Services.AddScoped<IListSubscriptionsUseCase, ListSubscriptionsUseCase>();
 builder.Services.AddScoped<IGetSubscriptionByIdUseCase, GetSubscriptionByIdUseCase>();
 builder.Services.AddScoped<IGetUserSubscriptionsUseCase, GetUserSubscriptionsUseCase>();
 builder.Services.AddScoped<IGetActiveUserSubscriptionUseCase, GetActiveUserSubscriptionUseCase>();

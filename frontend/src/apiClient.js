@@ -237,6 +237,11 @@ async function handleResponse(response) {
     : await response.text();
 
   if (!response.ok) {
+    if (response.status === 401) {
+      clearAuth();
+      throw new Error("Session expired or missing. Please log in again.");
+    }
+
     const message = typeof payload === "string" && payload
       ? payload
       : payload?.title ?? payload?.message ?? `Request failed with ${response.status}`;

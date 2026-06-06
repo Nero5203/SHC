@@ -10,6 +10,7 @@ namespace application.Ports.Driven.Purchases
         Task UpdatePlanAsync(SubscriptionPlan plan);
 
         Task CreateSubscriptionAsync(Subscription subscription, UserSubscription userSubscription);
+        Task<IReadOnlyList<Subscription>> GetSubscriptionsAsync();
         Task<Subscription?> GetSubscriptionByIdAsync(Guid subscriptionId);
         Task<IReadOnlyList<Subscription>> GetSubscriptionsByUserIdAsync(Guid userId);
         Task<Subscription?> GetActiveSubscriptionByUserIdAsync(Guid userId, DateTime utcNow);
