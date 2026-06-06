@@ -1,10 +1,12 @@
 export const defaultApiUrl = "http://127.0.0.1:5165";
 
 export async function postJson(apiUrl, path, body) {
+  const token = getAuthToken();
   const response = await fetch(`${apiUrl.replace(/\/$/, "")}${path}`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
     },
     body: JSON.stringify(body)
   });
@@ -85,10 +87,31 @@ export function getUserIdFromToken() {
   try {
     const payload = token.split(".")[1];
     const decoded = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
-    return decoded[ClaimTypes.NameIdentifier] || decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+    return decoded.nameid
+      || decoded.sub
+      || decoded[ClaimTypes.NameIdentifier]
+      || decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
   } catch (error) {
     return null;
   }
+}
+
+export function extractTokens(loginResponse) {
+  const tokenPayload = loginResponse?.token ?? loginResponse?.Token ?? loginResponse;
+
+  const accessToken = tokenPayload?.accessToken
+    ?? tokenPayload?.AccessToken
+    ?? tokenPayload?.acessToken
+    ?? tokenPayload?.AcessToken
+    ?? (typeof tokenPayload === "string" ? tokenPayload : "");
+
+  const refreshToken = tokenPayload?.refreshToken
+    ?? tokenPayload?.RefreshToken
+    ?? loginResponse?.refreshToken
+    ?? loginResponse?.RefreshToken
+    ?? "";
+
+  return { accessToken, refreshToken };
 }
 
 export const ClaimTypes = {

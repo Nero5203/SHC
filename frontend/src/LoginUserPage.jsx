@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { defaultApiUrl, postJson } from "./apiClient.js";
+import { defaultApiUrl, extractTokens, postJson, setAuthToken, setRefreshToken } from "./apiClient.js";
 
 const initialForm = {
   email: "",
@@ -28,10 +28,7 @@ function LoginUserPage({ onLogout }) {
 
     try {
       const result = await postJson(apiUrl, "/api/auth/login", form);
-      console.log("Login response:", result);
-
-      const accessToken = result?.token?.accessToken || result?.Token?.AccessToken || result?.Token || result?.token;
-      const refreshToken = result?.token?.refreshToken || result?.Token?.RefreshToken || result?.refreshToken || result?.RefreshToken;
+      const { accessToken, refreshToken } = extractTokens(result);
 
       if (!accessToken) {
         throw new Error("No access token received.");
