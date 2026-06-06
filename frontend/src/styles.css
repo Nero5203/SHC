@@ -19,7 +19,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
   letter-spacing: 0;
 }
@@ -575,6 +576,8 @@ h3 {
 }
 
 .storage-admin-header,
+.purchases-admin-header,
+.settings-admin-header,
 .storage-node-form-header,
 .storage-node-card-header,
 .node-capacity-meta {
@@ -586,6 +589,8 @@ h3 {
 }
 
 .storage-admin-header p:not(.eyebrow),
+.purchases-admin-header p:not(.eyebrow),
+.settings-admin-header p:not(.eyebrow),
 .storage-node-form-header p,
 .storage-node-card-header p {
   margin-top: 5px;
@@ -599,6 +604,11 @@ h3 {
   padding: 14px;
   display: grid;
   gap: 14px;
+}
+
+.purchases-admin-panel {
+  display: grid;
+  gap: 16px;
 }
 
 .storage-node-form-grid,
@@ -621,7 +631,9 @@ h3 {
 .storage-node-form-grid input,
 .heartbeat-form input,
 .heartbeat-form select,
-.node-actions select {
+.node-actions select,
+.settings-form-grid input,
+.settings-form-grid select {
   width: 100%;
   height: 40px;
   border: 1px solid #d8e0e8;
@@ -630,6 +642,218 @@ h3 {
   color: #263447;
   padding: 0 10px;
   min-width: 0;
+}
+
+.purchase-search-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.purchase-search-row form label {
+  display: grid;
+  gap: 6px;
+  color: #667386;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.purchase-search-row form label div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.purchase-search-row input,
+.purchase-actions select {
+  width: 100%;
+  height: 40px;
+  border: 1px solid #d8e0e8;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #263447;
+  padding: 0 10px;
+  min-width: 0;
+}
+
+.purchase-result-box {
+  border: 1px solid #d8e0e8;
+  border-radius: 8px;
+  background: #f8fafc;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  color: #263447;
+  font-size: 13px;
+}
+
+.purchase-result-box a {
+  color: #2c8f8a;
+  font-weight: 800;
+}
+
+.purchases-table {
+  min-width: 980px;
+}
+
+.purchase-status {
+  min-height: 28px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.purchase-status.status-pending {
+  background: #fff6df;
+  color: #9a6b18;
+}
+
+.purchase-status.status-paid {
+  background: #e7f5ee;
+  color: #278452;
+}
+
+.purchase-status.status-failed,
+.purchase-status.status-cancelled {
+  background: #fff1f1;
+  color: #b54848;
+}
+
+.purchase-status.status-refunded {
+  background: #edf1f5;
+  color: #667386;
+}
+
+.purchase-actions {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.settings-admin-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.settings-form {
+  display: grid;
+  gap: 14px;
+}
+
+.settings-section {
+  border: 1px solid #edf1f5;
+  border-radius: 8px;
+  padding: 14px;
+  display: grid;
+  gap: 14px;
+}
+
+.settings-section p {
+  margin-top: 5px;
+  color: #667386;
+  font-size: 13px;
+}
+
+.settings-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.settings-form-grid label {
+  display: grid;
+  gap: 6px;
+  color: #667386;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.settings-form-grid .extension-builder {
+  display: grid;
+  gap: 10px;
+}
+
+.extension-add-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.extension-chip-list {
+  min-height: 42px;
+  border: 1px solid #edf1f5;
+  border-radius: 8px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 8px;
+}
+
+.extension-chip {
+  min-height: 28px;
+  border-radius: 8px;
+  background: #eef6f6;
+  color: #2c8f8a;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 6px 4px 9px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.extension-chip button {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: #d9eeee;
+  color: #2c8f8a;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.settings-form-grid .wide-field {
+  grid-column: span 3;
+}
+
+.settings-form-grid .toggle-row {
+  min-height: 40px;
+  border: 1px solid #d8e0e8;
+  border-radius: 8px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px;
+  color: #263447;
+}
+
+.settings-form-grid .toggle-row input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #2c8f8a;
+}
+
+.settings-form-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.settings-form-footer span {
+  color: #667386;
+  font-size: 13px;
 }
 
 .storage-node-list {
@@ -762,10 +986,17 @@ h3 {
   .admin-dashboard-grid,
   .admin-module-grid,
   .storage-node-form-grid,
+  .purchase-search-row,
+  .settings-form-grid,
   .heartbeat-form,
   .node-detail-grid,
-  .node-actions {
+  .node-actions,
+  .purchase-actions {
     grid-template-columns: 1fr;
+  }
+
+  .settings-form-grid .wide-field {
+    grid-column: span 1;
   }
 }
 

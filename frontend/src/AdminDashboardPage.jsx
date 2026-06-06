@@ -21,6 +21,20 @@ const nodeStatusOptions = [
   { value: "4", label: "Full" }
 ];
 
+const registrationModeOptions = [
+  { value: "0", label: "Disabled" },
+  { value: "1", label: "Enabled" },
+  { value: "2", label: "Invite Only" }
+];
+
+const purchaseStatusOptions = [
+  { value: "0", label: "Pending" },
+  { value: "1", label: "Paid" },
+  { value: "2", label: "Failed" },
+  { value: "3", label: "Cancelled" },
+  { value: "4", label: "Refunded" }
+];
+
 const emptyStorageNodeForm = {
   storageNodeId: "",
   name: "",
@@ -29,6 +43,23 @@ const emptyStorageNodeForm = {
   port: "",
   basePath: "",
   totalCapacityBytes: ""
+};
+
+const emptySystemSettingsForm = {
+  maxFileSizeInBytes: "",
+  defaultUserStorageQuotaInBytes: "",
+  allowedFileExtensions: "",
+  allowPublicLinkSharing: false,
+  defaultLinkExpirationInDays: "",
+  enforceLinkPasswordProtection: false,
+  registrationMode: "1",
+  twoFactorAuthRequired: false,
+  maxLoginAttempts: "",
+  minimumPasswordLength: "",
+  requireUppercasePassword: false,
+  requireNumberPassword: false,
+  requireSpecialCharacterPassword: false,
+  trashRetentionInDays: ""
 };
 
 const adminModules = [
@@ -59,6 +90,15 @@ const adminModules = [
     route: "/api/system-settings",
     countPath: "/api/system-settings/all",
     description: "Control file limits, registration rules, link defaults, and trash retention."
+  },
+  {
+    key: "purchases",
+    title: "Purchases",
+    area: "Billing",
+    permissions: ["System.Admin"],
+    route: "/api/purchases",
+    countPath: "/api/purchases",
+    description: "Review purchases, update payment status, open invoices, and create checkout links."
   },
   {
     key: "subscriptions",
@@ -98,6 +138,20 @@ function AdminDashboardPage({ onLogout }) {
   const [loadingStorageNodes, setLoadingStorageNodes] = useState(false);
   const [storageNodesError, setStorageNodesError] = useState("");
   const [storageActionKey, setStorageActionKey] = useState("");
+  const [purchases, setPurchases] = useState([]);
+  const [purchaseIdSearch, setPurchaseIdSearch] = useState("");
+  const [purchaseUserIdSearch, setPurchaseUserIdSearch] = useState("");
+  const [invoiceDetails, setInvoiceDetails] = useState(null);
+  const [checkoutDetails, setCheckoutDetails] = useState(null);
+  const [loadingPurchases, setLoadingPurchases] = useState(false);
+  const [purchasesError, setPurchasesError] = useState("");
+  const [purchaseActionKey, setPurchaseActionKey] = useState("");
+  const [systemSettings, setSystemSettings] = useState(null);
+  const [systemSettingsForm, setSystemSettingsForm] = useState(emptySystemSettingsForm);
+  const [loadingSystemSettings, setLoadingSystemSettings] = useState(false);
+  const [systemSettingsError, setSystemSettingsError] = useState("");
+  const [savingSystemSettings, setSavingSystemSettings] = useState(false);
+  const [allowedExtensionDraft, setAllowedExtensionDraft] = useState("");
 
   const roles = getRolesFromToken();
   const permissions = getPermissionsFromToken();
@@ -114,6 +168,7 @@ function AdminDashboardPage({ onLogout }) {
   }, [isAdmin, permissions]);
 
   const activeModule = visibleModules.find((module) => module.key === activeModuleKey) ?? visibleModules[0];
+  const allowedExtensionList = parseAllowedFileExtensions(systemSettingsForm.allowedFileExtensions);
 
   function updateApiUrl(value) {
     setApiUrl(value);
@@ -305,6 +360,195 @@ function AdminDashboardPage({ onLogout }) {
     }
   }
 
+  const loadPurchases = useCallback(async () => {
+    setLoadingPurchases(true);
+    setPurchasesError("");
+
+    try {
+      const data = await getJson(apiUrl, "/api/purchases");
+      setPurchases(Array.isArray(data) ? data : []);
+    } catch (error) {
+      setPurchasesError(error.message);
+    } finally {
+      setLoadingPurchases(false);
+    }
+  }, [apiUrl]);
+
+  async function handleFindPurchase(event) {
+    event.preventDefault();
+    const purchaseId = purchaseIdSearch.trim();
+    if (!purchaseId) return;
+
+    setLoadingPurchases(true);
+    setPurchasesError("");
+
+    try {
+      const data = await getJson(apiUrl, `/api/purchases/${purchaseId}`);
+      setPurchases(data ? [data] : []);
+    } catch (error) {
+      setPurchasesError(error.message);
+      setPurchases([]);
+    } finally {
+      setLoadingPurchases(false);
+    }
+  }
+
+  async function handleFindUserPurchases(event) {
+    event.preventDefault();
+    const userId = purchaseUserIdSearch.trim();
+    if (!userId) return;
+
+    setLoadingPurchases(true);
+    setPurchasesError("");
+
+    try {
+      const data = await getJson(apiUrl, `/api/purchases/user/${userId}`);
+      setPurchases(Array.isArray(data) ? data : []);
+    } catch (error) {
+      setPurchasesError(error.message);
+      setPurchases([]);
+    } finally {
+      setLoadingPurchases(false);
+    }
+  }
+
+  async function handleUpdatePurchaseStatus(purchaseId, status) {
+    const actionKey = `${purchaseId}:status`;
+    setPurchaseActionKey(actionKey);
+    setPurchasesError("");
+
+    try {
+      const updatedPurchase = await putJson(apiUrl, `/api/purchases/${purchaseId}/status`, {
+        Status: Number(status)
+      });
+
+      setPurchases((current) =>
+        current.map((purchase) =>
+          getValue(purchase, "purchaseId", "PurchaseId") === purchaseId ? updatedPurchase : purchase
+        )
+      );
+    } catch (error) {
+      setPurchasesError(error.message);
+    } finally {
+      setPurchaseActionKey("");
+    }
+  }
+
+  async function handleLoadInvoice(purchaseId) {
+    const actionKey = `${purchaseId}:invoice`;
+    setPurchaseActionKey(actionKey);
+    setPurchasesError("");
+    setInvoiceDetails(null);
+
+    try {
+      const data = await getJson(apiUrl, `/api/purchases/${purchaseId}/invoice`);
+      setInvoiceDetails(data);
+    } catch (error) {
+      setPurchasesError(error.message);
+    } finally {
+      setPurchaseActionKey("");
+    }
+  }
+
+  async function handleCreateCheckout(purchaseId) {
+    const actionKey = `${purchaseId}:checkout`;
+    setPurchaseActionKey(actionKey);
+    setPurchasesError("");
+    setCheckoutDetails(null);
+
+    try {
+      const baseUrl = window.location.origin;
+      const data = await postJson(apiUrl, `/api/purchases/${purchaseId}/checkout`, {
+        SuccessUrl: `${baseUrl}/payment-success?purchaseId=${purchaseId}`,
+        CancelUrl: `${baseUrl}/payment-cancelled?purchaseId=${purchaseId}`
+      });
+
+      setCheckoutDetails(data);
+    } catch (error) {
+      setPurchasesError(error.message);
+    } finally {
+      setPurchaseActionKey("");
+    }
+  }
+
+  const loadSystemSettings = useCallback(async () => {
+    setLoadingSystemSettings(true);
+    setSystemSettingsError("");
+
+    try {
+      const data = await getJson(apiUrl, "/api/system-settings");
+      setSystemSettings(data);
+      setSystemSettingsForm(mapSystemSettingsToForm(data));
+    } catch (error) {
+      setSystemSettingsError(error.message);
+    } finally {
+      setLoadingSystemSettings(false);
+    }
+  }, [apiUrl]);
+
+  async function handleSaveSystemSettings(event) {
+    event.preventDefault();
+    setSavingSystemSettings(true);
+    setSystemSettingsError("");
+
+    const body = {
+      MaxFileSizeInBytes: toNullableNumber(systemSettingsForm.maxFileSizeInBytes),
+      DefaultUserStorageQuotaInBytes: toNullableNumber(systemSettingsForm.defaultUserStorageQuotaInBytes),
+      AllowedFileExtensions: systemSettingsForm.allowedFileExtensions.trim(),
+      AllowPublicLinkSharing: systemSettingsForm.allowPublicLinkSharing,
+      DefaultLinkExpirationInDays: toNullableNumber(systemSettingsForm.defaultLinkExpirationInDays),
+      EnforceLinkPasswordProtection: systemSettingsForm.enforceLinkPasswordProtection,
+      RegistrationMode: toNullableNumber(systemSettingsForm.registrationMode),
+      TwoFactorAuthRequired: systemSettingsForm.twoFactorAuthRequired,
+      MaxLoginAttempts: toNullableNumber(systemSettingsForm.maxLoginAttempts),
+      MinimumPasswordLength: toNullableNumber(systemSettingsForm.minimumPasswordLength),
+      RequireUppercasePassword: systemSettingsForm.requireUppercasePassword,
+      RequireNumberPassword: systemSettingsForm.requireNumberPassword,
+      RequireSpecialCharacterPassword: systemSettingsForm.requireSpecialCharacterPassword,
+      TrashRetentionInDays: toNullableNumber(systemSettingsForm.trashRetentionInDays)
+    };
+
+    try {
+      const updatedSettings = await putJson(apiUrl, "/api/system-settings", body);
+      setSystemSettings(updatedSettings);
+      setSystemSettingsForm(mapSystemSettingsToForm(updatedSettings));
+    } catch (error) {
+      setSystemSettingsError(error.message);
+    } finally {
+      setSavingSystemSettings(false);
+    }
+  }
+
+  function handleAddAllowedExtension(event) {
+    event.preventDefault();
+
+    const newExtensions = normalizeExtensionInputs(allowedExtensionDraft);
+    if (newExtensions.length === 0) return;
+
+    const mergedExtensions = Array.from(new Set([...allowedExtensionList, ...newExtensions]));
+
+    setSystemSettingsForm((current) => ({
+      ...current,
+      allowedFileExtensions: mergedExtensions.join(",")
+    }));
+    setAllowedExtensionDraft("");
+  }
+
+  function handleRemoveAllowedExtension(extension) {
+    const nextExtensions = allowedExtensionList.filter((item) => item !== extension);
+
+    setSystemSettingsForm((current) => ({
+      ...current,
+      allowedFileExtensions: nextExtensions.join(",")
+    }));
+  }
+
+  function handleAllowedExtensionKeyDown(event) {
+    if (event.key === "Enter") {
+      handleAddAllowedExtension(event);
+    }
+  }
+
   async function handleLogout() {
     try {
       const refreshToken = localStorage.getItem("shc.refreshToken");
@@ -375,6 +619,18 @@ function AdminDashboardPage({ onLogout }) {
     }
   }, [activeModuleKey, loadStorageNodes]);
 
+  useEffect(() => {
+    if (activeModuleKey === "purchases") {
+      loadPurchases();
+    }
+  }, [activeModuleKey, loadPurchases]);
+
+  useEffect(() => {
+    if (activeModuleKey === "settings") {
+      loadSystemSettings();
+    }
+  }, [activeModuleKey, loadSystemSettings]);
+
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -426,7 +682,7 @@ function AdminDashboardPage({ onLogout }) {
 
         <section className="content-grid admin-dashboard-grid">
           <section className="admin-main">
-            {!["users", "storage"].includes(activeModule?.key) && (
+            {!["users", "storage", "purchases", "settings"].includes(activeModule?.key) && (
               <>
                 <div className="section-heading">
                   <h2>Authorized Modules</h2>
@@ -799,6 +1055,399 @@ function AdminDashboardPage({ onLogout }) {
                   </div>
                 )}
               </section>
+            ) : activeModule?.key === "purchases" ? (
+              <section className="panel purchases-admin-panel">
+                <div className="purchases-admin-header">
+                  <div>
+                    <p className="eyebrow">Billing</p>
+                    <h2>Purchases</h2>
+                    <p>Review purchases, update status, open invoices, and create checkout links for pending payments.</p>
+                  </div>
+                  <button className="secondary-button" disabled={loadingPurchases} onClick={loadPurchases} type="button">
+                    {loadingPurchases ? "Refreshing..." : "Load All"}
+                  </button>
+                </div>
+
+                {purchasesError && <p className="inline-error">{purchasesError}</p>}
+
+                <div className="purchase-search-row">
+                  <form onSubmit={handleFindPurchase}>
+                    <label>
+                      Find by Purchase Id
+                      <div>
+                        <input
+                          value={purchaseIdSearch}
+                          onChange={(event) => setPurchaseIdSearch(event.target.value)}
+                        />
+                        <button className="secondary-button" type="submit">Find</button>
+                      </div>
+                    </label>
+                  </form>
+                  <form onSubmit={handleFindUserPurchases}>
+                    <label>
+                      Find by User Id
+                      <div>
+                        <input
+                          value={purchaseUserIdSearch}
+                          onChange={(event) => setPurchaseUserIdSearch(event.target.value)}
+                        />
+                        <button className="secondary-button" type="submit">Find</button>
+                      </div>
+                    </label>
+                  </form>
+                </div>
+
+                {checkoutDetails && (
+                  <div className="purchase-result-box">
+                    <strong>Checkout session created</strong>
+                    <a href={getValue(checkoutDetails, "checkoutUrl", "CheckoutUrl")} target="_blank" rel="noreferrer">
+                      Open checkout link
+                    </a>
+                    <span>{getValue(checkoutDetails, "checkoutSessionId", "CheckoutSessionId")}</span>
+                  </div>
+                )}
+
+                {invoiceDetails && (
+                  <div className="purchase-result-box">
+                    <strong>Invoice {getValue(invoiceDetails, "invoiceNumber", "InvoiceNumber")}</strong>
+                    <span>Total: {formatMoney(getValue(invoiceDetails, "totalAmount", "TotalAmount"), getValue(invoiceDetails, "currency", "Currency"))}</span>
+                    <span>Status: {getValue(invoiceDetails, "status", "Status")}</span>
+                    <span>Issued: {formatDate(getValue(invoiceDetails, "issuedAt", "IssuedAt"))}</span>
+                  </div>
+                )}
+
+                {loadingPurchases ? (
+                  <p className="loading-text">Loading purchases...</p>
+                ) : purchases.length === 0 ? (
+                  <p className="empty-text">No purchases found.</p>
+                ) : (
+                  <div className="users-table-wrap">
+                    <table className="users-table purchases-table">
+                      <thead>
+                        <tr>
+                          <th>Purchase</th>
+                          <th>User</th>
+                          <th>Subscription</th>
+                          <th>Amount</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {purchases.map((purchase) => {
+                          const purchaseId = getValue(purchase, "purchaseId", "PurchaseId");
+                          const statusValue = getPurchaseStatusValue(purchase);
+
+                          return (
+                            <tr key={purchaseId}>
+                              <td>
+                                <strong>{purchaseId}</strong>
+                                <span>{formatDate(getValue(purchase, "purchasedAt", "PurchasedAt"))}</span>
+                              </td>
+                              <td>{getValue(purchase, "userId", "UserId")}</td>
+                              <td>{getValue(purchase, "subscriptionId", "SubscriptionId")}</td>
+                              <td>{formatMoney(getValue(purchase, "amount", "Amount"), getValue(purchase, "currency", "Currency"))}</td>
+                              <td>
+                                <span className={`purchase-status status-${getPurchaseStatusLabel(purchase).toLowerCase()}`}>
+                                  {getPurchaseStatusLabel(purchase)}
+                                </span>
+                              </td>
+                              <td>
+                                <div className="purchase-actions">
+                                  <select
+                                    value={statusValue}
+                                    disabled={purchaseActionKey === `${purchaseId}:status`}
+                                    onChange={(event) => handleUpdatePurchaseStatus(purchaseId, event.target.value)}
+                                  >
+                                    {purchaseStatusOptions.map((option) => (
+                                      <option key={option.value} value={option.value}>{option.label}</option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    className="secondary-button"
+                                    disabled={purchaseActionKey === `${purchaseId}:invoice`}
+                                    onClick={() => handleLoadInvoice(purchaseId)}
+                                    type="button"
+                                  >
+                                    {purchaseActionKey === `${purchaseId}:invoice` ? "Loading..." : "Invoice"}
+                                  </button>
+                                  <button
+                                    className="secondary-button"
+                                    disabled={purchaseActionKey === `${purchaseId}:checkout`}
+                                    onClick={() => handleCreateCheckout(purchaseId)}
+                                    type="button"
+                                  >
+                                    {purchaseActionKey === `${purchaseId}:checkout` ? "Creating..." : "Checkout"}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            ) : activeModule?.key === "settings" ? (
+              <section className="panel settings-admin-panel">
+                <div className="settings-admin-header">
+                  <div>
+                    <p className="eyebrow">Platform</p>
+                    <h2>System Settings</h2>
+                    <p>Update global file limits, link sharing defaults, registration rules, and trash retention.</p>
+                  </div>
+                  <button className="secondary-button" disabled={loadingSystemSettings} onClick={loadSystemSettings} type="button">
+                    {loadingSystemSettings ? "Refreshing..." : "Refresh"}
+                  </button>
+                </div>
+
+                {systemSettingsError && <p className="inline-error">{systemSettingsError}</p>}
+
+                {loadingSystemSettings ? (
+                  <p className="loading-text">Loading system settings...</p>
+                ) : (
+                  <form className="settings-form" onSubmit={handleSaveSystemSettings}>
+                    <section className="settings-section">
+                      <div>
+                        <h3>File Limits</h3>
+                        <p>Storage rules used by uploads and user accounts.</p>
+                      </div>
+                      <div className="settings-form-grid">
+                        <label>
+                          Max File Size Bytes
+                          <input
+                            min="1"
+                            required
+                            type="number"
+                            value={systemSettingsForm.maxFileSizeInBytes}
+                            onChange={(event) => setSystemSettingsForm((current) => ({
+                              ...current,
+                              maxFileSizeInBytes: event.target.value
+                            }))}
+                          />
+                        </label>
+                        <label>
+                          Default User Quota Bytes
+                          <input
+                            min="1"
+                            required
+                            type="number"
+                            value={systemSettingsForm.defaultUserStorageQuotaInBytes}
+                            onChange={(event) => setSystemSettingsForm((current) => ({
+                              ...current,
+                              defaultUserStorageQuotaInBytes: event.target.value
+                            }))}
+                          />
+                        </label>
+                        <div className="wide-field extension-builder">
+                          <label>
+                            Allowed File Extensions
+                            <div className="extension-add-row">
+                              <input
+                                value={allowedExtensionDraft}
+                                onChange={(event) => setAllowedExtensionDraft(event.target.value)}
+                                onKeyDown={handleAllowedExtensionKeyDown}
+                                placeholder="jpg, png, pdf"
+                              />
+                              <button className="secondary-button" onClick={handleAddAllowedExtension} type="button">
+                                Add
+                              </button>
+                            </div>
+                          </label>
+
+                          <div className="extension-chip-list">
+                            {allowedExtensionList.length > 0 ? (
+                              allowedExtensionList.map((extension) => (
+                                <span className="extension-chip" key={extension}>
+                                  {extension}
+                                  <button
+                                    aria-label={`Remove ${extension}`}
+                                    onClick={() => handleRemoveAllowedExtension(extension)}
+                                    type="button"
+                                  >
+                                    x
+                                  </button>
+                                </span>
+                              ))
+                            ) : (
+                              <span className="muted-text">No extensions allowed yet.</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section className="settings-section">
+                      <div>
+                        <h3>Public Links</h3>
+                        <p>Defaults for sharing files and folders with links.</p>
+                      </div>
+                      <div className="settings-form-grid">
+                        <label>
+                          Default Expiration Days
+                          <input
+                            min="1"
+                            required
+                            type="number"
+                            value={systemSettingsForm.defaultLinkExpirationInDays}
+                            onChange={(event) => setSystemSettingsForm((current) => ({
+                              ...current,
+                              defaultLinkExpirationInDays: event.target.value
+                            }))}
+                          />
+                        </label>
+                        <label className="toggle-row">
+                          <input
+                            checked={systemSettingsForm.allowPublicLinkSharing}
+                            type="checkbox"
+                            onChange={(event) => setSystemSettingsForm((current) => ({
+                              ...current,
+                              allowPublicLinkSharing: event.target.checked
+                            }))}
+                          />
+                          Allow public link sharing
+                        </label>
+                        <label className="toggle-row">
+                          <input
+                            checked={systemSettingsForm.enforceLinkPasswordProtection}
+                            type="checkbox"
+                            onChange={(event) => setSystemSettingsForm((current) => ({
+                              ...current,
+                              enforceLinkPasswordProtection: event.target.checked
+                            }))}
+                          />
+                          Require link passwords
+                        </label>
+                      </div>
+                    </section>
+
+                    <section className="settings-section">
+                      <div>
+                        <h3>Registration And Auth</h3>
+                        <p>Global rules for signups, login attempts, and password strength.</p>
+                      </div>
+                      <div className="settings-form-grid">
+                        <label>
+                          Registration Mode
+                          <select
+                            value={systemSettingsForm.registrationMode}
+                            onChange={(event) => setSystemSettingsForm((current) => ({
+                              ...current,
+                              registrationMode: event.target.value
+                            }))}
+                          >
+                            {registrationModeOptions.map((option) => (
+                              <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          Max Login Attempts
+                          <input
+                            min="1"
+                            required
+                            type="number"
+                            value={systemSettingsForm.maxLoginAttempts}
+                            onChange={(event) => setSystemSettingsForm((current) => ({
+                              ...current,
+                              maxLoginAttempts: event.target.value
+                            }))}
+                          />
+                        </label>
+                        <label>
+                          Minimum Password Length
+                          <input
+                            min="1"
+                            required
+                            type="number"
+                            value={systemSettingsForm.minimumPasswordLength}
+                            onChange={(event) => setSystemSettingsForm((current) => ({
+                              ...current,
+                              minimumPasswordLength: event.target.value
+                            }))}
+                          />
+                        </label>
+                        <label className="toggle-row">
+                          <input
+                            checked={systemSettingsForm.twoFactorAuthRequired}
+                            type="checkbox"
+                            onChange={(event) => setSystemSettingsForm((current) => ({
+                              ...current,
+                              twoFactorAuthRequired: event.target.checked
+                            }))}
+                          />
+                          Require two-factor auth
+                        </label>
+                        <label className="toggle-row">
+                          <input
+                            checked={systemSettingsForm.requireUppercasePassword}
+                            type="checkbox"
+                            onChange={(event) => setSystemSettingsForm((current) => ({
+                              ...current,
+                              requireUppercasePassword: event.target.checked
+                            }))}
+                          />
+                          Require uppercase
+                        </label>
+                        <label className="toggle-row">
+                          <input
+                            checked={systemSettingsForm.requireNumberPassword}
+                            type="checkbox"
+                            onChange={(event) => setSystemSettingsForm((current) => ({
+                              ...current,
+                              requireNumberPassword: event.target.checked
+                            }))}
+                          />
+                          Require number
+                        </label>
+                        <label className="toggle-row">
+                          <input
+                            checked={systemSettingsForm.requireSpecialCharacterPassword}
+                            type="checkbox"
+                            onChange={(event) => setSystemSettingsForm((current) => ({
+                              ...current,
+                              requireSpecialCharacterPassword: event.target.checked
+                            }))}
+                          />
+                          Require special character
+                        </label>
+                      </div>
+                    </section>
+
+                    <section className="settings-section">
+                      <div>
+                        <h3>Trash</h3>
+                        <p>How long deleted files stay recoverable before cleanup.</p>
+                      </div>
+                      <div className="settings-form-grid">
+                        <label>
+                          Trash Retention Days
+                          <input
+                            min="1"
+                            required
+                            type="number"
+                            value={systemSettingsForm.trashRetentionInDays}
+                            onChange={(event) => setSystemSettingsForm((current) => ({
+                              ...current,
+                              trashRetentionInDays: event.target.value
+                            }))}
+                          />
+                        </label>
+                      </div>
+                    </section>
+
+                    <div className="settings-form-footer">
+                      <button className="primary-button" disabled={savingSystemSettings || allowedExtensionList.length === 0} type="submit">
+                        {savingSystemSettings ? "Saving..." : "Save Settings"}
+                      </button>
+                      {systemSettings && (
+                        <span>Last updated {formatDate(getValue(systemSettings, "updatedAt", "UpdatedAt"))}</span>
+                      )}
+                    </div>
+                  </form>
+                )}
+              </section>
             ) : activeModule && (
               <section className="panel module-detail">
                 <div>
@@ -876,6 +1525,81 @@ function getValue(source, ...keys) {
   return "";
 }
 
+function getBooleanValue(source, ...keys) {
+  for (const key of keys) {
+    const value = source?.[key];
+    if (value !== undefined && value !== null) {
+      return value === true || String(value).toLowerCase() === "true";
+    }
+  }
+
+  return false;
+}
+
+function getRegistrationModeValue(settings) {
+  const value = getValue(settings, "registrationMode", "RegistrationMode");
+  const matchingOption = registrationModeOptions.find((option) =>
+    option.value === value || option.label.toLowerCase().replace(/\s/g, "") === value.toLowerCase().replace(/\s/g, "")
+  );
+
+  return matchingOption?.value ?? "1";
+}
+
+function mapSystemSettingsToForm(settings) {
+  return {
+    maxFileSizeInBytes: getValue(settings, "maxFileSizeInBytes", "MaxFileSizeInBytes"),
+    defaultUserStorageQuotaInBytes: getValue(settings, "defaultUserStorageQuotaInBytes", "DefaultUserStorageQuotaInBytes"),
+    allowedFileExtensions: getValue(settings, "allowedFileExtensions", "AllowedFileExtensions"),
+    allowPublicLinkSharing: getBooleanValue(settings, "allowPublicLinkSharing", "AllowPublicLinkSharing"),
+    defaultLinkExpirationInDays: getValue(settings, "defaultLinkExpirationInDays", "DefaultLinkExpirationInDays"),
+    enforceLinkPasswordProtection: getBooleanValue(settings, "enforceLinkPasswordProtection", "EnforceLinkPasswordProtection"),
+    registrationMode: getRegistrationModeValue(settings),
+    twoFactorAuthRequired: getBooleanValue(settings, "twoFactorAuthRequired", "TwoFactorAuthRequired"),
+    maxLoginAttempts: getValue(settings, "maxLoginAttempts", "MaxLoginAttempts"),
+    minimumPasswordLength: getValue(settings, "minimumPasswordLength", "MinimumPasswordLength"),
+    requireUppercasePassword: getBooleanValue(settings, "requireUppercasePassword", "RequireUppercasePassword"),
+    requireNumberPassword: getBooleanValue(settings, "requireNumberPassword", "RequireNumberPassword"),
+    requireSpecialCharacterPassword: getBooleanValue(settings, "requireSpecialCharacterPassword", "RequireSpecialCharacterPassword"),
+    trashRetentionInDays: getValue(settings, "trashRetentionInDays", "TrashRetentionInDays")
+  };
+}
+
+function parseAllowedFileExtensions(value) {
+  return normalizeExtensionInputs(value);
+}
+
+function normalizeExtensionInputs(value) {
+  return Array.from(
+    new Set(
+      String(value ?? "")
+        .split(/[\s,;]+/)
+        .map(normalizeExtension)
+        .filter(Boolean)
+    )
+  );
+}
+
+function normalizeExtension(value) {
+  let text = String(value ?? "").trim().toLowerCase();
+  if (!text) return "";
+
+  text = text.replace(/^\*+/, "");
+  if (!text.startsWith(".")) {
+    text = `.${text}`;
+  }
+
+  text = text.replace(/[^.a-z0-9_-]/g, "");
+  return text.length > 1 ? text : "";
+}
+
+function toNullableNumber(value) {
+  if (value === "" || value === null || value === undefined) {
+    return null;
+  }
+
+  return Number(value);
+}
+
 function getUserDisplayName(user) {
   const firstName = getValue(user, "firstName", "FirstName");
   const lastName = getValue(user, "lastName", "LastName");
@@ -897,6 +1621,20 @@ function getNodeStatusLabel(node) {
   return nodeStatusOptions.find((option) => option.value === status)?.label ?? "Offline";
 }
 
+function getPurchaseStatusValue(purchase) {
+  const status = getValue(purchase, "status", "Status");
+  const matchingOption = purchaseStatusOptions.find((option) =>
+    option.value === status || option.label.toLowerCase() === status.toLowerCase()
+  );
+
+  return matchingOption?.value ?? "0";
+}
+
+function getPurchaseStatusLabel(purchase) {
+  const status = getPurchaseStatusValue(purchase);
+  return purchaseStatusOptions.find((option) => option.value === status)?.label ?? "Pending";
+}
+
 function formatBytes(bytes) {
   if (!bytes) return "0 B";
 
@@ -905,6 +1643,17 @@ function formatBytes(bytes) {
   const value = bytes / Math.pow(1024, index);
 
   return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
+function formatMoney(amount, currency) {
+  const value = Number(amount);
+  const safeCurrency = currency || "EUR";
+
+  if (Number.isNaN(value)) {
+    return `${amount || "0"} ${safeCurrency}`;
+  }
+
+  return `${value.toFixed(2)} ${safeCurrency}`;
 }
 
 function formatDate(value) {

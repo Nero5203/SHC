@@ -206,6 +206,7 @@ builder.Services.AddScoped<IUpdateUserSettingsUseCase, UpdateUserSettingsUseCase
 builder.Services.AddScoped<IDeleteUserUseCase, DeleteUserUseCase>();
 builder.Services.AddScoped<IPurchaseRepository, PurchaseRepository>();
 builder.Services.AddScoped<ICreatePurchaseUseCase, CreatePurchaseUseCase>();
+builder.Services.AddScoped<IGetAllPurchasesUseCase, GetAllPurchasesUseCase>();
 builder.Services.AddScoped<IGetPurchaseByIdUseCase, GetPurchaseByIdUseCase>();
 builder.Services.AddScoped<IGetPurchasesByUserIdUseCase, GetPurchasesByUserIdUseCase>();
 builder.Services.AddScoped<IUpdatePurchaseStatusUseCase, UpdatePurchaseStatusUseCase>();
