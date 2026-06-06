@@ -9,8 +9,27 @@ import {
   getUserNameFromToken,
   isAdminToken,
   isAuthenticated,
-  postJson
+  postJson,
+  putJson
 } from "./apiClient.js";
+
+const nodeStatusOptions = [
+  { value: "0", label: "Online" },
+  { value: "1", label: "Offline" },
+  { value: "2", label: "Maintenance" },
+  { value: "3", label: "Degraded" },
+  { value: "4", label: "Full" }
+];
+
+const emptyStorageNodeForm = {
+  storageNodeId: "",
+  name: "",
+  hostname: "",
+  ipAddress: "",
+  port: "",
+  basePath: "",
+  totalCapacityBytes: ""
+};
 
 const adminModules = [
   {
@@ -22,14 +41,6 @@ const adminModules = [
     countPath: "/api/users",
     description: "Manage profiles, settings, deletion, and account ownership.",
     note: "The admin list endpoint is available now."
-  },
-  {
-    key: "permissions",
-    title: "Permissions",
-    area: "Authorization",
-    permissions: ["System.Admin"],
-    route: "/api/permissions",
-    description: "Grant, update, revoke, and check resource permissions."
   },
   {
     key: "storage",
@@ -81,6 +92,12 @@ function AdminDashboardPage({ onLogout }) {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [usersError, setUsersError] = useState("");
   const [roleActionKey, setRoleActionKey] = useState("");
+  const [storageNodes, setStorageNodes] = useState([]);
+  const [storageNodeForm, setStorageNodeForm] = useState(emptyStorageNodeForm);
+  const [heartbeatDrafts, setHeartbeatDrafts] = useState({});
+  const [loadingStorageNodes, setLoadingStorageNodes] = useState(false);
+  const [storageNodesError, setStorageNodesError] = useState("");
+  const [storageActionKey, setStorageActionKey] = useState("");
 
   const roles = getRolesFromToken();
   const permissions = getPermissionsFromToken();
@@ -173,6 +190,121 @@ function AdminDashboardPage({ onLogout }) {
     }
   }
 
+  const loadStorageNodes = useCallback(async () => {
+    setLoadingStorageNodes(true);
+    setStorageNodesError("");
+
+    try {
+      const data = await getJson(apiUrl, "/api/storage-nodes");
+      const safeNodes = Array.isArray(data) ? data : [];
+
+      setStorageNodes(safeNodes);
+      setHeartbeatDrafts(
+        Object.fromEntries(
+          safeNodes.map((node) => {
+            const nodeId = getValue(node, "storageNodeId", "StorageNodeId");
+            return [
+              nodeId,
+              {
+                totalCapacityBytes: getValue(node, "totalCapacityBytes", "TotalCapacityBytes"),
+                usedCapacityBytes: getValue(node, "usedCapacityBytes", "UsedCapacityBytes"),
+                status: getNodeStatusValue(node)
+              }
+            ];
+          })
+        )
+      );
+    } catch (error) {
+      setStorageNodesError(error.message);
+    } finally {
+      setLoadingStorageNodes(false);
+    }
+  }, [apiUrl]);
+
+  async function handleSaveStorageNode(event) {
+    event.preventDefault();
+    const isEditing = !!storageNodeForm.storageNodeId;
+    const actionKey = isEditing ? `${storageNodeForm.storageNodeId}:edit` : "create";
+
+    setStorageActionKey(actionKey);
+    setStorageNodesError("");
+
+    const body = {
+      Name: storageNodeForm.name.trim(),
+      Hostname: storageNodeForm.hostname.trim(),
+      IpAddress: storageNodeForm.ipAddress.trim(),
+      Port: Number(storageNodeForm.port),
+      BasePath: storageNodeForm.basePath.trim(),
+      TotalCapacityBytes: Number(storageNodeForm.totalCapacityBytes)
+    };
+
+    try {
+      if (isEditing) {
+        await putJson(apiUrl, `/api/storage-nodes/${storageNodeForm.storageNodeId}`, body);
+      } else {
+        await postJson(apiUrl, "/api/storage-nodes", body);
+      }
+
+      setStorageNodeForm(emptyStorageNodeForm);
+      await loadStorageNodes();
+    } catch (error) {
+      setStorageNodesError(error.message);
+    } finally {
+      setStorageActionKey("");
+    }
+  }
+
+  function handleEditStorageNode(node) {
+    setStorageNodeForm({
+      storageNodeId: getValue(node, "storageNodeId", "StorageNodeId"),
+      name: getValue(node, "name", "Name"),
+      hostname: getValue(node, "hostname", "Hostname"),
+      ipAddress: getValue(node, "ipAddress", "IpAddress"),
+      port: getValue(node, "port", "Port"),
+      basePath: getValue(node, "basePath", "BasePath"),
+      totalCapacityBytes: getValue(node, "totalCapacityBytes", "TotalCapacityBytes")
+    });
+  }
+
+  async function handleUpdateStorageNodeStatus(nodeId, status) {
+    const actionKey = `${nodeId}:status`;
+    setStorageActionKey(actionKey);
+    setStorageNodesError("");
+
+    try {
+      await putJson(apiUrl, `/api/storage-nodes/${nodeId}/status`, {
+        Status: Number(status)
+      });
+      await loadStorageNodes();
+    } catch (error) {
+      setStorageNodesError(error.message);
+    } finally {
+      setStorageActionKey("");
+    }
+  }
+
+  async function handleStorageNodeHeartbeat(nodeId) {
+    const draft = heartbeatDrafts[nodeId];
+    if (!draft) return;
+
+    const actionKey = `${nodeId}:heartbeat`;
+    setStorageActionKey(actionKey);
+    setStorageNodesError("");
+
+    try {
+      await putJson(apiUrl, `/api/storage-nodes/${nodeId}/heartbeat`, {
+        TotalCapacityBytes: Number(draft.totalCapacityBytes),
+        UsedCapacityBytes: Number(draft.usedCapacityBytes),
+        Status: Number(draft.status)
+      });
+      await loadStorageNodes();
+    } catch (error) {
+      setStorageNodesError(error.message);
+    } finally {
+      setStorageActionKey("");
+    }
+  }
+
   async function handleLogout() {
     try {
       const refreshToken = localStorage.getItem("shc.refreshToken");
@@ -237,6 +369,12 @@ function AdminDashboardPage({ onLogout }) {
     }
   }, [activeModuleKey, loadUsersWithRoles]);
 
+  useEffect(() => {
+    if (activeModuleKey === "storage") {
+      loadStorageNodes();
+    }
+  }, [activeModuleKey, loadStorageNodes]);
+
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -288,7 +426,7 @@ function AdminDashboardPage({ onLogout }) {
 
         <section className="content-grid admin-dashboard-grid">
           <section className="admin-main">
-            {activeModule?.key !== "users" && (
+            {!["users", "storage"].includes(activeModule?.key) && (
               <>
                 <div className="section-heading">
                   <h2>Authorized Modules</h2>
@@ -435,6 +573,232 @@ function AdminDashboardPage({ onLogout }) {
                   </div>
                 )}
               </section>
+            ) : activeModule?.key === "storage" ? (
+              <section className="panel storage-admin-panel">
+                <div className="storage-admin-header">
+                  <div>
+                    <p className="eyebrow">Infrastructure</p>
+                    <h2>Storage Nodes</h2>
+                    <p>Register laptop nodes, edit connection details, update status, and send heartbeat capacity data.</p>
+                  </div>
+                  <button className="secondary-button" disabled={loadingStorageNodes} onClick={loadStorageNodes} type="button">
+                    {loadingStorageNodes ? "Refreshing..." : "Refresh"}
+                  </button>
+                </div>
+
+                {storageNodesError && <p className="inline-error">{storageNodesError}</p>}
+
+                <form className="storage-node-form" onSubmit={handleSaveStorageNode}>
+                  <div className="storage-node-form-header">
+                    <div>
+                      <h3>{storageNodeForm.storageNodeId ? "Edit Storage Node" : "Add Storage Node"}</h3>
+                      <p>{storageNodeForm.storageNodeId ? "Update the selected node details." : "Register one laptop/server as a storage node."}</p>
+                    </div>
+                    {storageNodeForm.storageNodeId && (
+                      <button className="secondary-button" onClick={() => setStorageNodeForm(emptyStorageNodeForm)} type="button">
+                        Cancel Edit
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="storage-node-form-grid">
+                    <label>
+                      Name
+                      <input
+                        required
+                        value={storageNodeForm.name}
+                        onChange={(event) => setStorageNodeForm((current) => ({ ...current, name: event.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      Hostname
+                      <input
+                        required
+                        value={storageNodeForm.hostname}
+                        onChange={(event) => setStorageNodeForm((current) => ({ ...current, hostname: event.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      IP Address
+                      <input
+                        required
+                        value={storageNodeForm.ipAddress}
+                        onChange={(event) => setStorageNodeForm((current) => ({ ...current, ipAddress: event.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      Port
+                      <input
+                        min="1"
+                        required
+                        type="number"
+                        value={storageNodeForm.port}
+                        onChange={(event) => setStorageNodeForm((current) => ({ ...current, port: event.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      Base Path
+                      <input
+                        required
+                        value={storageNodeForm.basePath}
+                        onChange={(event) => setStorageNodeForm((current) => ({ ...current, basePath: event.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      Total Capacity Bytes
+                      <input
+                        min="1"
+                        required
+                        type="number"
+                        value={storageNodeForm.totalCapacityBytes}
+                        onChange={(event) => setStorageNodeForm((current) => ({ ...current, totalCapacityBytes: event.target.value }))}
+                      />
+                    </label>
+                  </div>
+
+                  <button className="primary-button" disabled={!!storageActionKey} type="submit">
+                    {storageNodeForm.storageNodeId
+                      ? storageActionKey ? "Saving..." : "Save Changes"
+                      : storageActionKey === "create" ? "Adding..." : "Add Storage Node"}
+                  </button>
+                </form>
+
+                {loadingStorageNodes ? (
+                  <p className="loading-text">Loading storage nodes...</p>
+                ) : storageNodes.length === 0 ? (
+                  <p className="empty-text">No storage nodes found.</p>
+                ) : (
+                  <div className="storage-node-list">
+                    {storageNodes.map((node) => {
+                      const nodeId = getValue(node, "storageNodeId", "StorageNodeId");
+                      const totalBytes = Number(getValue(node, "totalCapacityBytes", "TotalCapacityBytes")) || 0;
+                      const usedBytes = Number(getValue(node, "usedCapacityBytes", "UsedCapacityBytes")) || 0;
+                      const usedPercent = totalBytes > 0 ? Math.min((usedBytes / totalBytes) * 100, 100) : 0;
+                      const heartbeatDraft = heartbeatDrafts[nodeId] ?? {
+                        totalCapacityBytes: String(totalBytes),
+                        usedCapacityBytes: String(usedBytes),
+                        status: getNodeStatusValue(node)
+                      };
+
+                      return (
+                        <article className="storage-node-card" key={nodeId}>
+                          <div className="storage-node-card-header">
+                            <div>
+                              <h3>{getValue(node, "name", "Name")}</h3>
+                              <p>{getValue(node, "hostname", "Hostname")} - {getValue(node, "ipAddress", "IpAddress")}:{getValue(node, "port", "Port")}</p>
+                            </div>
+                            <span className={`node-status status-${getNodeStatusLabel(node).toLowerCase()}`}>
+                              {getNodeStatusLabel(node)}
+                            </span>
+                          </div>
+
+                          <div className="node-capacity">
+                            <div className="node-capacity-meta">
+                              <span>{formatBytes(usedBytes)} used</span>
+                              <span>{formatBytes(totalBytes)} total</span>
+                            </div>
+                            <div className="storage-bar">
+                              <div className="storage-fill" style={{ width: `${usedPercent}%` }}></div>
+                            </div>
+                          </div>
+
+                          <dl className="node-detail-grid">
+                            <div>
+                              <dt>Base Path</dt>
+                              <dd>{getValue(node, "basePath", "BasePath")}</dd>
+                            </div>
+                            <div>
+                              <dt>Files</dt>
+                              <dd>{getValue(node, "fileCount", "FileCount") || "0"}</dd>
+                            </div>
+                            <div>
+                              <dt>Last Heartbeat</dt>
+                              <dd>{formatDate(getValue(node, "lastHeartbeatAt", "LastHeartbeatAt"))}</dd>
+                            </div>
+                            <div>
+                              <dt>Updated</dt>
+                              <dd>{formatDate(getValue(node, "updatedAt", "UpdatedAt"))}</dd>
+                            </div>
+                          </dl>
+
+                          <div className="node-actions">
+                            <button className="secondary-button" onClick={() => handleEditStorageNode(node)} type="button">
+                              Edit
+                            </button>
+                            <label>
+                              Status
+                              <select
+                                value={getNodeStatusValue(node)}
+                                onChange={(event) => handleUpdateStorageNodeStatus(nodeId, event.target.value)}
+                                disabled={storageActionKey === `${nodeId}:status`}
+                              >
+                                {nodeStatusOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>{option.label}</option>
+                                ))}
+                              </select>
+                            </label>
+                          </div>
+
+                          <div className="heartbeat-form">
+                            <label>
+                              Used Bytes
+                              <input
+                                min="0"
+                                type="number"
+                                value={heartbeatDraft.usedCapacityBytes}
+                                onChange={(event) =>
+                                  setHeartbeatDrafts((current) => ({
+                                    ...current,
+                                    [nodeId]: { ...heartbeatDraft, usedCapacityBytes: event.target.value }
+                                  }))
+                                }
+                              />
+                            </label>
+                            <label>
+                              Total Bytes
+                              <input
+                                min="1"
+                                type="number"
+                                value={heartbeatDraft.totalCapacityBytes}
+                                onChange={(event) =>
+                                  setHeartbeatDrafts((current) => ({
+                                    ...current,
+                                    [nodeId]: { ...heartbeatDraft, totalCapacityBytes: event.target.value }
+                                  }))
+                                }
+                              />
+                            </label>
+                            <label>
+                              Heartbeat Status
+                              <select
+                                value={heartbeatDraft.status}
+                                onChange={(event) =>
+                                  setHeartbeatDrafts((current) => ({
+                                    ...current,
+                                    [nodeId]: { ...heartbeatDraft, status: event.target.value }
+                                  }))
+                                }
+                              >
+                                {nodeStatusOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>{option.label}</option>
+                                ))}
+                              </select>
+                            </label>
+                            <button
+                              className="primary-button"
+                              disabled={storageActionKey === `${nodeId}:heartbeat`}
+                              onClick={() => handleStorageNodeHeartbeat(nodeId)}
+                              type="button"
+                            >
+                              {storageActionKey === `${nodeId}:heartbeat` ? "Sending..." : "Send Heartbeat"}
+                            </button>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
             ) : activeModule && (
               <section className="panel module-detail">
                 <div>
@@ -517,6 +881,43 @@ function getUserDisplayName(user) {
   const lastName = getValue(user, "lastName", "LastName");
   const fullName = [firstName, lastName].filter(Boolean).join(" ");
   return fullName || getValue(user, "username", "Username") || getValue(user, "email", "Email") || "User";
+}
+
+function getNodeStatusValue(node) {
+  const status = getValue(node, "status", "Status");
+  const matchingOption = nodeStatusOptions.find((option) =>
+    option.value === status || option.label.toLowerCase() === status.toLowerCase()
+  );
+
+  return matchingOption?.value ?? "1";
+}
+
+function getNodeStatusLabel(node) {
+  const status = getNodeStatusValue(node);
+  return nodeStatusOptions.find((option) => option.value === status)?.label ?? "Offline";
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return "0 B";
+
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const value = bytes / Math.pow(1024, index);
+
+  return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
+function formatDate(value) {
+  if (!value) return "Not set";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
 }
 
 export default AdminDashboardPage;

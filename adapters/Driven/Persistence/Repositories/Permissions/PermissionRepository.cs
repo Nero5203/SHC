@@ -27,6 +27,13 @@ namespace adapters.Driven.Persistence.Repositories.Permissions
                 .FirstOrDefaultAsync(p => p.PermissionId == permissionId);
         }
 
+        public async Task<IReadOnlyList<Permission>> GetAllAsync()
+        {
+            return await _context.Permissions
+                .OrderByDescending(p => p.GrantedAtUtc)
+                .ToListAsync();
+        }
+
         public async Task<Permission?> GetForSubjectResourceAsync(
             SubjectType subjectType,
             Guid subjectId,
