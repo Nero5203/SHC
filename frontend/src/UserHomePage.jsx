@@ -1,8 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   getJson,
   postJson,
   putJson,
+  deleteJson,
+  uploadFile,
+  downloadFileBlob,
   defaultApiUrl,
   getUserIdFromToken,
   getUserNameFromToken,
@@ -83,6 +86,18 @@ function UserHomePage({ onLogout }) {
 
   const [newFolderName, setNewFolderName] = useState("");
   const [creatingFolder, setCreatingFolder] = useState(false);
+
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [downloadProgress, setDownloadProgress] = useState(null);
+
+  const [deletingId, setDeletingId] = useState(null);
+  const [renamingId, setRenamingId] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
+
+  const fileInputRef = useRef(null);
 
   const userId = getUserIdFromToken();
   const tokenUserName = getUserNameFromToken() || "User";
@@ -188,6 +203,128 @@ function UserHomePage({ onLogout }) {
       alert(`Failed to create folder: ${error.message}`);
     } finally {
       setCreatingFolder(false);
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file || !userId) return;
+
+    setSelectedFile(file);
+    setUploadError("");
+    setUploading(true);
+
+    try {
+      await uploadFile(apiUrl, userId, currentFolder, file);
+      await fetchFolderContents(currentFolder);
+      setSelectedFile(null);
+    } catch (error) {
+      setUploadError(error.message);
+    } finally {
+      setUploading(false);
+      event.target.value = "";
+    }
+  };
+
+  const handleDownload = async (fileItem) => {
+    setDownloadProgress(fileItem.FileItemId);
+    try {
+      const blob = await downloadFileBlob(apiUrl, fileItem.FileItemId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileItem.FileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      alert(`Failed to download file: ${error.message}`);
+    } finally {
+      setDownloadProgress(null);
+    }
+  };
+
+  const handleDeleteFile = async (fileItem) => {
+    if (!window.confirm(`Delete "${fileItem.FileName}"?`)) return;
+    setDeletingId(fileItem.FileItemId);
+    try {
+      await deleteJson(apiUrl, `/api/files/${fileItem.FileItemId}`);
+      await fetchFolderContents(currentFolder);
+    } catch (error) {
+      alert(`Failed to delete file: ${error.message}`);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleDeleteFolder = async (folder) => {
+    if (!window.confirm(`Delete folder "${folder.Name}" and all its contents?`)) return;
+    setDeletingId(folder.FolderId);
+    try {
+      await deleteJson(apiUrl, `/api/folders/${folder.FolderId}`);
+      await fetchFolderContents(currentFolder);
+    } catch (error) {
+      alert(`Failed to delete folder: ${error.message}`);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const startRename = (item) => {
+    setRenamingId(item.FileItemId || item.FolderId);
+    setRenameValue(item.FileName || item.Name);
+  };
+
+  const cancelRename = () => {
+    setRenamingId(null);
+    setRenameValue("");
+  };
+
+  const submitRename = async (item) => {
+    const trimmed = renameValue.trim();
+    if (!trimmed) {
+      cancelRename();
+      return;
+    }
+
+    const isFile = !!item.FileItemId;
+    const id = isFile ? item.FileItemId : item.FolderId;
+    const endpoint = isFile
+      ? `/api/files/${id}/rename`
+      : `/api/folders/${id}/rename`;
+
+    try {
+      const body = isFile
+        ? { NewName: trimmed }
+        : { NewName: trimmed };
+
+      const response = await fetch(`${apiUrl.replace(/\/$/, "")}${endpoint}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("shc.authToken")}`
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        const contentType = response.headers.get("content-type") ?? "";
+        const payload = contentType.includes("application/json") ? await response.json() : await response.text();
+        const message = typeof payload === "string" && payload ? payload : payload?.title ?? payload?.message ?? `Request failed with ${response.status}`;
+        throw new Error(message);
+      }
+
+      await fetchFolderContents(currentFolder);
+    } catch (error) {
+      alert(`Failed to rename: ${error.message}`);
+    } finally {
+      setRenamingId(null);
+      setRenameValue("");
     }
   };
 
@@ -307,18 +444,29 @@ function UserHomePage({ onLogout }) {
                     <h2>My Files</h2>
                     <p>Browse and manage your files and folders.</p>
                   </div>
-                  <form className="new-folder-form" onSubmit={handleCreateFolder}>
-                    <input
-                      type="text"
-                      placeholder="New folder name"
-                      value={newFolderName}
-                      onChange={(e) => setNewFolderName(e.target.value)}
-                      disabled={creatingFolder}
-                    />
-                    <button className="primary-button" type="submit" disabled={creatingFolder || !newFolderName.trim()}>
-                      {creatingFolder ? "Creating..." : "New Folder"}
+                  <div className="files-actions">
+                    <form className="new-folder-form" onSubmit={handleCreateFolder}>
+                      <input
+                        type="text"
+                        placeholder="New folder name"
+                        value={newFolderName}
+                        onChange={(e) => setNewFolderName(e.target.value)}
+                        disabled={creatingFolder}
+                      />
+                      <button className="secondary-button" type="submit" disabled={creatingFolder || !newFolderName.trim()}>
+                        {creatingFolder ? "Creating..." : "New Folder"}
+                      </button>
+                    </form>
+                    <button className="primary-button" type="button" onClick={handleUploadClick} disabled={uploading}>
+                      {uploading ? "Uploading..." : "Upload File"}
                     </button>
-                  </form>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      style={{ display: "none" }}
+                      onChange={handleFileChange}
+                    />
+                  </div>
                 </div>
 
                 {currentFolder && (
@@ -327,30 +475,139 @@ function UserHomePage({ onLogout }) {
                   </button>
                 )}
 
+                {selectedFile && (
+                  <div className="upload-status">
+                    Uploading {selectedFile.name} ({formatBytes(selectedFile.size)})...
+                  </div>
+                )}
+
+                {uploadError && (
+                  <div className="upload-status error">{uploadError}</div>
+                )}
+
                 {loadingFiles ? (
                   <p className="loading-text">Loading files...</p>
                 ) : folderContents.folders.length === 0 && folderContents.files.length === 0 ? (
                   <p className="empty-text">No files or folders yet. Create a folder to get started.</p>
                 ) : (
                   <div className="file-list">
-                    {folderContents.folders.map((folder) => (
-                      <div key={folder.FolderId} className="file-item folder" onClick={() => openFolder(folder.FolderId)}>
-                        <div className="file-icon folder-icon">📁</div>
-                        <div className="file-info">
-                          <strong>{folder.Name}</strong>
-                          <small>Folder • Created {formatDate(folder.CreatedAt)}</small>
+                    {folderContents.folders.map((folder) => {
+                      const isRenaming = renamingId === folder.FolderId;
+                      const isDeleting = deletingId === folder.FolderId;
+
+                      return (
+                        <div key={folder.FolderId} className="file-item folder">
+                          <div className="file-icon folder-icon">📁</div>
+                          <div className="file-info">
+                            {isRenaming ? (
+                              <input
+                                className="rename-input"
+                                type="text"
+                                value={renameValue}
+                                onChange={(e) => setRenameValue(e.target.value)}
+                                onBlur={() => submitRename(folder)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") submitRename(folder);
+                                  if (e.key === "Escape") cancelRename();
+                                }}
+                                autoFocus
+                              />
+                            ) : (
+                              <strong onClick={() => openFolder(folder.FolderId)}>{folder.Name}</strong>
+                            )}
+                            <small>Folder • Created {formatDate(folder.CreatedAt)}</small>
+                          </div>
+                          <div className="file-actions">
+                            <button
+                              className="icon-button"
+                              onClick={() => openFolder(folder.FolderId)}
+                              title="Open"
+                              type="button"
+                              disabled={isRenaming}
+                            >
+                              Open
+                            </button>
+                            <button
+                              className="icon-button"
+                              onClick={() => startRename(folder)}
+                              title="Rename"
+                              type="button"
+                              disabled={isRenaming || isDeleting}
+                            >
+                              Rename
+                            </button>
+                            <button
+                              className="icon-button danger"
+                              onClick={() => handleDeleteFolder(folder)}
+                              title="Delete"
+                              type="button"
+                              disabled={isRenaming || isDeleting}
+                            >
+                              {isDeleting ? "Deleting..." : "Delete"}
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                    {folderContents.files.map((file) => (
-                      <div key={file.FileItemId} className="file-item">
-                        <div className="file-icon">📄</div>
-                        <div className="file-info">
-                          <strong>{file.FileName}</strong>
-                          <small>{file.FileType || "Unknown"} • {formatBytes(file.FileSize)}</small>
+                      );
+                    })}
+                    {folderContents.files.map((file) => {
+                      const isRenaming = renamingId === file.FileItemId;
+                      const isDeleting = deletingId === file.FileItemId;
+                      const isDownloading = downloadProgress === file.FileItemId;
+
+                      return (
+                        <div key={file.FileItemId} className="file-item">
+                          <div className="file-icon">📄</div>
+                          <div className="file-info">
+                            {isRenaming ? (
+                              <input
+                                className="rename-input"
+                                type="text"
+                                value={renameValue}
+                                onChange={(e) => setRenameValue(e.target.value)}
+                                onBlur={() => submitRename(file)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") submitRename(file);
+                                  if (e.key === "Escape") cancelRename();
+                                }}
+                                autoFocus
+                              />
+                            ) : (
+                              <strong>{file.FileName}</strong>
+                            )}
+                            <small>{file.FileType || "Unknown"} • {formatBytes(file.FileSize)}</small>
+                          </div>
+                          <div className="file-actions">
+                            <button
+                              className="icon-button"
+                              onClick={() => handleDownload(file)}
+                              title="Download"
+                              type="button"
+                              disabled={isDownloading || isRenaming || isDeleting}
+                            >
+                              {isDownloading ? "Saving..." : "Download"}
+                            </button>
+                            <button
+                              className="icon-button"
+                              onClick={() => startRename(file)}
+                              title="Rename"
+                              type="button"
+                              disabled={isRenaming || isDeleting || isDownloading}
+                            >
+                              Rename
+                            </button>
+                            <button
+                              className="icon-button danger"
+                              onClick={() => handleDeleteFile(file)}
+                              title="Delete"
+                              type="button"
+                              disabled={isRenaming || isDeleting || isDownloading}
+                            >
+                              {isDeleting ? "Deleting..." : "Delete"}
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -364,7 +621,7 @@ function UserHomePage({ onLogout }) {
                 ) : profile ? (
                   <div className="profile-info">
                     <div className="profile-avatar">
-                      {userDisplayName[0].toUpperCase()}
+                      {userDisplayName[0]?.toUpperCase() || "?"}
                     </div>
                     <div>
                       <strong>{userDisplayName}</strong>
