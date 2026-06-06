@@ -252,6 +252,7 @@ builder.Services.AddScoped<IListSystemSettingsUseCase, ListSystemSettingsUseCase
 builder.Services.AddScoped<IUpdateSystemSettingsUseCase, UpdateSystemSettingsUseCase>();
 builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+builder.Services.AddScoped<IGetAllPermissionsUseCase, GetAllPermissionsUseCase>();
 builder.Services.AddScoped<IGrantPermissionUseCase, GrantPermissionUseCase>();
 builder.Services.AddScoped<IUpdatePermissionUseCase, UpdatePermissionUseCase>();
 builder.Services.AddScoped<IRevokePermissionUseCase, RevokePermissionUseCase>();

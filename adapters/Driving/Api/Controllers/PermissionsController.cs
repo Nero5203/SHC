@@ -10,6 +10,7 @@ namespace api.Controllers
     [Route("api/permissions")]
     public class PermissionsController : ControllerBase
     {
+        private readonly IGetAllPermissionsUseCase _getAllPermissionsUseCase;
         private readonly IGrantPermissionUseCase _grantPermissionUseCase;
         private readonly IUpdatePermissionUseCase _updatePermissionUseCase;
         private readonly IRevokePermissionUseCase _revokePermissionUseCase;
@@ -18,6 +19,7 @@ namespace api.Controllers
         private readonly IGetPermissionsByResourceUseCase _getPermissionsByResourceUseCase;
 
         public PermissionsController(
+            IGetAllPermissionsUseCase getAllPermissionsUseCase,
             IGrantPermissionUseCase grantPermissionUseCase,
             IUpdatePermissionUseCase updatePermissionUseCase,
             IRevokePermissionUseCase revokePermissionUseCase,
@@ -25,12 +27,25 @@ namespace api.Controllers
             IGetPermissionsBySubjectUseCase getPermissionsBySubjectUseCase,
             IGetPermissionsByResourceUseCase getPermissionsByResourceUseCase)
         {
+            _getAllPermissionsUseCase = getAllPermissionsUseCase;
             _grantPermissionUseCase = grantPermissionUseCase;
             _updatePermissionUseCase = updatePermissionUseCase;
             _revokePermissionUseCase = revokePermissionUseCase;
             _checkPermissionUseCase = checkPermissionUseCase;
             _getPermissionsBySubjectUseCase = getPermissionsBySubjectUseCase;
             _getPermissionsByResourceUseCase = getPermissionsByResourceUseCase;
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<IReadOnlyList<PermissionResponseDto>>> GetAllPermissions()
+        {
+            var permissions = await _getAllPermissionsUseCase.ExecuteAsync();
+
+            var response = permissions
+                .Select(MapPermission)
+                .ToList();
+
+            return Ok(response);
         }
 
         [HttpPost]

@@ -7,6 +7,7 @@ namespace application.Ports.Driven.Permissions
     {
         Task CreateAsync(Permission permission);
         Task<Permission?> GetByIdAsync(Guid permissionId);
+        Task<IReadOnlyList<Permission>> GetAllAsync();
         Task<Permission?> GetForSubjectResourceAsync(
             SubjectType subjectType,
             Guid subjectId,
