@@ -1,4 +1,5 @@
 using application.Dto.Purchases;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using application.Ports.Driving.Purchases;
 
@@ -13,19 +14,22 @@ namespace api.Controllers
         private readonly IGetPurchasesByUserIdUseCase _getPurchasesByUserIdUseCase;
         private readonly IUpdatePurchaseStatusUseCase _updatePurchaseStatusUseCase;
         private readonly IGetInvoiceByPurchaseIdUseCase _getInvoiceByPurchaseIdUseCase;
+        private readonly IMapper _mapper;
 
         public PurchasesController(
             ICreatePurchaseUseCase createPurchaseUseCase,
             IGetPurchaseByIdUseCase getPurchaseByIdUseCase,
             IGetPurchasesByUserIdUseCase getPurchasesByUserIdUseCase,
             IUpdatePurchaseStatusUseCase updatePurchaseStatusUseCase,
-            IGetInvoiceByPurchaseIdUseCase getInvoiceByPurchaseIdUseCase)
+            IGetInvoiceByPurchaseIdUseCase getInvoiceByPurchaseIdUseCase,
+            IMapper mapper)
         {
             _createPurchaseUseCase = createPurchaseUseCase;
             _getPurchaseByIdUseCase = getPurchaseByIdUseCase;
             _getPurchasesByUserIdUseCase = getPurchasesByUserIdUseCase;
             _updatePurchaseStatusUseCase = updatePurchaseStatusUseCase;
             _getInvoiceByPurchaseIdUseCase = getInvoiceByPurchaseIdUseCase;
+            _mapper = mapper;
         }
 
         [HttpPost]
@@ -130,24 +134,7 @@ namespace api.Controllers
                 return NotFound();
             }
 
-            var response = new InvoiceResponseDto
-            {
-                InvoiceId = invoice.InvoiceId,
-                InvoiceNumber = invoice.InvoiceNumber,
-                UserId = invoice.UserId,
-                PurchaseId = invoice.PurchaseId,
-                SubtotalAmount = invoice.SubtotalAmount,
-                TaxAmount = invoice.TaxAmount,
-                DiscountAmount = invoice.DiscountAmount,
-                TotalAmount = invoice.TotalAmount,
-                Currency = invoice.Currency,
-                Status = invoice.Status,
-                IssuedAt = invoice.IssuedAt,
-                DueAt = invoice.DueAt,
-                PaidAt = invoice.PaidAt,
-                VoidedAt = invoice.VoidedAt,
-                ProviderInvoiceId = invoice.ProviderInvoiceId
-            };
+            var response = _mapper.Map<InvoiceResponseDto>(invoice);
 
             return Ok(response);
         }

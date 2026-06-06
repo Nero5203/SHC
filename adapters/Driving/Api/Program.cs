@@ -45,6 +45,7 @@ using application.Ports.Driving.FileStorage.Folder;
 using application.UseCases.Subscriptions;
 using Microsoft.EntityFrameworkCore;
 using adapters.Driven.ExternalServices.Auth;
+using AutoMapper;
 using application.Ports.Driven.Auth;
 using application.Ports.Driving.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -69,6 +70,7 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddAutoMapper(typeof(Program));
 
 //JWT Authentication
 builder.Services.AddAuthentication(options =>
