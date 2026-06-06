@@ -25,6 +25,10 @@ using adapters.Driven.Persistence.Repositories.FileStorage;
 using application.Ports.Driven.Purchases;
 using application.Ports.Driving.Subscriptions;
 using application.Ports.Driving.Purchases;
+using application.Ports.Driven.Payments;
+using application.Ports.Driving.Payments;
+using adapters.Driven.ExternalServices.Payments;
+using application.UseCases.Payments;
 using application.Ports.Driven.LinkSharing;
 using application.Ports.Driving.LinkSharing;
 using application.Ports.Driven.StorageNodes;
@@ -58,6 +62,7 @@ using application.UseCases.Auth;
 using api.Authorization;
 using application.Common.Authorization;
 using Microsoft.AspNetCore.Authorization;
+using Stripe;
 
 
 
@@ -147,7 +152,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ShcDbContext>(options =>
     options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 0))));
 
-
+StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IGetUserByEmailUseCase, GetUserByEmailUseCase>();
@@ -162,6 +167,12 @@ builder.Services.AddScoped<IGetPurchaseByIdUseCase, GetPurchaseByIdUseCase>();
 builder.Services.AddScoped<IGetPurchasesByUserIdUseCase, GetPurchasesByUserIdUseCase>();
 builder.Services.AddScoped<IUpdatePurchaseStatusUseCase, UpdatePurchaseStatusUseCase>();
 builder.Services.AddScoped<IGetInvoiceByPurchaseIdUseCase, GetInvoiceByPurchaseIdUseCase>();
+builder.Services.AddScoped<ICreateCheckoutSessionUseCase, CreateCheckoutSessionUseCase>();
+builder.Services.AddScoped<IProcessPaymentWebhookUseCase, ProcessPaymentWebhookUseCase>();
+builder.Services.AddScoped<IPaymentGatewayService, StripePaymentGatewayService>();
+builder.Services.AddScoped<ICreateCheckoutSessionUseCase, CreateCheckoutSessionUseCase>();
+builder.Services.AddScoped<IProcessPaymentWebhookUseCase, ProcessPaymentWebhookUseCase>();
+builder.Services.AddScoped<IPaymentGatewayService, StripePaymentGatewayService>();
 builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
 builder.Services.AddScoped<ICreateSubscriptionPlanUseCase, CreateSubscriptionPlanUseCase>();
 builder.Services.AddScoped<IListSubscriptionPlansUseCase, ListSubscriptionPlansUseCase>();
@@ -271,7 +282,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseRouting();
 app.MapControllers();
 
 app.Run();

@@ -19,7 +19,9 @@ namespace Domain.Entities.Purchases
 
         public PurchaseStatus Status { get; set; }
 
-        
+        public string? ProviderCheckoutSessionId { get; set; }
+        public string? ProviderPaymentIntentId { get; set; }
+
         public Invoice? Invoice { get; set; }
     }
 }

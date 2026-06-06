@@ -386,6 +386,7 @@ namespace adapters.Driven.Persistence.Data
                 .HasForeignKey(ti => ti.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+
         }
 
         private static void SeedAuthorization(ModelBuilder modelBuilder)

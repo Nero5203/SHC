@@ -10,5 +10,6 @@ namespace application.Ports.Driven.Purchases
         Task<IReadOnlyList<Purchase>> GetByUserIdAsync(Guid userId);
         Task<Invoice?> GetInvoiceByPurchaseIdAsync(Guid purchaseId);
         Task UpdateStatusAsync(Purchase purchase, PurchaseStatus status);
+        Task UpdateAsync(Purchase purchase);
     }
 }

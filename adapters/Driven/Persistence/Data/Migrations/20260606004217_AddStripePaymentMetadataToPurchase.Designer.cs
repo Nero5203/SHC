@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using adapters.Driven.Persistence.Data;
 
@@ -10,9 +11,11 @@ using adapters.Driven.Persistence.Data;
 namespace adapters.Driven.Persistence.Data.Migrations
 {
     [DbContext(typeof(ShcDbContext))]
-    partial class ShcDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260606004217_AddStripePaymentMetadataToPurchase")]
+    partial class AddStripePaymentMetadataToPurchase
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

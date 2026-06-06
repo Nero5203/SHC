@@ -45,5 +45,11 @@ namespace adapters.Driven.Persistence.Repositories.Purchases
             purchase.Status = status;
             await _context.SaveChangesAsync();
         }
+
+        public async Task UpdateAsync(Purchase purchase)
+        {
+            _context.Purchases.Update(purchase);
+            await _context.SaveChangesAsync();
+        }
     }
 }
