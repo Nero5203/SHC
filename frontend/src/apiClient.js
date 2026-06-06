@@ -47,6 +47,54 @@ export async function deleteJson(apiUrl, path) {
   return handleResponse(response);
 }
 
+export async function uploadFile(apiUrl, userId, folderId, file) {
+  const token = getAuthToken();
+  const formData = new FormData();
+  formData.append("UserId", userId);
+  if (folderId) formData.append("FolderId", folderId);
+  formData.append("File", file);
+
+  const response = await fetch(`${apiUrl.replace(/\/$/, "")}/api/files/upload`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: formData
+  });
+
+  return handleResponse(response);
+}
+
+export async function downloadFileBlob(apiUrl, fileItemId) {
+  const token = getAuthToken();
+  const response = await fetch(`${apiUrl.replace(/\/$/, "")}/api/files/${fileItemId}/download`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined
+  });
+
+  if (!response.ok) {
+    const contentType = response.headers.get("content-type") ?? "";
+    const payload = contentType.includes("application/json") ? await response.json() : await response.text();
+    const message = typeof payload === "string" && payload ? payload : payload?.title ?? payload?.message ?? `Request failed with ${response.status}`;
+    throw new Error(message);
+  }
+
+  return response.blob();
+}
+
+export async function postFormData(apiUrl, path, body) {
+  const token = getAuthToken();
+  const formData = new FormData();
+  Object.entries(body).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) formData.append(key, value);
+  });
+
+  const response = await fetch(`${apiUrl.replace(/\/$/, "")}${path}`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: formData
+  });
+
+  return handleResponse(response);
+}
+
 export function getAuthToken() {
   return localStorage.getItem("shc.authToken");
 }
