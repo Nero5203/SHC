@@ -3,8 +3,10 @@ using api.Authorization;
 using application.Common.Authorization;
 using application.Dto.FileStorage.File;
 using application.Ports.Driving.FileStorage.File;
+using application.Ports.Driving.Notifications;
 using Domain.Entities.FileStorage;
 using Domain.Entities.LinkSharing;
+using Domain.Entities.Notifications.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SHC.Domain.Entities.Permissions.Enums;
@@ -28,6 +30,7 @@ namespace api.Controllers
         private readonly IShareFileUseCase _shareFileUseCase;
         private readonly IAuthorizationService _authorizationService;
         private readonly IFileActivityRepository _fileActivityRepository;
+        private readonly ICreateNotificationUseCase _createNotificationUseCase;
 
         public FilesController(
             IUploadFileUseCase uploadFileUseCase,
@@ -39,7 +42,8 @@ namespace api.Controllers
             IDeleteFileUseCase deleteFileUseCase,
             IShareFileUseCase shareFileUseCase,
             IAuthorizationService authorizationService,
-            IFileActivityRepository fileActivityRepository)
+            IFileActivityRepository fileActivityRepository,
+            ICreateNotificationUseCase createNotificationUseCase)
         {
             _uploadFileUseCase = uploadFileUseCase;
             _getFileByIdUseCase = getFileByIdUseCase;
@@ -51,6 +55,7 @@ namespace api.Controllers
             _shareFileUseCase = shareFileUseCase;
             _authorizationService = authorizationService;
             _fileActivityRepository = fileActivityRepository;
+            _createNotificationUseCase = createNotificationUseCase;
         }
 
         [HttpPost("upload")]
@@ -81,6 +86,11 @@ namespace api.Controllers
                     fileItem.FileItemId,
                     FileActivityType.Uploaded
                 );
+                await CreateFileNotificationAsync(
+                    "File uploaded",
+                    $"You uploaded {fileItem.FileName}.",
+                    fileItem.UserId,
+                    fileItem.FileItemId);
 
                 return CreatedAtAction(
                     nameof(GetFileById),
@@ -183,16 +193,21 @@ namespace api.Controllers
 
             var fileItem = await _renameFileUseCase.ExecuteAsync(fileItemId, dto.NewName);
 
+            if (fileItem == null)
+            {
+                return NotFound();
+            }
+
             await _fileActivityRepository.TrackAsync(
                 User.GetUserId(),
                 fileItemId,
                 FileActivityType.Renamed
             );
-
-            if (fileItem == null)
-            {
-                return NotFound();
-            }
+            await CreateFileNotificationAsync(
+                "File renamed",
+                $"Your file was renamed to {fileItem.FileName}.",
+                fileItem.UserId,
+                fileItem.FileItemId);
 
             return Ok(new RenameFileResponseDto { File = MapFile(fileItem) });
         }
@@ -228,6 +243,12 @@ namespace api.Controllers
                     return NotFound();
                 }
 
+                await CreateFileNotificationAsync(
+                    "File moved",
+                    $"{fileItem.FileName} was moved to another folder.",
+                    fileItem.UserId,
+                    fileItem.FileItemId);
+
                 return Ok(new MoveFileResponseDto { File = MapFile(fileItem) });
             }
             catch (InvalidOperationException ex)
@@ -261,6 +282,11 @@ namespace api.Controllers
                 fileItemId,
                 FileActivityType.Deleted
             );
+            await CreateFileNotificationAsync(
+                "File deleted",
+                "A file was moved to trash.",
+                User.GetUserId(),
+                fileItemId);
 
             return Ok(new DeleteFileResponseDto { Success = true });
         }
@@ -291,7 +317,34 @@ namespace api.Controllers
                 return NotFound();
             }
 
+            await _createNotificationUseCase.ExecuteAsync(
+                "File shared",
+                "A share link was created for one of your files.",
+                NotificationType.FileShared,
+                NotificationChannel.InApp,
+                User.GetUserId(),
+                User.GetUserId(),
+                fileItemId,
+                null);
+
             return Ok(MapShareFile(sharedLink));
+        }
+
+        private async Task CreateFileNotificationAsync(
+            string title,
+            string message,
+            Guid userId,
+            Guid fileItemId)
+        {
+            await _createNotificationUseCase.ExecuteAsync(
+                title,
+                message,
+                NotificationType.FileUpdated,
+                NotificationChannel.InApp,
+                userId,
+                User.GetUserId(),
+                fileItemId,
+                null);
         }
 
         private static FileDto MapFile(FileItem fileItem)

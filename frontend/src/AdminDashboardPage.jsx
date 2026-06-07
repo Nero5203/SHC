@@ -145,7 +145,7 @@ const adminModules = [
     permissions: ["System.Admin"],
     route: "/api/purchases",
     countPath: "/api/purchases",
-    description: "Review purchases, update payment status, open invoices, and create checkout links."
+    description: "Review purchases, update payment status, and manage invoices."
   },
   {
     key: "subscriptions",
@@ -199,7 +199,6 @@ function AdminDashboardPage({ onLogout }) {
   const [purchaseIdSearch, setPurchaseIdSearch] = useState("");
   const [purchaseUserIdSearch, setPurchaseUserIdSearch] = useState("");
   const [invoiceDetails, setInvoiceDetails] = useState(null);
-  const [checkoutDetails, setCheckoutDetails] = useState(null);
   const [loadingPurchases, setLoadingPurchases] = useState(false);
   const [purchasesError, setPurchasesError] = useState("");
   const [purchaseActionKey, setPurchaseActionKey] = useState("");
@@ -551,27 +550,6 @@ function AdminDashboardPage({ onLogout }) {
       const data = await postJson(apiUrl, `/api/purchases/${purchaseId}/invoice`);
       setInvoiceDetails(data);
       await loadInvoices();
-    } catch (error) {
-      setPurchasesError(error.message);
-    } finally {
-      setPurchaseActionKey("");
-    }
-  }
-
-  async function handleCreateCheckout(purchaseId) {
-    const actionKey = `${purchaseId}:checkout`;
-    setPurchaseActionKey(actionKey);
-    setPurchasesError("");
-    setCheckoutDetails(null);
-
-    try {
-      const baseUrl = window.location.origin;
-      const data = await postJson(apiUrl, `/api/purchases/${purchaseId}/checkout`, {
-        SuccessUrl: `${baseUrl}/payment-success?purchaseId=${purchaseId}`,
-        CancelUrl: `${baseUrl}/payment-cancelled?purchaseId=${purchaseId}`
-      });
-
-      setCheckoutDetails(data);
     } catch (error) {
       setPurchasesError(error.message);
     } finally {
@@ -1460,7 +1438,7 @@ function AdminDashboardPage({ onLogout }) {
                   <div>
                     <p className="eyebrow">Billing</p>
                     <h2>Purchases</h2>
-                    <p>Review purchases, update status, open invoices, and create checkout links for pending payments.</p>
+                    <p>Review purchases, update status, and generate or view invoices.</p>
                   </div>
                   <button className="secondary-button" disabled={loadingPurchases} onClick={loadPurchases} type="button">
                     {loadingPurchases ? "Refreshing..." : "Load All"}
@@ -1514,16 +1492,6 @@ function AdminDashboardPage({ onLogout }) {
                     </label>
                   </form>
                 </div>
-
-                {checkoutDetails && (
-                  <div className="purchase-result-box">
-                    <strong>Checkout session created</strong>
-                    <a href={getValue(checkoutDetails, "checkoutUrl", "CheckoutUrl")} target="_blank" rel="noreferrer">
-                      Open checkout link
-                    </a>
-                    <span>{getValue(checkoutDetails, "checkoutSessionId", "CheckoutSessionId")}</span>
-                  </div>
-                )}
 
                 {invoiceDetails && (
                   <div className="purchase-result-box">
@@ -1596,14 +1564,6 @@ function AdminDashboardPage({ onLogout }) {
                                     {purchaseActionKey === `${purchaseId}:invoice` || purchaseActionKey === `${purchaseId}:generate-invoice`
                                       ? "Working..."
                                       : purchaseInvoice ? "View Invoice" : "Generate Invoice"}
-                                  </button>
-                                  <button
-                                    className="secondary-button"
-                                    disabled={purchaseActionKey === `${purchaseId}:checkout`}
-                                    onClick={() => handleCreateCheckout(purchaseId)}
-                                    type="button"
-                                  >
-                                    {purchaseActionKey === `${purchaseId}:checkout` ? "Creating..." : "Checkout"}
                                   </button>
                                 </div>
                               </td>

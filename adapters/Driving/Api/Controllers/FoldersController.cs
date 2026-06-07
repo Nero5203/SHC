@@ -3,8 +3,10 @@ using application.Common.Authorization;
 using application.Dto.FileStorage.File;
 using application.Dto.FileStorage.Folder;
 using application.Ports.Driving.FileStorage.Folder;
+using application.Ports.Driving.Notifications;
 using Domain.Entities.FileStorage;
 using Domain.Entities.LinkSharing;
+using Domain.Entities.Notifications.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SHC.Domain.Entities.Permissions.Enums;
@@ -25,6 +27,7 @@ namespace api.Controllers
         private readonly IArchiveFolderUseCase _archiveFolderUseCase;
         private readonly IShareFolderUseCase _shareFolderUseCase;
         private readonly IAuthorizationService _authorizationService;
+        private readonly ICreateNotificationUseCase _createNotificationUseCase;
 
         public FoldersController(
             ICreateFolderUseCase createFolderUseCase,
@@ -35,7 +38,8 @@ namespace api.Controllers
             IDeleteFolderUseCase deleteFolderUseCase,
             IArchiveFolderUseCase archiveFolderUseCase,
             IShareFolderUseCase shareFolderUseCase,
-            IAuthorizationService authorizationService)
+            IAuthorizationService authorizationService,
+            ICreateNotificationUseCase createNotificationUseCase)
         {
             _createFolderUseCase = createFolderUseCase;
             _getFolderByIdUseCase = getFolderByIdUseCase;
@@ -46,6 +50,7 @@ namespace api.Controllers
             _archiveFolderUseCase = archiveFolderUseCase;
             _shareFolderUseCase = shareFolderUseCase;
             _authorizationService = authorizationService;
+            _createNotificationUseCase = createNotificationUseCase;
         }
 
         [HttpPost]
@@ -58,6 +63,13 @@ namespace api.Controllers
                     dto.UserId,
                     dto.Name,
                     dto.ParentFolderId);
+
+                await CreateFolderNotificationAsync(
+                    "Folder created",
+                    $"You created the folder {folder.Name}.",
+                    folder.UserId,
+                    folder.FolderId,
+                    NotificationType.FileUpdated);
 
                 return CreatedAtAction(
                     nameof(GetFolderById),
@@ -136,6 +148,13 @@ namespace api.Controllers
                 return NotFound();
             }
 
+            await CreateFolderNotificationAsync(
+                "Folder renamed",
+                $"Your folder was renamed to {folder.Name}.",
+                folder.UserId,
+                folder.FolderId,
+                NotificationType.FileUpdated);
+
             return Ok(new RenameFolderResponseDto { Folder = MapFolder(folder) });
         }
 
@@ -163,6 +182,13 @@ namespace api.Controllers
                 {
                     return NotFound();
                 }
+
+                await CreateFolderNotificationAsync(
+                    "Folder moved",
+                    $"{folder.Name} was moved.",
+                    folder.UserId,
+                    folder.FolderId,
+                    NotificationType.FileUpdated);
 
                 return Ok(new MoveFolderResponseDto { Folder = MapFolder(folder) });
             }
@@ -193,6 +219,13 @@ namespace api.Controllers
                 return NotFound();
             }
 
+            await CreateFolderNotificationAsync(
+                "Folder archived",
+                $"{folder.Name} was archived.",
+                folder.UserId,
+                folder.FolderId,
+                NotificationType.FileUpdated);
+
             return Ok(MapFolder(folder));
         }
 
@@ -216,6 +249,13 @@ namespace api.Controllers
             {
                 return NotFound();
             }
+
+            await CreateFolderNotificationAsync(
+                "Folder deleted",
+                "A folder was moved to trash.",
+                User.GetUserId(),
+                folderId,
+                NotificationType.FileUpdated);
 
             return Ok(new DeleteFolderResponseDto { Success = true });
         }
@@ -246,7 +286,32 @@ namespace api.Controllers
                 return NotFound();
             }
 
+            await CreateFolderNotificationAsync(
+                "Folder shared",
+                "A share link was created for one of your folders.",
+                sharedLink.UserId,
+                folderId,
+                NotificationType.FolderShared);
+
             return Ok(MapShareFolder(sharedLink));
+        }
+
+        private async Task CreateFolderNotificationAsync(
+            string title,
+            string message,
+            Guid userId,
+            Guid folderId,
+            NotificationType type)
+        {
+            await _createNotificationUseCase.ExecuteAsync(
+                title,
+                message,
+                type,
+                NotificationChannel.InApp,
+                userId,
+                User.GetUserId(),
+                null,
+                folderId);
         }
 
         private static FolderDto MapFolder(Domain.Entities.FileStorage.Folder folder)

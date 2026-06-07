@@ -1818,7 +1818,7 @@ h3 {
 
 .purchase-actions {
   display: grid;
-  grid-template-columns: minmax(130px, 1fr) auto auto;
+  grid-template-columns: minmax(130px, 1fr) auto;
   gap: 8px;
   align-items: center;
 }

@@ -2,6 +2,9 @@ using application.Dto.LinkSharing;
 using Domain.Entities.LinkSharing;
 using Microsoft.AspNetCore.Mvc;
 using application.Ports.Driving.LinkSharing;
+using application.Ports.Driving.Notifications;
+using Domain.Entities.LinkSharing.Enums;
+using Domain.Entities.Notifications.Enums;
 
 namespace api.Controllers.LinkSharing
 {
@@ -15,6 +18,7 @@ namespace api.Controllers.LinkSharing
         private readonly IGetSharedLinksByUserIdUseCase _getSharedLinksByUserIdUseCase;
         private readonly IUpdateSharedLinkUseCase _updateSharedLinkUseCase;
         private readonly IDeactivateSharedLinkUseCase _deactivateSharedLinkUseCase;
+        private readonly ICreateNotificationUseCase _createNotificationUseCase;
 
         public SharedLinksController(
             ICreateSharedLinkUseCase createSharedLinkUseCase,
@@ -22,7 +26,8 @@ namespace api.Controllers.LinkSharing
             IGetSharedLinkByTokenUseCase getSharedLinkByTokenUseCase,
             IGetSharedLinksByUserIdUseCase getSharedLinksByUserIdUseCase,
             IUpdateSharedLinkUseCase updateSharedLinkUseCase,
-            IDeactivateSharedLinkUseCase deactivateSharedLinkUseCase)
+            IDeactivateSharedLinkUseCase deactivateSharedLinkUseCase,
+            ICreateNotificationUseCase createNotificationUseCase)
         {
             _createSharedLinkUseCase = createSharedLinkUseCase;
             _getSharedLinkByIdUseCase = getSharedLinkByIdUseCase;
@@ -30,6 +35,7 @@ namespace api.Controllers.LinkSharing
             _getSharedLinksByUserIdUseCase = getSharedLinksByUserIdUseCase;
             _updateSharedLinkUseCase = updateSharedLinkUseCase;
             _deactivateSharedLinkUseCase = deactivateSharedLinkUseCase;
+            _createNotificationUseCase = createNotificationUseCase;
         }
 
         [HttpPost]
@@ -45,6 +51,7 @@ namespace api.Controllers.LinkSharing
                 dto.AllowDownload);
 
             var response = MapToResponse(sharedLink);
+            await CreateSharedLinkNotificationAsync(sharedLink);
 
             return CreatedAtAction(nameof(GetSharedLinkById), new { sharedLinkId = sharedLink.SharedLinkId }, response);
         }
@@ -138,6 +145,23 @@ namespace api.Controllers.LinkSharing
                 CanEdit = sharedLink.CanEdit,
                 AllowDownload = sharedLink.AllowDownload
             };
+        }
+
+        private async Task CreateSharedLinkNotificationAsync(SharedLink sharedLink)
+        {
+            var isFolder = sharedLink.TargetType == ShareTargetType.Folder;
+
+            await _createNotificationUseCase.ExecuteAsync(
+                isFolder ? "Folder shared" : "File shared",
+                isFolder
+                    ? "A share link was created for one of your folders."
+                    : "A share link was created for one of your files.",
+                isFolder ? NotificationType.FolderShared : NotificationType.FileShared,
+                NotificationChannel.InApp,
+                sharedLink.UserId,
+                sharedLink.UserId,
+                isFolder ? null : sharedLink.TargetId,
+                isFolder ? sharedLink.TargetId : null);
         }
     }
 }
