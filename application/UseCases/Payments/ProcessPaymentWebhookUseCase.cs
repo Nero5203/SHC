@@ -2,6 +2,7 @@ using application.Ports.Driven.Payments;
 using application.Ports.Driven.Notifications;
 using application.Ports.Driven.Purchases;
 using application.Ports.Driving.Payments;
+using application.UseCases.Purchases;
 using application.UseCases.Subscriptions;
 using Domain.Entities.Notifications.Enums;
 using Domain.Entities.Purchases.Enums;
@@ -55,6 +56,7 @@ namespace application.UseCases.Payments
             var previousStatus = purchase.Status;
             await _purchaseRepository.UpdateStatusAsync(purchase, webhookResult.PurchaseStatus.Value);
             await UpdateSubscriptionStatusAsync(purchase.SubscriptionId, webhookResult.PurchaseStatus.Value);
+            await GenerateInvoiceIfPaidAsync(purchase, webhookResult.PurchaseStatus.Value);
 
             if (previousStatus != webhookResult.PurchaseStatus.Value)
             {
@@ -90,6 +92,25 @@ namespace application.UseCases.Payments
             }
 
             await _subscriptionRepository.UpdateSubscriptionAsync(subscription);
+        }
+
+        private async Task GenerateInvoiceIfPaidAsync(
+            Domain.Entities.Purchases.Purchase purchase,
+            PurchaseStatus purchaseStatus)
+        {
+            if (purchaseStatus != PurchaseStatus.Paid)
+            {
+                return;
+            }
+
+            var existingInvoice = await _purchaseRepository.GetInvoiceByPurchaseIdAsync(purchase.PurchaseId);
+            if (existingInvoice != null)
+            {
+                return;
+            }
+
+            var invoice = InvoiceFactory.CreateFromPurchase(purchase, DateTime.UtcNow);
+            await _purchaseRepository.CreateInvoiceAsync(invoice);
         }
 
         private async Task CreateBillingNotificationAsync(

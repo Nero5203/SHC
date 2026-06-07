@@ -74,23 +74,24 @@ namespace adapters.Driven.Persistence.Repositories.Purchases
 
         public async Task<IReadOnlyList<Subscription>> GetSubscriptionsByUserIdAsync(Guid userId)
         {
-            return await _context.UserSubscriptions
-                .Where(userSubscription => userSubscription.UserId == userId && userSubscription.RemovedAt == null)
-                .Select(userSubscription => userSubscription.Subscription)
+            return await _context.Subscriptions
                 .Include(subscription => subscription.SubscriptionPlan)
                 .Include(subscription => subscription.UserSubscriptions)
+                .Where(subscription => subscription.UserSubscriptions
+                    .Any(userSubscription => userSubscription.UserId == userId && userSubscription.RemovedAt == null))
                 .OrderByDescending(subscription => subscription.StartedAt)
                 .ToListAsync();
         }
 
         public async Task<Subscription?> GetPendingSubscriptionByUserIdAndPlanIdAsync(Guid userId, Guid subscriptionPlanId)
         {
-            return await _context.UserSubscriptions
-                .Where(userSubscription => userSubscription.UserId == userId && userSubscription.RemovedAt == null)
-                .Select(userSubscription => userSubscription.Subscription)
+            return await _context.Subscriptions
                 .Include(subscription => subscription.SubscriptionPlan)
                 .Include(subscription => subscription.UserSubscriptions)
                 .Where(subscription =>
+                    subscription.UserSubscriptions.Any(userSubscription =>
+                        userSubscription.UserId == userId &&
+                        userSubscription.RemovedAt == null) &&
                     subscription.SubscriptionPlanId == subscriptionPlanId &&
                     subscription.Status == SubscriptionStatus.Pending &&
                     subscription.EndedAt == null)
@@ -100,12 +101,13 @@ namespace adapters.Driven.Persistence.Repositories.Purchases
 
         public async Task<Subscription?> GetActiveSubscriptionByUserIdAsync(Guid userId, DateTime utcNow)
         {
-            return await _context.UserSubscriptions
-                .Where(userSubscription => userSubscription.UserId == userId && userSubscription.RemovedAt == null)
-                .Select(userSubscription => userSubscription.Subscription)
+            return await _context.Subscriptions
                 .Include(subscription => subscription.SubscriptionPlan)
                 .Include(subscription => subscription.UserSubscriptions)
                 .Where(subscription =>
+                    subscription.UserSubscriptions.Any(userSubscription =>
+                        userSubscription.UserId == userId &&
+                        userSubscription.RemovedAt == null) &&
                     (subscription.Status == SubscriptionStatus.Active || subscription.Status == SubscriptionStatus.Trialing) &&
                     subscription.CurrentPeriodStart <= utcNow &&
                     subscription.CurrentPeriodEnd > utcNow &&

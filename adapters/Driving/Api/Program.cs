@@ -215,6 +215,8 @@ builder.Services.AddScoped<IGetPurchaseByIdUseCase, GetPurchaseByIdUseCase>();
 builder.Services.AddScoped<IGetPurchasesByUserIdUseCase, GetPurchasesByUserIdUseCase>();
 builder.Services.AddScoped<IUpdatePurchaseStatusUseCase, UpdatePurchaseStatusUseCase>();
 builder.Services.AddScoped<IGetInvoiceByPurchaseIdUseCase, GetInvoiceByPurchaseIdUseCase>();
+builder.Services.AddScoped<IGenerateInvoiceForPurchaseUseCase, GenerateInvoiceForPurchaseUseCase>();
+builder.Services.AddScoped<IListInvoicesUseCase, ListInvoicesUseCase>();
 builder.Services.AddScoped<ICreateCheckoutSessionUseCase, CreateCheckoutSessionUseCase>();
 builder.Services.AddScoped<IProcessPaymentWebhookUseCase, ProcessPaymentWebhookUseCase>();
 builder.Services.AddScoped<IPaymentGatewayService, StripePaymentGatewayService>();

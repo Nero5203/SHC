@@ -25,6 +25,16 @@ namespace application.UseCases.Purchases
 
             await _purchaseRepository.UpdateStatusAsync(purchase, status);
 
+            if (status == PurchaseStatus.Paid)
+            {
+                var existingInvoice = await _purchaseRepository.GetInvoiceByPurchaseIdAsync(purchaseId);
+                if (existingInvoice == null)
+                {
+                    var invoice = InvoiceFactory.CreateFromPurchase(purchase, DateTime.UtcNow);
+                    await _purchaseRepository.CreateInvoiceAsync(invoice);
+                }
+            }
+
             return purchase;
         }
     }

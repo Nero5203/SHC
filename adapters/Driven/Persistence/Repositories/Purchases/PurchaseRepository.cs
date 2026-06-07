@@ -50,10 +50,23 @@ namespace adapters.Driven.Persistence.Repositories.Purchases
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<IReadOnlyList<Invoice>> GetAllInvoicesAsync()
+        {
+            return await _context.Invoices
+                .OrderByDescending(i => i.IssuedAt)
+                .ToListAsync();
+        }
+
         public async Task<Invoice?> GetInvoiceByPurchaseIdAsync(Guid purchaseId)
         {
             return await _context.Invoices
                 .FirstOrDefaultAsync(i => i.PurchaseId == purchaseId);
+        }
+
+        public async Task CreateInvoiceAsync(Invoice invoice)
+        {
+            _context.Invoices.Add(invoice);
+            await _context.SaveChangesAsync();
         }
 
         public async Task UpdateStatusAsync(Purchase purchase, PurchaseStatus status)

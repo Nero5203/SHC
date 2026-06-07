@@ -2097,7 +2097,7 @@ function AdminDashboardPage({ onLogout }) {
                   </form>
                 )}
               </section>
-            ) : activeModule && (
+            ) : activeModule?.key !== "dashboard" && activeModule && (
               <section className="panel module-detail">
                 <div>
                   <p className="eyebrow">{activeModule.area}</p>
@@ -2107,7 +2107,7 @@ function AdminDashboardPage({ onLogout }) {
                 <dl>
                   <div>
                     <dt>Required permission</dt>
-                    <dd>{activeModule.permissions.join(" or ")}</dd>
+                    <dd>{(activeModule.permissions ?? ["System.Admin"]).join(" or ")}</dd>
                   </div>
                   <div>
                     <dt>Main API route</dt>
