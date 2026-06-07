@@ -82,9 +82,6 @@ namespace adapters.Driven.Persistence.Data.Migrations
                     b.Property<Guid?>("FileItemId")
                         .HasColumnType("char(36)");
 
-                    b.Property<Guid?>("FileItemId1")
-                        .HasColumnType("char(36)");
-
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -101,18 +98,11 @@ namespace adapters.Driven.Persistence.Data.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("char(36)");
 
-                    b.Property<Guid>("UserId1")
-                        .HasColumnType("char(36)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("FileItemId");
 
-                    b.HasIndex("FileItemId1");
-
                     b.HasIndex("UserId");
-
-                    b.HasIndex("UserId1");
 
                     b.ToTable("AISuggestions");
                 });
@@ -1130,27 +1120,17 @@ namespace adapters.Driven.Persistence.Data.Migrations
                     b.Property<Guid>("FileItemId")
                         .HasColumnType("char(36)");
 
-                    b.Property<Guid?>("FileItemId1")
-                        .HasColumnType("char(36)");
-
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("char(36)");
 
-                    b.Property<Guid?>("UserId1")
-                        .HasColumnType("char(36)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("FileItemId");
 
-                    b.HasIndex("FileItemId1");
-
                     b.HasIndex("UserId");
-
-                    b.HasIndex("UserId1");
 
                     b.ToTable("FileActivities");
                 });
@@ -1168,24 +1148,14 @@ namespace adapters.Driven.Persistence.Data.Migrations
 
             modelBuilder.Entity("Domain.Entities.AI.AISuggestion", b =>
                 {
-                    b.HasOne("Domain.Entities.FileStorage.FileItem", null)
-                        .WithMany()
+                    b.HasOne("Domain.Entities.FileStorage.FileItem", "FileItem")
+                        .WithMany("AISuggestions")
                         .HasForeignKey("FileItemId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("Domain.Entities.FileStorage.FileItem", "FileItem")
-                        .WithMany("AISuggestions")
-                        .HasForeignKey("FileItemId1");
-
-                    b.HasOne("Domain.Entities.Users.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Domain.Entities.Users.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId1")
+                        .WithMany("AISuggestions")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1590,25 +1560,21 @@ namespace adapters.Driven.Persistence.Data.Migrations
 
             modelBuilder.Entity("domain.Entities.FileStorage.FileActivity", b =>
                 {
-                    b.HasOne("Domain.Entities.FileStorage.FileItem", null)
-                        .WithMany()
+                    b.HasOne("Domain.Entities.FileStorage.FileItem", "FileItem")
+                        .WithMany("FileActivities")
                         .HasForeignKey("FileItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.FileStorage.FileItem", null)
+                    b.HasOne("Domain.Entities.Users.User", "User")
                         .WithMany("FileActivities")
-                        .HasForeignKey("FileItemId1");
-
-                    b.HasOne("Domain.Entities.Users.User", null)
-                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.Users.User", null)
-                        .WithMany("FileActivities")
-                        .HasForeignKey("UserId1");
+                    b.Navigation("FileItem");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Domain.Entities.Authorization.Permission", b =>

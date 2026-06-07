@@ -391,18 +391,18 @@ namespace adapters.Driven.Persistence.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<FileActivity>()
-                .HasOne<User>()
-                .WithMany()
+                .HasOne(fa => fa.User)
+                .WithMany(u => u.FileActivities)
                 .HasForeignKey(fa => fa.UserId);
 
             modelBuilder.Entity<FileActivity>()
-                .HasOne<FileItem>()
-                .WithMany()
+                .HasOne(fa => fa.FileItem)
+                .WithMany(fi => fi.FileActivities)
                 .HasForeignKey(fa => fa.FileItemId);
 
             modelBuilder.Entity<AISuggestion>()
                 .HasOne(ai => ai.User)
-                .WithMany()
+                .WithMany(u => u.AISuggestions)
                 .HasForeignKey(ai => ai.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 

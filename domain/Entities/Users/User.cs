@@ -25,6 +25,7 @@ namespace Domain.Entities.Users
 
         public UserCredential UserCredentials { get; set; } = null!;
         public UserSetting UserSettings { get; set; } = new ();
+        public ICollection<AISuggestion> AISuggestions { get; set; } = new List<AISuggestion>();
         public ICollection<FileActivity> FileActivities { get; set; } = new List<FileActivity>();
     }
 }
