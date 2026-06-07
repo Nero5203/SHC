@@ -219,6 +219,52 @@ function getSubscriptionStatusLabel(subscriptionItem) {
   return subscriptionStatusOptions.find((option) => option.value === status)?.label ?? "Pending";
 }
 
+function getNotificationId(notification) {
+  return getValue(notification, "notificationId", "NotificationId");
+}
+
+function getNotificationTypeValue(notification) {
+  return getValue(notification, "type", "Type") || "5";
+}
+
+function getNotificationTypeLabel(notification) {
+  switch (String(getNotificationTypeValue(notification)).toLowerCase()) {
+    case "1":
+    case "fileshared":
+      return "File Shared";
+    case "2":
+    case "foldershared":
+      return "Folder Shared";
+    case "3":
+    case "fileupdated":
+      return "File Updated";
+    case "4":
+    case "storagewarning":
+      return "Storage Warning";
+    case "5":
+    case "systemalert":
+      return "System Alert";
+    default:
+      return "Notification";
+  }
+}
+
+function getNotificationIconLabel(notification) {
+  switch (String(getNotificationTypeValue(notification)).toLowerCase()) {
+    case "1":
+    case "2":
+      return "SH";
+    case "3":
+      return "UP";
+    case "4":
+      return "ST";
+    case "5":
+      return "SY";
+    default:
+      return "NT";
+  }
+}
+
 function UserHomePage({ onLogout }) {
   const [apiUrl, setApiUrl] = useState(() => localStorage.getItem("shc.apiUrl") || defaultApiUrl);
   const [activeTab, setActiveTab] = useState("files");
@@ -238,6 +284,8 @@ function UserHomePage({ onLogout }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loadingNotifications, setLoadingNotifications] = useState(true);
+  const [notificationFilter, setNotificationFilter] = useState("all");
+  const [notificationActionKey, setNotificationActionKey] = useState("");
   const [sharedLinks, setSharedLinks] = useState([]);
   const [loadingSharedLinks, setLoadingSharedLinks] = useState(true);
   const [shareActionKey, setShareActionKey] = useState("");
@@ -326,9 +374,10 @@ function UserHomePage({ onLogout }) {
   const fetchNotifications = useCallback(async () => {
     if (!userId) return;
     try {
-      const unread = await getJson(apiUrl, `/api/notifications/user/${userId}/unread`);
-      setNotifications(unread);
-      setUnreadCount(unread.length);
+      const items = await getJson(apiUrl, `/api/notifications/user/${userId}`);
+      const notificationItems = Array.isArray(items) ? items : [];
+      setNotifications(notificationItems);
+      setUnreadCount(notificationItems.filter((item) => !getBooleanValue(item, "isRead", "IsRead")).length);
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
     } finally {
@@ -388,9 +437,11 @@ function UserHomePage({ onLogout }) {
     if (checkoutStatus === "success") {
       setCheckoutMessage("Payment completed. Your subscription will update after Stripe confirms the payment.");
       fetchSubscriptionData();
+      fetchNotifications();
     } else if (checkoutStatus === "cancelled") {
       setCheckoutMessage("Checkout was cancelled. Your subscription remains pending until payment is completed.");
       fetchSubscriptionData();
+      fetchNotifications();
     }
 
     params.delete("checkout");
@@ -398,7 +449,50 @@ function UserHomePage({ onLogout }) {
     const nextQuery = params.toString();
     const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}`;
     window.history.replaceState({}, "", nextUrl);
-  }, [fetchSubscriptionData]);
+  }, [fetchNotifications, fetchSubscriptionData]);
+
+  const handleMarkNotificationAsRead = async (notificationId) => {
+    if (!notificationId) return;
+
+    setNotificationActionKey(`${notificationId}:read`);
+    try {
+      await putJson(apiUrl, `/api/notifications/${notificationId}/read`, {});
+      await fetchNotifications();
+    } catch (error) {
+      alert(`Failed to mark notification as read: ${error.message}`);
+    } finally {
+      setNotificationActionKey("");
+    }
+  };
+
+  const handleMarkAllNotificationsAsRead = async () => {
+    if (!userId || unreadCount === 0) return;
+
+    setNotificationActionKey("all:read");
+    try {
+      await putJson(apiUrl, `/api/notifications/user/${userId}/read-all`, {});
+      await fetchNotifications();
+    } catch (error) {
+      alert(`Failed to mark all notifications as read: ${error.message}`);
+    } finally {
+      setNotificationActionKey("");
+    }
+  };
+
+  const handleDeleteNotification = async (notification) => {
+    const notificationId = getNotificationId(notification);
+    if (!notificationId) return;
+
+    setNotificationActionKey(`${notificationId}:delete`);
+    try {
+      await deleteJson(apiUrl, `/api/notifications/${notificationId}`);
+      await fetchNotifications();
+    } catch (error) {
+      alert(`Failed to delete notification: ${error.message}`);
+    } finally {
+      setNotificationActionKey("");
+    }
+  };
 
   const handleCreateFolder = async (event) => {
     event.preventDefault();
@@ -706,6 +800,19 @@ function UserHomePage({ onLogout }) {
   };
 
   const latestSubscription = subscription || userSubscriptions[0] || null;
+  const visibleNotifications = notifications.filter((notification) => {
+    const isRead = getBooleanValue(notification, "isRead", "IsRead");
+
+    if (notificationFilter === "unread") {
+      return !isRead;
+    }
+
+    if (notificationFilter === "read") {
+      return isRead;
+    }
+
+    return true;
+  });
 
   const handleSubscribeToPlan = async (plan) => {
     if (!userId) {
@@ -1155,29 +1262,109 @@ function UserHomePage({ onLogout }) {
               <div className="panel">
                 <div className="notifications-header">
                   <h2>Notifications</h2>
-                  {unreadCount > 0 && (
-                    <span className="unread-badge">{unreadCount} unread</span>
-                  )}
+                  <div className="notifications-toolbar">
+                    {unreadCount > 0 && (
+                      <span className="unread-badge">{unreadCount} unread</span>
+                    )}
+                    <button
+                      className="secondary-button"
+                      onClick={fetchNotifications}
+                      type="button"
+                      disabled={loadingNotifications || notificationActionKey === "all:read"}
+                    >
+                      {loadingNotifications ? "Refreshing..." : "Refresh"}
+                    </button>
+                    <button
+                      className="secondary-button"
+                      onClick={handleMarkAllNotificationsAsRead}
+                      type="button"
+                      disabled={unreadCount === 0 || notificationActionKey === "all:read"}
+                    >
+                      {notificationActionKey === "all:read" ? "Saving..." : "Mark all read"}
+                    </button>
+                  </div>
                 </div>
                 {loadingNotifications ? (
                   <p className="loading-text">Loading notifications...</p>
-                ) : notifications.length === 0 ? (
-                  <p className="empty-text">No notifications.</p>
                 ) : (
-                  <div className="notification-list">
-                    {notifications.map((notification) => (
-                      <div key={notification.NotificationId} className="notification-item">
-                        <div className="notification-icon">
-                          {notification.Type === "System" ? "🔔" : notification.Type === "File" ? "📁" : "ℹ️"}
-                        </div>
-                        <div className="notification-content">
-                          <strong>{notification.Title}</strong>
-                          <p>{notification.Message}</p>
-                          <small>{formatDate(notification.CreatedAt)}</small>
-                        </div>
+                  <>
+                    <div className="notification-filters">
+                      <button
+                        className={`secondary-button ${notificationFilter === "all" ? "is-active" : ""}`}
+                        onClick={() => setNotificationFilter("all")}
+                        type="button"
+                      >
+                        All
+                      </button>
+                      <button
+                        className={`secondary-button ${notificationFilter === "unread" ? "is-active" : ""}`}
+                        onClick={() => setNotificationFilter("unread")}
+                        type="button"
+                      >
+                        Unread
+                      </button>
+                      <button
+                        className={`secondary-button ${notificationFilter === "read" ? "is-active" : ""}`}
+                        onClick={() => setNotificationFilter("read")}
+                        type="button"
+                      >
+                        Read
+                      </button>
+                    </div>
+
+                    {visibleNotifications.length === 0 ? (
+                      <p className="empty-text">No notifications in this view.</p>
+                    ) : (
+                      <div className="notification-list">
+                        {visibleNotifications.map((notification) => {
+                          const notificationId = getNotificationId(notification);
+                          const isRead = getBooleanValue(notification, "isRead", "IsRead");
+                          const title = getValue(notification, "title", "Title") || "Notification";
+                          const message = getValue(notification, "message", "Message");
+                          const createdAt = getValue(notification, "createdAt", "CreatedAt");
+
+                          return (
+                            <div key={notificationId} className={`notification-item ${isRead ? "is-read" : "is-unread"}`}>
+                              <div className="notification-icon">{getNotificationIconLabel(notification)}</div>
+                              <div className="notification-content">
+                                <div className="notification-top-row">
+                                  <strong>{title}</strong>
+                                  <span className={`notification-type-badge ${isRead ? "read" : "unread"}`}>
+                                    {getNotificationTypeLabel(notification)}
+                                  </span>
+                                </div>
+                                <p>{message}</p>
+                                <div className="notification-meta-row">
+                                  <small>{formatDate(createdAt)}</small>
+                                  {!isRead && <small>Unread</small>}
+                                </div>
+                              </div>
+                              <div className="notification-actions">
+                                {!isRead && (
+                                  <button
+                                    className="secondary-button"
+                                    onClick={() => handleMarkNotificationAsRead(notificationId)}
+                                    type="button"
+                                    disabled={notificationActionKey === `${notificationId}:read` || notificationActionKey === `${notificationId}:delete`}
+                                  >
+                                    {notificationActionKey === `${notificationId}:read` ? "Saving..." : "Mark read"}
+                                  </button>
+                                )}
+                                <button
+                                  className="secondary-button"
+                                  onClick={() => handleDeleteNotification(notification)}
+                                  type="button"
+                                  disabled={notificationActionKey === `${notificationId}:read` || notificationActionKey === `${notificationId}:delete`}
+                                >
+                                  {notificationActionKey === `${notificationId}:delete` ? "Deleting..." : "Delete"}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </>
                 )}
               </div>
             </section>

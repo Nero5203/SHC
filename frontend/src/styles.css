@@ -1451,8 +1451,33 @@ h3 {
 
 .notification-list {
   display: grid;
-  gap: 2px;
+  gap: 10px;
   margin-top: 12px;
+}
+
+.notifications-toolbar,
+.notification-filters,
+.notification-top-row,
+.notification-meta-row,
+.notification-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.notifications-toolbar {
+  justify-content: flex-end;
+}
+
+.notification-filters {
+  margin-top: 12px;
+}
+
+.notification-filters .secondary-button.is-active {
+  background: #edf4ff;
+  border-color: #b9d2ea;
+  color: #2f6f9f;
 }
 
 .shared-link-list {
@@ -1570,10 +1595,22 @@ h3 {
 }
 
 .notification-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
   gap: 12px;
   padding: 12px;
   border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #edf1f5;
+}
+
+.notification-item.is-unread {
+  background: #f4f8fc;
+  border-color: #d8e6f2;
+}
+
+.notification-item.is-read {
   background: #f8fafc;
 }
 
@@ -1582,11 +1619,13 @@ h3 {
   height: 36px;
   display: grid;
   place-items: center;
-  font-size: 18px;
+  font-size: 11px;
+  font-weight: 900;
   flex-shrink: 0;
   background: #ffffff;
   border-radius: 50%;
   border: 1px solid #d9e1ea;
+  color: #2f6f9f;
 }
 
 .notification-content strong {
@@ -1604,8 +1643,34 @@ h3 {
 .notification-content small {
   color: #9eabbc;
   font-size: 12px;
-  margin-top: 4px;
-  display: block;
+}
+
+.notification-type-badge {
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.notification-type-badge.unread {
+  background: #e9f3ff;
+  color: #2f6f9f;
+}
+
+.notification-type-badge.read {
+  background: #edf1f5;
+  color: #667386;
+}
+
+.notification-meta-row {
+  margin-top: 6px;
+}
+
+.notification-actions {
+  justify-content: flex-end;
 }
 
 .unread-badge {
