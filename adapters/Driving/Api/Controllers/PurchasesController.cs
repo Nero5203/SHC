@@ -15,6 +15,8 @@ namespace api.Controllers
         private readonly IGetPurchasesByUserIdUseCase _getPurchasesByUserIdUseCase;
         private readonly IUpdatePurchaseStatusUseCase _updatePurchaseStatusUseCase;
         private readonly IGetInvoiceByPurchaseIdUseCase _getInvoiceByPurchaseIdUseCase;
+        private readonly IGenerateInvoiceForPurchaseUseCase _generateInvoiceForPurchaseUseCase;
+        private readonly IListInvoicesUseCase _listInvoicesUseCase;
         private readonly IMapper _mapper;
 
         public PurchasesController(
@@ -24,6 +26,8 @@ namespace api.Controllers
             IGetPurchasesByUserIdUseCase getPurchasesByUserIdUseCase,
             IUpdatePurchaseStatusUseCase updatePurchaseStatusUseCase,
             IGetInvoiceByPurchaseIdUseCase getInvoiceByPurchaseIdUseCase,
+            IGenerateInvoiceForPurchaseUseCase generateInvoiceForPurchaseUseCase,
+            IListInvoicesUseCase listInvoicesUseCase,
             IMapper mapper)
         {
             _createPurchaseUseCase = createPurchaseUseCase;
@@ -32,6 +36,8 @@ namespace api.Controllers
             _getPurchasesByUserIdUseCase = getPurchasesByUserIdUseCase;
             _updatePurchaseStatusUseCase = updatePurchaseStatusUseCase;
             _getInvoiceByPurchaseIdUseCase = getInvoiceByPurchaseIdUseCase;
+            _generateInvoiceForPurchaseUseCase = generateInvoiceForPurchaseUseCase;
+            _listInvoicesUseCase = listInvoicesUseCase;
             _mapper = mapper;
         }
 
@@ -91,6 +97,18 @@ namespace api.Controllers
             return Ok(response);
         }
 
+        [HttpGet("invoices")]
+        public async Task<ActionResult<IReadOnlyList<InvoiceResponseDto>>> GetInvoices()
+        {
+            var invoices = await _listInvoicesUseCase.ExecuteAsync();
+
+            var response = invoices
+                .Select(invoice => _mapper.Map<InvoiceResponseDto>(invoice))
+                .ToList();
+
+            return Ok(response);
+        }
+
         [HttpPut("{purchaseId:guid}/status")]
         public async Task<ActionResult<PurchaseResponseDto>> UpdatePurchaseStatus(
             Guid purchaseId,
@@ -110,6 +128,21 @@ namespace api.Controllers
         public async Task<ActionResult<InvoiceResponseDto>> GetInvoiceByPurchaseId(Guid purchaseId)
         {
             var invoice = await _getInvoiceByPurchaseIdUseCase.ExecuteAsync(purchaseId);
+
+            if (invoice == null)
+            {
+                return NotFound();
+            }
+
+            var response = _mapper.Map<InvoiceResponseDto>(invoice);
+
+            return Ok(response);
+        }
+
+        [HttpPost("{purchaseId:guid}/invoice")]
+        public async Task<ActionResult<InvoiceResponseDto>> GenerateInvoiceForPurchase(Guid purchaseId)
+        {
+            var invoice = await _generateInvoiceForPurchaseUseCase.ExecuteAsync(purchaseId);
 
             if (invoice == null)
             {

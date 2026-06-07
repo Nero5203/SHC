@@ -47,6 +47,15 @@ const purchaseStatusOptions = [
   { value: "4", label: "Refunded" }
 ];
 
+const invoiceStatusOptions = [
+  { value: "0", label: "Draft" },
+  { value: "1", label: "Issued" },
+  { value: "2", label: "Paid" },
+  { value: "3", label: "Overdue" },
+  { value: "4", label: "Voided" },
+  { value: "5", label: "Refunded" }
+];
+
 const billingIntervalOptions = [
   { value: "0", label: "Monthly" },
   { value: "1", label: "Yearly" }
@@ -186,6 +195,7 @@ function AdminDashboardPage({ onLogout }) {
   const [storageNodesError, setStorageNodesError] = useState("");
   const [storageActionKey, setStorageActionKey] = useState("");
   const [purchases, setPurchases] = useState([]);
+  const [invoices, setInvoices] = useState([]);
   const [purchaseIdSearch, setPurchaseIdSearch] = useState("");
   const [purchaseUserIdSearch, setPurchaseUserIdSearch] = useState("");
   const [invoiceDetails, setInvoiceDetails] = useState(null);
@@ -427,6 +437,11 @@ function AdminDashboardPage({ onLogout }) {
     }
   }
 
+  const loadInvoices = useCallback(async () => {
+    const data = await getJson(apiUrl, "/api/purchases/invoices");
+    setInvoices(Array.isArray(data) ? data : []);
+  }, [apiUrl]);
+
   const loadPurchases = useCallback(async () => {
     setLoadingPurchases(true);
     setPurchasesError("");
@@ -434,6 +449,7 @@ function AdminDashboardPage({ onLogout }) {
     try {
       const [data] = await Promise.all([
         getJson(apiUrl, "/api/purchases"),
+        loadInvoices(),
         userDirectory.length === 0 ? loadUserDirectory() : Promise.resolve()
       ]);
       setPurchases(Array.isArray(data) ? data : []);
@@ -442,7 +458,7 @@ function AdminDashboardPage({ onLogout }) {
     } finally {
       setLoadingPurchases(false);
     }
-  }, [apiUrl, loadUserDirectory, userDirectory.length]);
+  }, [apiUrl, loadInvoices, loadUserDirectory, userDirectory.length]);
 
   async function handleFindPurchase(event) {
     event.preventDefault();
@@ -501,6 +517,7 @@ function AdminDashboardPage({ onLogout }) {
           getValue(purchase, "purchaseId", "PurchaseId") === purchaseId ? updatedPurchase : purchase
         )
       );
+      await loadInvoices();
     } catch (error) {
       setPurchasesError(error.message);
     } finally {
@@ -517,6 +534,23 @@ function AdminDashboardPage({ onLogout }) {
     try {
       const data = await getJson(apiUrl, `/api/purchases/${purchaseId}/invoice`);
       setInvoiceDetails(data);
+    } catch (error) {
+      setPurchasesError(error.message);
+    } finally {
+      setPurchaseActionKey("");
+    }
+  }
+
+  async function handleGenerateInvoice(purchaseId) {
+    const actionKey = `${purchaseId}:generate-invoice`;
+    setPurchaseActionKey(actionKey);
+    setPurchasesError("");
+    setInvoiceDetails(null);
+
+    try {
+      const data = await postJson(apiUrl, `/api/purchases/${purchaseId}/invoice`);
+      setInvoiceDetails(data);
+      await loadInvoices();
     } catch (error) {
       setPurchasesError(error.message);
     } finally {
@@ -883,6 +917,9 @@ function AdminDashboardPage({ onLogout }) {
   const recentAdminUsers = adminUsers.slice(0, 5);
   const recentPurchases = purchases.slice(0, 5);
   const recentSubscriptions = subscriptions.slice(0, 4);
+  const paidInvoiceTotal = invoices
+    .filter((invoice) => getInvoiceStatusLabel(invoice) === "Paid")
+    .reduce((total, invoice) => total + Number(getValue(invoice, "totalAmount", "TotalAmount") || 0), 0);
   const healthyNodesCount = storageNodes.filter((node) => getNodeStatusValue(node) === "0").length;
   const nodeUsagePairs = storageNodes.slice(0, 4).map((node) => {
     const total = Number(getValue(node, "totalCapacityBytes", "TotalCapacityBytes")) || 0;
@@ -1432,6 +1469,24 @@ function AdminDashboardPage({ onLogout }) {
 
                 {purchasesError && <p className="inline-error">{purchasesError}</p>}
 
+                <div className="invoice-summary-grid">
+                  <div className="invoice-summary-card">
+                    <span>Total invoices</span>
+                    <strong>{invoices.length}</strong>
+                    <small>Generated from purchases</small>
+                  </div>
+                  <div className="invoice-summary-card">
+                    <span>Paid invoices</span>
+                    <strong>{invoices.filter((invoice) => getInvoiceStatusLabel(invoice) === "Paid").length}</strong>
+                    <small>{formatMoney(paidInvoiceTotal, "EUR")} collected</small>
+                  </div>
+                  <div className="invoice-summary-card">
+                    <span>Open invoices</span>
+                    <strong>{invoices.filter((invoice) => ["Draft", "Issued", "Overdue"].includes(getInvoiceStatusLabel(invoice))).length}</strong>
+                    <small>Waiting for payment or review</small>
+                  </div>
+                </div>
+
                 <div className="purchase-search-row">
                   <form onSubmit={handleFindPurchase}>
                     <label>
@@ -1500,6 +1555,9 @@ function AdminDashboardPage({ onLogout }) {
                         {purchases.map((purchase) => {
                           const purchaseId = getValue(purchase, "purchaseId", "PurchaseId");
                           const statusValue = getPurchaseStatusValue(purchase);
+                          const purchaseInvoice = invoices.find((invoice) =>
+                            getValue(invoice, "purchaseId", "PurchaseId") === purchaseId
+                          );
 
                           return (
                             <tr key={purchaseId}>
@@ -1531,11 +1589,13 @@ function AdminDashboardPage({ onLogout }) {
                                   </select>
                                   <button
                                     className="secondary-button"
-                                    disabled={purchaseActionKey === `${purchaseId}:invoice`}
-                                    onClick={() => handleLoadInvoice(purchaseId)}
+                                    disabled={purchaseActionKey === `${purchaseId}:invoice` || purchaseActionKey === `${purchaseId}:generate-invoice`}
+                                    onClick={() => purchaseInvoice ? handleLoadInvoice(purchaseId) : handleGenerateInvoice(purchaseId)}
                                     type="button"
                                   >
-                                    {purchaseActionKey === `${purchaseId}:invoice` ? "Loading..." : "Invoice"}
+                                    {purchaseActionKey === `${purchaseId}:invoice` || purchaseActionKey === `${purchaseId}:generate-invoice`
+                                      ? "Working..."
+                                      : purchaseInvoice ? "View Invoice" : "Generate Invoice"}
                                   </button>
                                   <button
                                     className="secondary-button"
@@ -1554,6 +1614,64 @@ function AdminDashboardPage({ onLogout }) {
                     </table>
                   </div>
                 )}
+
+                <div className="invoice-list-panel">
+                  <div className="invoice-list-header">
+                    <div>
+                      <h3>Invoices</h3>
+                      <p>Invoices are linked one-to-one with purchases and generated automatically when a purchase is paid.</p>
+                    </div>
+                    <button className="secondary-button" disabled={loadingPurchases} onClick={loadInvoices} type="button">
+                      Refresh Invoices
+                    </button>
+                  </div>
+
+                  {invoices.length === 0 ? (
+                    <p className="empty-text">No invoices generated yet.</p>
+                  ) : (
+                    <div className="users-table-wrap">
+                      <table className="users-table invoices-table">
+                        <thead>
+                          <tr>
+                            <th>Invoice</th>
+                            <th>User</th>
+                            <th>Purchase</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Issued</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {invoices.map((invoice) => {
+                            const invoiceId = getValue(invoice, "invoiceId", "InvoiceId");
+                            const purchaseId = getValue(invoice, "purchaseId", "PurchaseId");
+
+                            return (
+                              <tr key={invoiceId}>
+                                <td>
+                                  <strong>{getValue(invoice, "invoiceNumber", "InvoiceNumber")}</strong>
+                                  <span>{invoiceId}</span>
+                                </td>
+                                <td>
+                                  <strong>{getUserLookupLabel(getValue(invoice, "userId", "UserId"), usersById)}</strong>
+                                  <span>{getValue(invoice, "userId", "UserId")}</span>
+                                </td>
+                                <td>{purchaseId}</td>
+                                <td>{formatMoney(getValue(invoice, "totalAmount", "TotalAmount"), getValue(invoice, "currency", "Currency"))}</td>
+                                <td>
+                                  <span className={`invoice-status status-${getInvoiceStatusLabel(invoice).toLowerCase()}`}>
+                                    {getInvoiceStatusLabel(invoice)}
+                                  </span>
+                                </td>
+                                <td>{formatDate(getValue(invoice, "issuedAt", "IssuedAt"))}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
               </section>
             ) : activeModule?.key === "subscriptions" ? (
               <section className="panel subscriptions-admin-panel">
@@ -2336,7 +2454,7 @@ function getNodeStatusLabel(node) {
 }
 
 function getPurchaseStatusValue(purchase) {
-  const status = getValue(purchase, "status", "Status");
+  const status = String(getValue(purchase, "status", "Status") ?? "");
   const matchingOption = purchaseStatusOptions.find((option) =>
     option.value === status || option.label.toLowerCase() === status.toLowerCase()
   );
@@ -2347,6 +2465,20 @@ function getPurchaseStatusValue(purchase) {
 function getPurchaseStatusLabel(purchase) {
   const status = getPurchaseStatusValue(purchase);
   return purchaseStatusOptions.find((option) => option.value === status)?.label ?? "Pending";
+}
+
+function getInvoiceStatusValue(invoice) {
+  const status = String(getValue(invoice, "status", "Status") ?? "");
+  const matchingOption = invoiceStatusOptions.find((option) =>
+    option.value === status || option.label.toLowerCase() === status.toLowerCase()
+  );
+
+  return matchingOption?.value ?? "1";
+}
+
+function getInvoiceStatusLabel(invoice) {
+  const status = getInvoiceStatusValue(invoice);
+  return invoiceStatusOptions.find((option) => option.value === status)?.label ?? "Issued";
 }
 
 function getBillingIntervalValue(plan) {

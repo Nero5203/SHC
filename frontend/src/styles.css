@@ -1695,11 +1695,79 @@ h3 {
   font-weight: 800;
 }
 
+.invoice-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.invoice-summary-card,
+.invoice-list-panel {
+  border: 1px solid #edf1f5;
+  border-radius: 8px;
+  background: #fbfdff;
+  box-shadow: 0 8px 24px rgba(16, 32, 51, 0.05);
+}
+
+.invoice-summary-card {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+}
+
+.invoice-summary-card span {
+  color: #667386;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.invoice-summary-card strong {
+  color: #263447;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.invoice-summary-card small {
+  color: #8a97a8;
+  font-size: 12px;
+}
+
+.invoice-list-panel {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+}
+
+.invoice-list-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.invoice-list-header h3 {
+  margin: 0;
+  color: #263447;
+}
+
+.invoice-list-header p {
+  margin-top: 5px;
+  color: #667386;
+  font-size: 13px;
+}
+
 .purchases-table {
+  min-width: 1080px;
+}
+
+.invoices-table {
   min-width: 980px;
 }
 
-.purchase-status {
+.purchase-status,
+.invoice-status {
   min-height: 28px;
   border-radius: 8px;
   display: inline-flex;
@@ -1719,13 +1787,31 @@ h3 {
   color: #278452;
 }
 
+.invoice-status.status-paid {
+  background: #e7f5ee;
+  color: #278452;
+}
+
+.invoice-status.status-issued,
+.invoice-status.status-draft {
+  background: #edf4ff;
+  color: #2f6f9f;
+}
+
+.invoice-status.status-overdue {
+  background: #fff6df;
+  color: #9a6b18;
+}
+
 .purchase-status.status-failed,
-.purchase-status.status-cancelled {
+.purchase-status.status-cancelled,
+.invoice-status.status-voided {
   background: #fff1f1;
   color: #b54848;
 }
 
-.purchase-status.status-refunded {
+.purchase-status.status-refunded,
+.invoice-status.status-refunded {
   background: #edf1f5;
   color: #667386;
 }
