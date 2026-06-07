@@ -8,25 +8,18 @@ namespace adapters.Driven.ExternalServices.Payments
 {
     public class StripePaymentGatewayService : IPaymentGatewayService
     {
-        private readonly SessionService _sessionService;
+        private readonly string? _secretKey;
         private readonly string _webhookSecret;
 
         public StripePaymentGatewayService(IConfiguration configuration)
         {
-            var secretKey = configuration["Stripe:SecretKey"];
+            _secretKey = configuration["Stripe:SecretKey"];
             _webhookSecret = configuration["Stripe:WebhookSecret"] ?? string.Empty;
-
-            if (string.IsNullOrWhiteSpace(secretKey))
-            {
-                throw new InvalidOperationException("Stripe secret key is not configured. Set Stripe:SecretKey in configuration.");
-            }
-
-            var client = new StripeClient(secretKey);
-            _sessionService = new SessionService(client);
         }
 
         public async Task<CheckoutSessionResult> CreateCheckoutSessionAsync(PaymentCheckoutRequest request)
         {
+            var sessionService = CreateSessionService();
             var sessionOptions = new SessionCreateOptions
             {
                 PaymentMethodTypes = new List<string> { "card" },
@@ -55,7 +48,7 @@ namespace adapters.Driven.ExternalServices.Payments
                 }
             };
 
-            var session = await _sessionService.CreateAsync(sessionOptions);
+            var session = await sessionService.CreateAsync(sessionOptions);
 
             return new CheckoutSessionResult
             {
@@ -66,6 +59,7 @@ namespace adapters.Driven.ExternalServices.Payments
 
         public Task<PaymentGatewayWebhookResult> ProcessWebhookAsync(string payload, string signatureHeader)
         {
+            EnsureWebhookConfigured();
             var result = new PaymentGatewayWebhookResult();
 
             try
@@ -141,6 +135,32 @@ namespace adapters.Driven.ExternalServices.Payments
             catch (StripeException)
             {
                 return Task.FromResult(new PaymentGatewayWebhookResult { Handled = false });
+            }
+        }
+
+        private SessionService CreateSessionService()
+        {
+            EnsureSecretKeyConfigured();
+
+            var client = new StripeClient(_secretKey);
+            return new SessionService(client);
+        }
+
+        private void EnsureSecretKeyConfigured()
+        {
+            if (string.IsNullOrWhiteSpace(_secretKey))
+            {
+                throw new InvalidOperationException("Stripe secret key is not configured. Set Stripe:SecretKey in configuration.");
+            }
+        }
+
+        private void EnsureWebhookConfigured()
+        {
+            EnsureSecretKeyConfigured();
+
+            if (string.IsNullOrWhiteSpace(_webhookSecret))
+            {
+                throw new InvalidOperationException("Stripe webhook secret is not configured. Set Stripe:WebhookSecret in configuration.");
             }
         }
     }

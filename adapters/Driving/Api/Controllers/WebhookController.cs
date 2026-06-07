@@ -27,13 +27,23 @@ namespace api.Controllers
                 return BadRequest("Missing Stripe signature header.");
             }
 
-            var handled = await _processPaymentWebhookUseCase.ExecuteAsync(payload, signatureHeader);
-            if (!handled)
+            try
             {
-                return BadRequest("Webhook event could not be processed.");
-            }
+                var handled = await _processPaymentWebhookUseCase.ExecuteAsync(payload, signatureHeader);
+                if (!handled)
+                {
+                    return BadRequest("Webhook event could not be processed.");
+                }
 
-            return Ok();
+                return Ok();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Problem(
+                    detail: ex.Message,
+                    statusCode: StatusCodes.Status503ServiceUnavailable,
+                    title: "Stripe is not configured");
+            }
         }
     }
 }
