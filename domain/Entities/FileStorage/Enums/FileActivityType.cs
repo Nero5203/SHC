@@ -8,6 +8,7 @@ namespace domain.Entities.FileStorage.Enums
         Edited = 4,
         Shared = 5,
         Renamed = 6,
-        Moved = 7
+        Moved = 7,
+        Deleted = 8
     }
 }
