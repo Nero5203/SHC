@@ -1,4 +1,5 @@
 using api.Requests.FileStorage;
+using api.Auditing;
 using api.Authorization;
 using application.Common.Authorization;
 using application.Dto.FileStorage.File;
@@ -31,6 +32,7 @@ namespace api.Controllers
         private readonly IAuthorizationService _authorizationService;
         private readonly IFileActivityRepository _fileActivityRepository;
         private readonly ICreateNotificationUseCase _createNotificationUseCase;
+        private readonly IAuditLogWriter _auditLogWriter;
 
         public FilesController(
             IUploadFileUseCase uploadFileUseCase,
@@ -43,7 +45,8 @@ namespace api.Controllers
             IShareFileUseCase shareFileUseCase,
             IAuthorizationService authorizationService,
             IFileActivityRepository fileActivityRepository,
-            ICreateNotificationUseCase createNotificationUseCase)
+            ICreateNotificationUseCase createNotificationUseCase,
+            IAuditLogWriter auditLogWriter)
         {
             _uploadFileUseCase = uploadFileUseCase;
             _getFileByIdUseCase = getFileByIdUseCase;
@@ -56,6 +59,7 @@ namespace api.Controllers
             _authorizationService = authorizationService;
             _fileActivityRepository = fileActivityRepository;
             _createNotificationUseCase = createNotificationUseCase;
+            _auditLogWriter = auditLogWriter;
         }
 
         [HttpPost("upload")]
@@ -326,6 +330,20 @@ namespace api.Controllers
                 User.GetUserId(),
                 fileItemId,
                 null);
+            await _auditLogWriter.WriteAsync(
+                User,
+                "SharedLink.Created",
+                ResourceType.SharedLink,
+                sharedLink.SharedLinkId.ToString(),
+                true,
+                new
+                {
+                    sharedLink.SharedLinkId,
+                    sharedLink.UserId,
+                    sharedLink.TargetId,
+                    sharedLink.TargetType,
+                    sharedLink.ExpirationDate
+                });
 
             return Ok(MapShareFile(sharedLink));
         }

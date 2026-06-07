@@ -1,7 +1,9 @@
+using api.Auditing;
 using application.Dto.Settings;
 using application.Ports.Driving.Settings;
 using Domain.Entities.Settings;
 using Microsoft.AspNetCore.Mvc;
+using SHC.Domain.Entities.Permissions.Enums;
 
 namespace api.Controllers
 {
@@ -12,15 +14,18 @@ namespace api.Controllers
         private readonly IGetSystemSettingsUseCase _getSystemSettingsUseCase;
         private readonly IListSystemSettingsUseCase _listSystemSettingsUseCase;
         private readonly IUpdateSystemSettingsUseCase _updateSystemSettingsUseCase;
+        private readonly IAuditLogWriter _auditLogWriter;
 
         public SystemSettingsController(
             IGetSystemSettingsUseCase getSystemSettingsUseCase,
             IListSystemSettingsUseCase listSystemSettingsUseCase,
-            IUpdateSystemSettingsUseCase updateSystemSettingsUseCase)
+            IUpdateSystemSettingsUseCase updateSystemSettingsUseCase,
+            IAuditLogWriter auditLogWriter)
         {
             _getSystemSettingsUseCase = getSystemSettingsUseCase;
             _listSystemSettingsUseCase = listSystemSettingsUseCase;
             _updateSystemSettingsUseCase = updateSystemSettingsUseCase;
+            _auditLogWriter = auditLogWriter;
         }
 
         [HttpGet]
@@ -63,6 +68,21 @@ namespace api.Controllers
                     dto.RequireNumberPassword,
                     dto.RequireSpecialCharacterPassword,
                     dto.TrashRetentionInDays);
+
+                await _auditLogWriter.WriteAsync(
+                    User,
+                    "SystemSettings.Updated",
+                    ResourceType.SystemSettings,
+                    systemSetting.SystemSettingId.ToString(),
+                    true,
+                    new
+                    {
+                        systemSetting.MaxFileSizeInBytes,
+                        systemSetting.DefaultUserStorageQuotaInBytes,
+                        systemSetting.AllowedFileExtensions,
+                        systemSetting.AllowPublicLinkSharing,
+                        systemSetting.RegistrationMode
+                    });
 
                 return Ok(MapSystemSetting(systemSetting));
             }

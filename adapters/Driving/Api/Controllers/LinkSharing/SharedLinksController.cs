@@ -1,3 +1,4 @@
+using api.Auditing;
 using application.Dto.LinkSharing;
 using Domain.Entities.LinkSharing;
 using Microsoft.AspNetCore.Mvc;
@@ -5,6 +6,7 @@ using application.Ports.Driving.LinkSharing;
 using application.Ports.Driving.Notifications;
 using Domain.Entities.LinkSharing.Enums;
 using Domain.Entities.Notifications.Enums;
+using SHC.Domain.Entities.Permissions.Enums;
 
 namespace api.Controllers.LinkSharing
 {
@@ -19,6 +21,7 @@ namespace api.Controllers.LinkSharing
         private readonly IUpdateSharedLinkUseCase _updateSharedLinkUseCase;
         private readonly IDeactivateSharedLinkUseCase _deactivateSharedLinkUseCase;
         private readonly ICreateNotificationUseCase _createNotificationUseCase;
+        private readonly IAuditLogWriter _auditLogWriter;
 
         public SharedLinksController(
             ICreateSharedLinkUseCase createSharedLinkUseCase,
@@ -27,7 +30,8 @@ namespace api.Controllers.LinkSharing
             IGetSharedLinksByUserIdUseCase getSharedLinksByUserIdUseCase,
             IUpdateSharedLinkUseCase updateSharedLinkUseCase,
             IDeactivateSharedLinkUseCase deactivateSharedLinkUseCase,
-            ICreateNotificationUseCase createNotificationUseCase)
+            ICreateNotificationUseCase createNotificationUseCase,
+            IAuditLogWriter auditLogWriter)
         {
             _createSharedLinkUseCase = createSharedLinkUseCase;
             _getSharedLinkByIdUseCase = getSharedLinkByIdUseCase;
@@ -36,6 +40,7 @@ namespace api.Controllers.LinkSharing
             _updateSharedLinkUseCase = updateSharedLinkUseCase;
             _deactivateSharedLinkUseCase = deactivateSharedLinkUseCase;
             _createNotificationUseCase = createNotificationUseCase;
+            _auditLogWriter = auditLogWriter;
         }
 
         [HttpPost]
@@ -52,6 +57,7 @@ namespace api.Controllers.LinkSharing
 
             var response = MapToResponse(sharedLink);
             await CreateSharedLinkNotificationAsync(sharedLink);
+            await WriteSharedLinkAuditAsync("SharedLink.Created", sharedLink);
 
             return CreatedAtAction(nameof(GetSharedLinkById), new { sharedLinkId = sharedLink.SharedLinkId }, response);
         }
@@ -78,6 +84,8 @@ namespace api.Controllers.LinkSharing
             {
                 return NotFound();
             }
+
+            await WriteSharedLinkAuditAsync("SharedLink.Updated", sharedLink);
 
             return Ok(MapToResponse(sharedLink));
         }
@@ -111,6 +119,8 @@ namespace api.Controllers.LinkSharing
             {
                 return NotFound();
             }
+
+            await WriteSharedLinkAuditAsync("SharedLink.Deactivated", sharedLink);
 
             return Ok(MapToResponse(sharedLink));
         }
@@ -162,6 +172,28 @@ namespace api.Controllers.LinkSharing
                 sharedLink.UserId,
                 isFolder ? null : sharedLink.TargetId,
                 isFolder ? sharedLink.TargetId : null);
+        }
+
+        private async Task WriteSharedLinkAuditAsync(string action, SharedLink sharedLink)
+        {
+            await _auditLogWriter.WriteAsync(
+                User,
+                action,
+                ResourceType.SharedLink,
+                sharedLink.SharedLinkId.ToString(),
+                true,
+                new
+                {
+                    sharedLink.SharedLinkId,
+                    sharedLink.UserId,
+                    sharedLink.TargetId,
+                    sharedLink.TargetType,
+                    sharedLink.IsActive,
+                    sharedLink.CanView,
+                    sharedLink.CanEdit,
+                    sharedLink.AllowDownload,
+                    sharedLink.ExpirationDate
+                });
         }
     }
 }

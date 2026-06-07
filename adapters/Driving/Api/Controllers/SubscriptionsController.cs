@@ -1,9 +1,11 @@
+using api.Auditing;
 using application.Dto.Subscriptions;
 using application.Ports.Driving.Subscriptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using application.Common.Authorization;
 using application.Ports.Driving.Auth;
+using SHC.Domain.Entities.Permissions.Enums;
 
 namespace api.Controllers
 {
@@ -26,6 +28,7 @@ namespace api.Controllers
         private readonly ICancelSubscriptionUseCase _cancelSubscriptionUseCase;
         private readonly ICurrentUserService _currentUserService;
         private readonly IUserAuthorizationService _userAuthorizationService;
+        private readonly IAuditLogWriter _auditLogWriter;
 
         public SubscriptionsController(
             ICreateSubscriptionPlanUseCase createSubscriptionPlanUseCase,
@@ -41,7 +44,8 @@ namespace api.Controllers
             IChangeSubscriptionPlanUseCase changeSubscriptionPlanUseCase,
             ICancelSubscriptionUseCase cancelSubscriptionUseCase,
             ICurrentUserService currentUserService,
-            IUserAuthorizationService userAuthorizationService)
+            IUserAuthorizationService userAuthorizationService,
+            IAuditLogWriter auditLogWriter)
         {
             _createSubscriptionPlanUseCase = createSubscriptionPlanUseCase;
             _listSubscriptionPlansUseCase = listSubscriptionPlansUseCase;
@@ -57,6 +61,7 @@ namespace api.Controllers
             _cancelSubscriptionUseCase = cancelSubscriptionUseCase;
             _currentUserService = currentUserService;
             _userAuthorizationService = userAuthorizationService;
+            _auditLogWriter = auditLogWriter;
         }
 
         [HttpGet("plans")]
@@ -138,6 +143,18 @@ namespace api.Controllers
                 UpdatedAt = plan.UpdatedAt
             };
 
+            await WriteSubscriptionAuditAsync(
+                "SubscriptionPlan.Created",
+                plan.SubscriptionPlanId,
+                new
+                {
+                    plan.Name,
+                    plan.Price,
+                    plan.Currency,
+                    plan.BillingInterval,
+                    plan.IsActive
+                });
+
             return CreatedAtAction(nameof(GetPlanById), new { subscriptionPlanId = plan.SubscriptionPlanId }, response);
         }
 
@@ -176,6 +193,18 @@ namespace api.Controllers
                 UpdatedAt = plan.UpdatedAt
             };
 
+            await WriteSubscriptionAuditAsync(
+                "SubscriptionPlan.Updated",
+                plan.SubscriptionPlanId,
+                new
+                {
+                    plan.Name,
+                    plan.Price,
+                    plan.Currency,
+                    plan.BillingInterval,
+                    plan.IsActive
+                });
+
             return Ok(response);
         }
 
@@ -210,6 +239,17 @@ namespace api.Controllers
                 ProviderSubscriptionId = subscription.ProviderSubscriptionId,
                 UserIds = subscription.UserSubscriptions.Select(us => us.UserId).ToList()
             };
+
+            await WriteSubscriptionAuditAsync(
+                "Subscription.Created",
+                subscription.SubscriptionId,
+                new
+                {
+                    subscription.SubscriptionId,
+                    subscription.SubscriptionPlanId,
+                    subscription.Status,
+                    UserIds = subscription.UserSubscriptions.Select(us => us.UserId).ToList()
+                });
 
             return CreatedAtAction(nameof(GetSubscriptionById), new { subscriptionId = subscription.SubscriptionId }, response);
         }
@@ -275,6 +315,16 @@ namespace api.Controllers
                 ProviderSubscriptionId = subscription.ProviderSubscriptionId,
                 UserIds = subscription.UserSubscriptions.Select(us => us.UserId).ToList()
             };
+
+            await WriteSubscriptionAuditAsync(
+                "Subscription.PlanChanged",
+                subscription.SubscriptionId,
+                new
+                {
+                    subscription.SubscriptionId,
+                    subscription.SubscriptionPlanId,
+                    subscription.Status
+                });
 
             return Ok(response);
         }
@@ -432,7 +482,30 @@ namespace api.Controllers
                 UserIds = subscription.UserSubscriptions.Select(us => us.UserId).ToList()
             };
 
+            await WriteSubscriptionAuditAsync(
+                "Subscription.Cancelled",
+                subscription.SubscriptionId,
+                new
+                {
+                    subscription.SubscriptionId,
+                    subscription.SubscriptionPlanId,
+                    subscription.Status,
+                    subscription.CancelledAt,
+                    cancelImmediately
+                });
+
             return Ok(response);
+        }
+
+        private async Task WriteSubscriptionAuditAsync(string action, Guid resourceId, object payload)
+        {
+            await _auditLogWriter.WriteAsync(
+                User,
+                action,
+                ResourceType.Subscription,
+                resourceId.ToString(),
+                true,
+                payload);
         }
     }
 }

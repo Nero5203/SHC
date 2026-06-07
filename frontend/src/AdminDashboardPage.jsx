@@ -56,6 +56,28 @@ const invoiceStatusOptions = [
   { value: "5", label: "Refunded" }
 ];
 
+const auditSubjectTypeOptions = [
+  { value: "1", label: "User" },
+  { value: "2", label: "Service Account" },
+  { value: "3", label: "Storage Node" },
+  { value: "4", label: "Guest" },
+  { value: "5", label: "Role" }
+];
+
+const auditResourceTypeOptions = [
+  { value: "1", label: "File" },
+  { value: "2", label: "Folder" },
+  { value: "3", label: "Bucket" },
+  { value: "4", label: "Storage Node" },
+  { value: "5", label: "Permission" },
+  { value: "6", label: "System Settings" },
+  { value: "7", label: "Purchase" },
+  { value: "8", label: "Invoice" },
+  { value: "9", label: "Subscription" },
+  { value: "10", label: "Shared Link" },
+  { value: "11", label: "Role" }
+];
+
 const billingIntervalOptions = [
   { value: "0", label: "Monthly" },
   { value: "1", label: "Yearly" }
@@ -210,6 +232,9 @@ function AdminDashboardPage({ onLogout }) {
   const [loadingSubscriptions, setLoadingSubscriptions] = useState(false);
   const [subscriptionsError, setSubscriptionsError] = useState("");
   const [subscriptionActionKey, setSubscriptionActionKey] = useState("");
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [loadingAuditLogs, setLoadingAuditLogs] = useState(false);
+  const [auditLogsError, setAuditLogsError] = useState("");
   const [systemSettings, setSystemSettings] = useState(null);
   const [systemSettingsForm, setSystemSettingsForm] = useState(emptySystemSettingsForm);
   const [loadingSystemSettings, setLoadingSystemSettings] = useState(false);
@@ -701,6 +726,20 @@ function AdminDashboardPage({ onLogout }) {
     }
   }, [apiUrl]);
 
+  const loadAuditLogs = useCallback(async () => {
+    setLoadingAuditLogs(true);
+    setAuditLogsError("");
+
+    try {
+      const data = await getJson(apiUrl, "/api/audit-logs");
+      setAuditLogs(Array.isArray(data) ? data : []);
+    } catch (error) {
+      setAuditLogsError(error.message);
+    } finally {
+      setLoadingAuditLogs(false);
+    }
+  }, [apiUrl]);
+
   async function handleSaveSystemSettings(event) {
     event.preventDefault();
     setSavingSystemSettings(true);
@@ -857,6 +896,12 @@ function AdminDashboardPage({ onLogout }) {
       loadSystemSettings();
     }
   }, [activeModuleKey, loadSystemSettings]);
+
+  useEffect(() => {
+    if (activeModuleKey === "audit") {
+      loadAuditLogs();
+    }
+  }, [activeModuleKey, loadAuditLogs]);
 
   useEffect(() => {
     if (activeModuleKey === "dashboard") {
@@ -2175,6 +2220,94 @@ function AdminDashboardPage({ onLogout }) {
                   </form>
                 )}
               </section>
+            ) : activeModule?.key === "audit" ? (
+              <section className="panel audit-admin-panel">
+                <div className="audit-admin-header">
+                  <div>
+                    <p className="eyebrow">Security</p>
+                    <h2>Audit Logs</h2>
+                    <p>Review permission checks, grants, revokes, and other security-sensitive events.</p>
+                  </div>
+                  <button className="secondary-button" disabled={loadingAuditLogs} onClick={loadAuditLogs} type="button">
+                    {loadingAuditLogs ? "Refreshing..." : "Refresh"}
+                  </button>
+                </div>
+
+                {auditLogsError && <p className="inline-error">{auditLogsError}</p>}
+
+                <div className="audit-summary-grid">
+                  <div className="audit-summary-card">
+                    <span>Total events</span>
+                    <strong>{auditLogs.length}</strong>
+                    <small>Latest security activity</small>
+                  </div>
+                  <div className="audit-summary-card">
+                    <span>Successful</span>
+                    <strong>{auditLogs.filter((log) => getBooleanValue(log, "isSuccess", "IsSuccess")).length}</strong>
+                    <small>Allowed or completed events</small>
+                  </div>
+                  <div className="audit-summary-card">
+                    <span>Failed</span>
+                    <strong>{auditLogs.filter((log) => !getBooleanValue(log, "isSuccess", "IsSuccess")).length}</strong>
+                    <small>Denied or failed events</small>
+                  </div>
+                </div>
+
+                {loadingAuditLogs ? (
+                  <p className="loading-text">Loading audit logs...</p>
+                ) : auditLogs.length === 0 ? (
+                  <p className="empty-text">No audit logs yet. Permission actions will appear here.</p>
+                ) : (
+                  <div className="users-table-wrap">
+                    <table className="users-table audit-table">
+                      <thead>
+                        <tr>
+                          <th>Time</th>
+                          <th>Subject</th>
+                          <th>Action</th>
+                          <th>Resource</th>
+                          <th>Result</th>
+                          <th>Payload</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {auditLogs.map((log) => {
+                          const auditLogId = getValue(log, "auditLogId", "AuditLogId");
+                          const subjectId = getValue(log, "subjectId", "SubjectId");
+                          const resourceId = getValue(log, "resourceId", "ResourceId");
+                          const isSuccess = getBooleanValue(log, "isSuccess", "IsSuccess");
+
+                          return (
+                            <tr key={auditLogId}>
+                              <td>
+                                <strong>{formatDate(getValue(log, "timestampUtc", "TimestampUtc"))}</strong>
+                                <span>{auditLogId}</span>
+                              </td>
+                              <td>
+                                <strong>{getAuditSubjectTypeLabel(log)}</strong>
+                                <span>{subjectId || "No subject"}</span>
+                              </td>
+                              <td>{getValue(log, "action", "Action") || "Unknown"}</td>
+                              <td>
+                                <strong>{getAuditResourceTypeLabel(log)}</strong>
+                                <span>{resourceId || "No resource"}</span>
+                              </td>
+                              <td>
+                                <span className={`audit-result ${isSuccess ? "success" : "failed"}`}>
+                                  {isSuccess ? "Success" : "Failed"}
+                                </span>
+                              </td>
+                              <td>
+                                <code className="audit-payload">{formatAuditPayload(getValue(log, "payloadJson", "PayloadJson"))}</code>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
             ) : activeModule?.key !== "dashboard" && activeModule && (
               <section className="panel module-detail">
                 <div>
@@ -2439,6 +2572,35 @@ function getInvoiceStatusValue(invoice) {
 function getInvoiceStatusLabel(invoice) {
   const status = getInvoiceStatusValue(invoice);
   return invoiceStatusOptions.find((option) => option.value === status)?.label ?? "Issued";
+}
+
+function getAuditSubjectTypeLabel(log) {
+  const subjectType = String(getValue(log, "subjectType", "SubjectType") ?? "");
+  const matchingOption = auditSubjectTypeOptions.find((option) =>
+    option.value === subjectType || option.label.toLowerCase().replace(/\s/g, "") === subjectType.toLowerCase().replace(/\s/g, "")
+  );
+
+  return matchingOption?.label ?? (subjectType || "Unknown");
+}
+
+function getAuditResourceTypeLabel(log) {
+  const resourceType = String(getValue(log, "resourceType", "ResourceType") ?? "");
+  const matchingOption = auditResourceTypeOptions.find((option) =>
+    option.value === resourceType || option.label.toLowerCase().replace(/\s/g, "") === resourceType.toLowerCase().replace(/\s/g, "")
+  );
+
+  return matchingOption?.label ?? (resourceType || "Unknown");
+}
+
+function formatAuditPayload(value) {
+  if (!value) return "None";
+
+  try {
+    const parsed = JSON.parse(value);
+    return JSON.stringify(parsed);
+  } catch {
+    return String(value);
+  }
 }
 
 function getBillingIntervalValue(plan) {

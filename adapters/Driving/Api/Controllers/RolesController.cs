@@ -1,7 +1,9 @@
+using api.Auditing;
 using application.Dto.Roles;
 using application.Ports.Driving.Roles;
 using Domain.Entities.Roles;
 using Microsoft.AspNetCore.Mvc;
+using SHC.Domain.Entities.Permissions.Enums;
 
 namespace api.Controllers
 {
@@ -18,6 +20,7 @@ namespace api.Controllers
         private readonly IRemoveRoleFromUserUseCase _removeRoleFromUserUseCase;
         private readonly IGetUserRolesUseCase _getUserRolesUseCase;
         private readonly IGetRoleUsersUseCase _getRoleUsersUseCase;
+        private readonly IAuditLogWriter _auditLogWriter;
 
         public RolesController(
             ICreateRoleUseCase createRoleUseCase,
@@ -28,7 +31,8 @@ namespace api.Controllers
             IAssignRoleToUserUseCase assignRoleToUserUseCase,
             IRemoveRoleFromUserUseCase removeRoleFromUserUseCase,
             IGetUserRolesUseCase getUserRolesUseCase,
-            IGetRoleUsersUseCase getRoleUsersUseCase)
+            IGetRoleUsersUseCase getRoleUsersUseCase,
+            IAuditLogWriter auditLogWriter)
         {
             _createRoleUseCase = createRoleUseCase;
             _getRoleByIdUseCase = getRoleByIdUseCase;
@@ -39,6 +43,7 @@ namespace api.Controllers
             _removeRoleFromUserUseCase = removeRoleFromUserUseCase;
             _getUserRolesUseCase = getUserRolesUseCase;
             _getRoleUsersUseCase = getRoleUsersUseCase;
+            _auditLogWriter = auditLogWriter;
         }
 
         [HttpPost]
@@ -47,6 +52,7 @@ namespace api.Controllers
             try
             {
                 var role = await _createRoleUseCase.ExecuteAsync(dto.Name, dto.Description);
+                await WriteRoleAuditAsync("Role.Created", role.RoleId, new { role.Name, role.Description });
 
                 return CreatedAtAction(
                     nameof(GetRoleById),
@@ -96,6 +102,8 @@ namespace api.Controllers
                     return NotFound();
                 }
 
+                await WriteRoleAuditAsync("Role.Updated", role.RoleId, new { role.Name, role.Description });
+
                 return Ok(MapRole(role));
             }
             catch (ArgumentException exception)
@@ -114,6 +122,8 @@ namespace api.Controllers
                 return NotFound();
             }
 
+            await WriteRoleAuditAsync("Role.Deleted", roleId, new { roleId });
+
             return NoContent();
         }
 
@@ -126,6 +136,8 @@ namespace api.Controllers
             {
                 return NotFound();
             }
+
+            await WriteRoleAuditAsync("Role.AssignedToUser", roleId, new { roleId, userId });
 
             return Ok(MapUserRole(userRole));
         }
@@ -140,7 +152,20 @@ namespace api.Controllers
                 return NotFound();
             }
 
+            await WriteRoleAuditAsync("Role.RemovedFromUser", roleId, new { roleId, userId });
+
             return NoContent();
+        }
+
+        private async Task WriteRoleAuditAsync(string action, Guid roleId, object payload)
+        {
+            await _auditLogWriter.WriteAsync(
+                User,
+                action,
+                ResourceType.Role,
+                roleId.ToString(),
+                true,
+                payload);
         }
 
         [HttpGet("user/{userId:guid}")]

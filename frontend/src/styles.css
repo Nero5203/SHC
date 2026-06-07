@@ -1373,6 +1373,7 @@ h3 {
 .storage-admin-header,
 .purchases-admin-header,
 .subscriptions-admin-header,
+.audit-admin-header,
 .subscription-plan-form-header,
 .settings-admin-header,
 .storage-node-form-header,
@@ -1388,6 +1389,7 @@ h3 {
 .storage-admin-header p:not(.eyebrow),
 .purchases-admin-header p:not(.eyebrow),
 .subscriptions-admin-header p:not(.eyebrow),
+.audit-admin-header p:not(.eyebrow),
 .subscription-plan-form-header p,
 .settings-admin-header p:not(.eyebrow),
 .storage-node-form-header p,
@@ -1412,7 +1414,8 @@ h3 {
 }
 
 .subscriptions-admin-panel,
-.subscription-plan-list {
+.subscription-plan-list,
+.audit-admin-panel {
   display: grid;
   gap: 16px;
 }
@@ -1701,7 +1704,14 @@ h3 {
   gap: 12px;
 }
 
+.audit-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .invoice-summary-card,
+.audit-summary-card,
 .invoice-list-panel {
   border: 1px solid #edf1f5;
   border-radius: 8px;
@@ -1715,7 +1725,20 @@ h3 {
   padding: 14px;
 }
 
+.audit-summary-card {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+}
+
 .invoice-summary-card span {
+  color: #667386;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.audit-summary-card span {
   color: #667386;
   font-size: 12px;
   font-weight: 800;
@@ -1728,7 +1751,18 @@ h3 {
   line-height: 1;
 }
 
+.audit-summary-card strong {
+  color: #263447;
+  font-size: 24px;
+  line-height: 1;
+}
+
 .invoice-summary-card small {
+  color: #8a97a8;
+  font-size: 12px;
+}
+
+.audit-summary-card small {
   color: #8a97a8;
   font-size: 12px;
 }
@@ -1764,6 +1798,10 @@ h3 {
 
 .invoices-table {
   min-width: 980px;
+}
+
+.audit-table {
+  min-width: 1120px;
 }
 
 .purchase-status,
@@ -2689,6 +2727,36 @@ h3 {
   align-items: center;
   font-size: 11px;
   font-weight: 900;
+}
+
+.audit-result {
+  min-height: 28px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.audit-result.success {
+  background: #e7f5ee;
+  color: #278452;
+}
+
+.audit-result.failed {
+  background: #fff1f1;
+  color: #b54848;
+}
+
+.audit-payload {
+  display: block;
+  max-width: 260px;
+  color: #526276;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .notification-type-badge.unread {

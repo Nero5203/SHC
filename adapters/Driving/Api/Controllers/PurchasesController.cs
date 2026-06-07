@@ -1,7 +1,9 @@
+using api.Auditing;
 using application.Dto.Purchases;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using application.Ports.Driving.Purchases;
+using SHC.Domain.Entities.Permissions.Enums;
 
 namespace api.Controllers
 {
@@ -17,6 +19,7 @@ namespace api.Controllers
         private readonly IGetInvoiceByPurchaseIdUseCase _getInvoiceByPurchaseIdUseCase;
         private readonly IGenerateInvoiceForPurchaseUseCase _generateInvoiceForPurchaseUseCase;
         private readonly IListInvoicesUseCase _listInvoicesUseCase;
+        private readonly IAuditLogWriter _auditLogWriter;
         private readonly IMapper _mapper;
 
         public PurchasesController(
@@ -28,6 +31,7 @@ namespace api.Controllers
             IGetInvoiceByPurchaseIdUseCase getInvoiceByPurchaseIdUseCase,
             IGenerateInvoiceForPurchaseUseCase generateInvoiceForPurchaseUseCase,
             IListInvoicesUseCase listInvoicesUseCase,
+            IAuditLogWriter auditLogWriter,
             IMapper mapper)
         {
             _createPurchaseUseCase = createPurchaseUseCase;
@@ -38,6 +42,7 @@ namespace api.Controllers
             _getInvoiceByPurchaseIdUseCase = getInvoiceByPurchaseIdUseCase;
             _generateInvoiceForPurchaseUseCase = generateInvoiceForPurchaseUseCase;
             _listInvoicesUseCase = listInvoicesUseCase;
+            _auditLogWriter = auditLogWriter;
             _mapper = mapper;
         }
 
@@ -81,6 +86,20 @@ namespace api.Controllers
             {
                 return NotFound();
             }
+
+            await _auditLogWriter.WriteAsync(
+                User,
+                "Purchase.StatusUpdated",
+                ResourceType.Purchase,
+                purchase.PurchaseId.ToString(),
+                true,
+                new
+                {
+                    purchase.PurchaseId,
+                    purchase.UserId,
+                    purchase.SubscriptionId,
+                    purchase.Status
+                });
 
             return Ok(MapPurchase(purchase));
         }
@@ -150,6 +169,21 @@ namespace api.Controllers
             }
 
             var response = _mapper.Map<InvoiceResponseDto>(invoice);
+            await _auditLogWriter.WriteAsync(
+                User,
+                "Invoice.Generated",
+                ResourceType.Invoice,
+                invoice.InvoiceId.ToString(),
+                true,
+                new
+                {
+                    invoice.InvoiceId,
+                    invoice.InvoiceNumber,
+                    invoice.PurchaseId,
+                    invoice.UserId,
+                    invoice.TotalAmount,
+                    invoice.Status
+                });
 
             return Ok(response);
         }

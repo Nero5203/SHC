@@ -1,9 +1,11 @@
+using api.Auditing;
 using application.Common.Authorization;
 using application.Dto.StorageNodes;
 using Domain.Entities.StorageNodes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using application.Ports.Driving.StorageNodes;
+using SHC.Domain.Entities.Permissions.Enums;
 
 namespace api.Controllers
 {
@@ -19,6 +21,7 @@ namespace api.Controllers
         private readonly IUpdateStorageNodeUseCase _updateStorageNodeUseCase;
         private readonly IUpdateStorageNodeHeartbeatUseCase _updateStorageNodeHeartbeatUseCase;
         private readonly IUpdateStorageNodeStatusUseCase _updateStorageNodeStatusUseCase;
+        private readonly IAuditLogWriter _auditLogWriter;
 
         public StorageNodesController(
             ICreateStorageNodeUseCase createStorageNodeUseCase,
@@ -27,7 +30,8 @@ namespace api.Controllers
             IGetBestAvailableStorageNodeUseCase getBestAvailableStorageNodeUseCase,
             IUpdateStorageNodeUseCase updateStorageNodeUseCase,
             IUpdateStorageNodeHeartbeatUseCase updateStorageNodeHeartbeatUseCase,
-            IUpdateStorageNodeStatusUseCase updateStorageNodeStatusUseCase)
+            IUpdateStorageNodeStatusUseCase updateStorageNodeStatusUseCase,
+            IAuditLogWriter auditLogWriter)
         {
             _createStorageNodeUseCase = createStorageNodeUseCase;
             _getStorageNodeByIdUseCase = getStorageNodeByIdUseCase;
@@ -36,6 +40,7 @@ namespace api.Controllers
             _updateStorageNodeUseCase = updateStorageNodeUseCase;
             _updateStorageNodeHeartbeatUseCase = updateStorageNodeHeartbeatUseCase;
             _updateStorageNodeStatusUseCase = updateStorageNodeStatusUseCase;
+            _auditLogWriter = auditLogWriter;
         }
 
         [HttpPost]
@@ -49,6 +54,8 @@ namespace api.Controllers
                 dto.Port,
                 dto.BasePath,
                 dto.TotalCapacityBytes);
+
+            await WriteStorageNodeAuditAsync("StorageNode.Created", storageNode);
 
             return CreatedAtAction(
                 nameof(GetStorageNodeById),
@@ -80,6 +87,8 @@ namespace api.Controllers
                 return NotFound();
             }
 
+            await WriteStorageNodeAuditAsync("StorageNode.Updated", storageNode);
+
             return Ok(MapStorageNode(storageNode));
         }
 
@@ -94,6 +103,8 @@ namespace api.Controllers
             {
                 return NotFound();
             }
+
+            await WriteStorageNodeAuditAsync("StorageNode.HeartbeatUpdated", storageNode);
 
             return Ok(MapStorageNode(storageNode));
         }
@@ -156,7 +167,29 @@ namespace api.Controllers
                 return NotFound();
             }
 
+            await WriteStorageNodeAuditAsync("StorageNode.StatusUpdated", storageNode);
+
             return Ok(MapStorageNode(storageNode));
+        }
+
+        private async Task WriteStorageNodeAuditAsync(string action, StorageNode storageNode)
+        {
+            await _auditLogWriter.WriteAsync(
+                User,
+                action,
+                ResourceType.StorageNode,
+                storageNode.StorageNodeId.ToString(),
+                true,
+                new
+                {
+                    storageNode.Name,
+                    storageNode.Hostname,
+                    storageNode.IpAddress,
+                    storageNode.Port,
+                    storageNode.Status,
+                    storageNode.UsedCapacityBytes,
+                    storageNode.TotalCapacityBytes
+                });
         }
 
         private static StorageNodeResponseDto MapStorageNode(StorageNode storageNode)

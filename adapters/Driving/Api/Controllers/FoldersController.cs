@@ -1,3 +1,4 @@
+using api.Auditing;
 using api.Authorization;
 using application.Common.Authorization;
 using application.Dto.FileStorage.File;
@@ -28,6 +29,7 @@ namespace api.Controllers
         private readonly IShareFolderUseCase _shareFolderUseCase;
         private readonly IAuthorizationService _authorizationService;
         private readonly ICreateNotificationUseCase _createNotificationUseCase;
+        private readonly IAuditLogWriter _auditLogWriter;
 
         public FoldersController(
             ICreateFolderUseCase createFolderUseCase,
@@ -39,7 +41,8 @@ namespace api.Controllers
             IArchiveFolderUseCase archiveFolderUseCase,
             IShareFolderUseCase shareFolderUseCase,
             IAuthorizationService authorizationService,
-            ICreateNotificationUseCase createNotificationUseCase)
+            ICreateNotificationUseCase createNotificationUseCase,
+            IAuditLogWriter auditLogWriter)
         {
             _createFolderUseCase = createFolderUseCase;
             _getFolderByIdUseCase = getFolderByIdUseCase;
@@ -51,6 +54,7 @@ namespace api.Controllers
             _shareFolderUseCase = shareFolderUseCase;
             _authorizationService = authorizationService;
             _createNotificationUseCase = createNotificationUseCase;
+            _auditLogWriter = auditLogWriter;
         }
 
         [HttpPost]
@@ -292,6 +296,20 @@ namespace api.Controllers
                 sharedLink.UserId,
                 folderId,
                 NotificationType.FolderShared);
+            await _auditLogWriter.WriteAsync(
+                User,
+                "SharedLink.Created",
+                ResourceType.SharedLink,
+                sharedLink.SharedLinkId.ToString(),
+                true,
+                new
+                {
+                    sharedLink.SharedLinkId,
+                    sharedLink.UserId,
+                    sharedLink.TargetId,
+                    sharedLink.TargetType,
+                    sharedLink.ExpirationDate
+                });
 
             return Ok(MapShareFolder(sharedLink));
         }

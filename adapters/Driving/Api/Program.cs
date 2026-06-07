@@ -22,6 +22,7 @@ using adapters.Driven.Persistence.Repositories.Permissions;
 using adapters.Driven.Persistence.Repositories.Notifications;
 using adapters.Driven.Persistence.Repositories.Roles;
 using adapters.Driven.Persistence.Repositories.FileStorage;
+using api.Auditing;
 using application.Ports.Driven.Purchases;
 using application.Ports.Driving.Subscriptions;
 using application.Ports.Driving.Purchases;
@@ -260,6 +261,7 @@ builder.Services.AddScoped<IListSystemSettingsUseCase, ListSystemSettingsUseCase
 builder.Services.AddScoped<IUpdateSystemSettingsUseCase, UpdateSystemSettingsUseCase>();
 builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+builder.Services.AddScoped<IAuditLogWriter, AuditLogWriter>();
 builder.Services.AddScoped<IGetAllPermissionsUseCase, GetAllPermissionsUseCase>();
 builder.Services.AddScoped<IGrantPermissionUseCase, GrantPermissionUseCase>();
 builder.Services.AddScoped<IUpdatePermissionUseCase, UpdatePermissionUseCase>();
