@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using adapters.Driven.Persistence.Data;
 
@@ -10,9 +11,11 @@ using adapters.Driven.Persistence.Data;
 namespace adapters.Driven.Persistence.Data.Migrations
 {
     [DbContext(typeof(ShcDbContext))]
-    partial class ShcDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260607121603_AddFileActivityEntity")]
+    partial class AddFileActivityEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -54,7 +57,7 @@ namespace adapters.Driven.Persistence.Data.Migrations
                     b.HasIndex("FileItemId")
                         .IsUnique();
 
-                    b.ToTable("AIFileInsights");
+                    b.ToTable("AIFileInsight");
                 });
 
             modelBuilder.Entity("Domain.Entities.AI.AISuggestion", b =>
@@ -82,9 +85,6 @@ namespace adapters.Driven.Persistence.Data.Migrations
                     b.Property<Guid?>("FileItemId")
                         .HasColumnType("char(36)");
 
-                    b.Property<Guid?>("FileItemId1")
-                        .HasColumnType("char(36)");
-
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -101,20 +101,13 @@ namespace adapters.Driven.Persistence.Data.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("char(36)");
 
-                    b.Property<Guid>("UserId1")
-                        .HasColumnType("char(36)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("FileItemId");
 
-                    b.HasIndex("FileItemId1");
-
                     b.HasIndex("UserId");
 
-                    b.HasIndex("UserId1");
-
-                    b.ToTable("AISuggestions");
+                    b.ToTable("AISuggestion");
                 });
 
             modelBuilder.Entity("Domain.Entities.Auth.RefreshToken", b =>
@@ -1118,43 +1111,6 @@ namespace adapters.Driven.Persistence.Data.Migrations
                     b.ToTable("Permissions");
                 });
 
-            modelBuilder.Entity("domain.Entities.FileStorage.FileActivity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<Guid>("FileItemId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid?>("FileItemId1")
-                        .HasColumnType("char(36)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid?>("UserId1")
-                        .HasColumnType("char(36)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FileItemId");
-
-                    b.HasIndex("FileItemId1");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("UserId1");
-
-                    b.ToTable("FileActivities");
-                });
-
             modelBuilder.Entity("Domain.Entities.AI.AIFileInsight", b =>
                 {
                     b.HasOne("Domain.Entities.FileStorage.FileItem", "FileItem")
@@ -1168,24 +1124,14 @@ namespace adapters.Driven.Persistence.Data.Migrations
 
             modelBuilder.Entity("Domain.Entities.AI.AISuggestion", b =>
                 {
-                    b.HasOne("Domain.Entities.FileStorage.FileItem", null)
-                        .WithMany()
+                    b.HasOne("Domain.Entities.FileStorage.FileItem", "FileItem")
+                        .WithMany("AISuggestions")
                         .HasForeignKey("FileItemId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("Domain.Entities.FileStorage.FileItem", "FileItem")
-                        .WithMany("AISuggestions")
-                        .HasForeignKey("FileItemId1");
-
-                    b.HasOne("Domain.Entities.Users.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Domain.Entities.Users.User", "User")
                         .WithMany()
-                        .HasForeignKey("UserId1")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1588,29 +1534,6 @@ namespace adapters.Driven.Persistence.Data.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("domain.Entities.FileStorage.FileActivity", b =>
-                {
-                    b.HasOne("Domain.Entities.FileStorage.FileItem", null)
-                        .WithMany()
-                        .HasForeignKey("FileItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Entities.FileStorage.FileItem", null)
-                        .WithMany("FileActivities")
-                        .HasForeignKey("FileItemId1");
-
-                    b.HasOne("Domain.Entities.Users.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Entities.Users.User", null)
-                        .WithMany("FileActivities")
-                        .HasForeignKey("UserId1");
-                });
-
             modelBuilder.Entity("Domain.Entities.Authorization.Permission", b =>
                 {
                     b.Navigation("RolePermissions");
@@ -1621,8 +1544,6 @@ namespace adapters.Driven.Persistence.Data.Migrations
                     b.Navigation("AIFileInsight");
 
                     b.Navigation("AISuggestions");
-
-                    b.Navigation("FileActivities");
 
                     b.Navigation("Notifications");
                 });
@@ -1667,8 +1588,6 @@ namespace adapters.Driven.Persistence.Data.Migrations
 
             modelBuilder.Entity("Domain.Entities.Users.User", b =>
                 {
-                    b.Navigation("FileActivities");
-
                     b.Navigation("UserCredentials")
                         .IsRequired();
 

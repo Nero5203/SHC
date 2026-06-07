@@ -8,6 +8,9 @@ using Domain.Entities.LinkSharing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SHC.Domain.Entities.Permissions.Enums;
+using application.Ports.Driven.FileStorage;
+using application.Ports.Driven.AI;
+using domain.Entities.FileStorage.Enums;
 
 namespace api.Controllers
 {
@@ -25,6 +28,8 @@ namespace api.Controllers
         private readonly IDeleteFileUseCase _deleteFileUseCase;
         private readonly IShareFileUseCase _shareFileUseCase;
         private readonly IAuthorizationService _authorizationService;
+        private readonly IFileActivityRepository _fileActivityRepository;
+        private readonly IAISuggestionRepository _aiSuggestionRepository;
 
         public FilesController(
             IUploadFileUseCase uploadFileUseCase,
@@ -35,7 +40,9 @@ namespace api.Controllers
             IMoveFileUseCase moveFileUseCase,
             IDeleteFileUseCase deleteFileUseCase,
             IShareFileUseCase shareFileUseCase,
-            IAuthorizationService authorizationService)
+            IAuthorizationService authorizationService,
+            IFileActivityRepository fileActivityRepository,
+            IAISuggestionRepository aiSuggestionRepository)
         {
             _uploadFileUseCase = uploadFileUseCase;
             _getFileByIdUseCase = getFileByIdUseCase;
@@ -46,6 +53,8 @@ namespace api.Controllers
             _deleteFileUseCase = deleteFileUseCase;
             _shareFileUseCase = shareFileUseCase;
             _authorizationService = authorizationService;
+            _fileActivityRepository = fileActivityRepository;
+            _aiSuggestionRepository = aiSuggestionRepository;
         }
 
         [HttpPost("upload")]
@@ -70,6 +79,12 @@ namespace api.Controllers
                     file.ContentType,
                     file.Length,
                     content);
+                
+                await _fileActivityRepository.TrackAsync(
+                    request.UserId,
+                    fileItem.FileItemId,
+                    FileActivityType.Uploaded
+                );
 
                 return CreatedAtAction(
                     nameof(GetFileById),
@@ -97,6 +112,12 @@ namespace api.Controllers
                 User,
                 fileItemId,
                 new OwnershipRequirement(ResourceType.File, AccessLevel.Read));
+
+            await _fileActivityRepository.TrackAsync(
+                User.GetUserId(),
+                fileItem.FileItemId,
+                FileActivityType.Viewed
+            );
 
             if (!authorization.Succeeded)
             {
@@ -139,6 +160,11 @@ namespace api.Controllers
             {
                 return Forbid();
             }
+            await _fileActivityRepository.TrackAsync(
+                User.GetUserId(),
+                fileItemId,
+                FileActivityType.Downloaded
+            );
 
             return File(content, fileItem.FileType, fileItem.FileName);
         }
@@ -160,6 +186,12 @@ namespace api.Controllers
             }
 
             var fileItem = await _renameFileUseCase.ExecuteAsync(fileItemId, dto.NewName);
+
+            await _fileActivityRepository.TrackAsync(
+                User.GetUserId(),
+                fileItemId,
+                FileActivityType.Renamed
+            );
 
             if (fileItem == null)
             {
@@ -184,6 +216,12 @@ namespace api.Controllers
             {
                 return Forbid();
             }
+
+            await _fileActivityRepository.TrackAsync(
+                User.GetUserId(),
+                fileItemId,
+                FileActivityType.Moved
+            );
 
             try
             {
@@ -222,6 +260,11 @@ namespace api.Controllers
             {
                 return NotFound();
             }
+            await _fileActivityRepository.TrackAsync(
+                User.GetUserId(),
+                fileItemId,
+                FileActivityType.Deleted
+            );
 
             return Ok(new DeleteFileResponseDto { Success = true });
         }

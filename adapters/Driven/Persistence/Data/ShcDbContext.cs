@@ -18,6 +18,7 @@ using Domain.Entities.Users;
 using Domain.Entities.Users.Settings;
 using Microsoft.EntityFrameworkCore;
 using SHC.Domain.Entities.Permissions;
+using domain.Entities.FileStorage;
 
 namespace adapters.Driven.Persistence.Data
 {
@@ -69,6 +70,9 @@ namespace adapters.Driven.Persistence.Data
         // USERS & USER SETTINGS
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<UserSetting> UserSettings { get; set; } = null!;
+        public DbSet<AIFileInsight> AIFileInsights { get; set; } = null!;
+        public DbSet<AISuggestion> AISuggestions { get; set; } = null!;
+        public DbSet<FileActivity> FileActivities { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -384,6 +388,28 @@ namespace adapters.Driven.Persistence.Data
                 .HasOne<User>()
                 .WithMany()
                 .HasForeignKey(ti => ti.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<FileActivity>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(fa => fa.UserId);
+
+            modelBuilder.Entity<FileActivity>()
+                .HasOne<FileItem>()
+                .WithMany()
+                .HasForeignKey(fa => fa.FileItemId);
+
+            modelBuilder.Entity<AISuggestion>()
+                .HasOne<FileItem>()
+                .WithMany()
+                .HasForeignKey(ai => ai.FileItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<AISuggestion>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(ai => ai.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
 
