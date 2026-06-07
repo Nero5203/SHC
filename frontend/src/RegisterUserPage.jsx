@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ArrowLeft, Lock, Mail, Phone, ShieldCheck, UserPlus } from "./icons.jsx";
 import { defaultApiUrl, postJson } from "./apiClient.js";
 
 const initialForm = {
@@ -11,15 +12,10 @@ const initialForm = {
 };
 
 function RegisterUserPage({ onLogout }) {
-  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem("shc.apiUrl") || defaultApiUrl);
+  const apiUrl = localStorage.getItem("shc.apiUrl") || defaultApiUrl;
   const [form, setForm] = useState(initialForm);
   const [status, setStatus] = useState({ type: "idle", message: "Ready to register a user." });
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  function updateApiUrl(value) {
-    setApiUrl(value);
-    localStorage.setItem("shc.apiUrl", value);
-  }
 
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -46,138 +42,157 @@ function RegisterUserPage({ onLogout }) {
   }
 
   return (
-    <main className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-mark">S</div>
-          <div>
-            <strong>SHC</strong>
-            <span>Cloud Console</span>
-          </div>
-        </div>
-
-        <nav className="module-list" aria-label="Frontend modules">
-          <button className="module-item active" type="button">
-            <span>Register User</span>
-            <small>Auth</small>
+    <main className="auth-page auth-page-register">
+      <section className="auth-showcase">
+        <header className="auth-showcase-nav">
+          <button className="landing-back-button" type="button" onClick={() => onLogout("landing")}>
+            <ArrowLeft size={16} />
+            Back
           </button>
-          <button className="module-item" onClick={() => onLogout("login")} type="button">
-            <span>Login</span>
-            <small>Auth</small>
-          </button>
-        </nav>
-      </aside>
-
-      <section className="page">
-        <header className="topbar">
-          <div>
-            <p className="eyebrow">Auth Module</p>
-            <h1>Register User</h1>
+          <div className="landing-brand">
+            <div className="landing-brand-mark" aria-hidden="true" />
+            <div>
+              <strong>SHC DRIVE</strong>
+              <span>Secure cloud workspace</span>
+            </div>
           </div>
-          <label className="api-field">
-            API URL
-            <input value={apiUrl} onChange={(event) => updateApiUrl(event.target.value)} />
-          </label>
         </header>
 
-        <section className="content-grid">
-          <form className="panel register-form" onSubmit={handleSubmit}>
-            <div className="form-header">
-              <div>
-                <h2>New Account</h2>
-                <p>Create a user through the backend auth endpoint.</p>
-              </div>
+        <div className="auth-showcase-copy">
+          <p className="landing-kicker">
+            <ShieldCheck size={14} />
+            New workspace access
+          </p>
+          <h1>Create a new SHC DRIVE account.</h1>
+          <p>
+            Register a teammate through the real auth endpoint, then move directly into
+            login and role-aware dashboard access.
+          </p>
+        </div>
+
+        <div className="auth-preview-grid" aria-hidden="true">
+          <article className="auth-preview-card">
+            <div className="auth-preview-icon">
+              <UserPlus size={18} />
             </div>
+            <strong>Backend registration</strong>
+            <span>The form submits to your actual register endpoint.</span>
+          </article>
+          <article className="auth-preview-card">
+            <div className="auth-preview-icon">
+              <ShieldCheck size={18} />
+            </div>
+            <strong>Ready for login</strong>
+            <span>After sign-up, the flow sends the user into the login experience.</span>
+          </article>
+        </div>
+      </section>
 
-            <div className="form-grid">
-              <label>
-                First Name
-                <input
-                  value={form.firstName}
-                  onChange={(event) => updateField("firstName", event.target.value)}
-                  required
-                />
-              </label>
+      <section className="auth-form-shell">
+        <form className="auth-form-card auth-form-card-wide" onSubmit={handleSubmit}>
+          <div className="auth-form-icon">
+            <UserPlus size={28} />
+          </div>
 
-              <label>
-                Last Name
-                <input
-                  value={form.lastName}
-                  onChange={(event) => updateField("lastName", event.target.value)}
-                  required
-                />
-              </label>
+          <div className="auth-form-header">
+            <h2>Register User</h2>
+            <p>Create a new account for SHC DRIVE.</p>
+          </div>
 
-              <label>
-                Username
-                <input
-                  value={form.username}
-                  onChange={(event) => updateField("username", event.target.value)}
-                  required
-                />
-              </label>
+          <div className="auth-form-grid auth-form-grid-two">
+            <label>
+              First Name
+              <input
+                value={form.firstName}
+                onChange={(event) => updateField("firstName", event.target.value)}
+                required
+                placeholder="First name"
+              />
+            </label>
 
-              <label>
-                Email
+            <label>
+              Last Name
+              <input
+                value={form.lastName}
+                onChange={(event) => updateField("lastName", event.target.value)}
+                required
+                placeholder="Last name"
+              />
+            </label>
+
+            <label>
+              Username
+              <input
+                value={form.username}
+                onChange={(event) => updateField("username", event.target.value)}
+                required
+                placeholder="Username"
+              />
+            </label>
+
+            <label>
+              Email
+              <div className="auth-input-wrap">
+                <Mail size={18} />
                 <input
                   value={form.email}
                   onChange={(event) => updateField("email", event.target.value)}
                   required
                   type="email"
+                  placeholder="you@example.com"
                 />
-              </label>
+              </div>
+            </label>
 
-              <label>
-                Phone Number
+            <label>
+              Phone Number
+              <div className="auth-input-wrap">
+                <Phone size={18} />
                 <input
                   value={form.phoneNumber}
                   onChange={(event) => updateField("phoneNumber", event.target.value)}
                   required
+                  placeholder="+00 000 000 000"
                 />
-              </label>
+              </div>
+            </label>
 
-              <label>
-                Password
+            <label>
+              Password
+              <div className="auth-input-wrap">
+                <Lock size={18} />
                 <input
                   value={form.password}
                   onChange={(event) => updateField("password", event.target.value)}
                   required
                   type="password"
+                  placeholder="Create a password"
                 />
-              </label>
-            </div>
-
-            <div className="form-footer">
-              <button className="primary-button" disabled={isSubmitting} type="submit">
-                {isSubmitting ? "Registering..." : "Register User"}
-              </button>
-              <button className="secondary-button" disabled={isSubmitting} type="button" onClick={() => setForm(initialForm)}>
-                Clear
-              </button>
-              <span className="form-footer-alt">
-                Already have an account?{" "}
-                <button type="button" onClick={() => onLogout("login")}>
-                  Login
-                </button>
-              </span>
-            </div>
-          </form>
-
-          <aside className={`panel status-panel ${status.type}`}>
-            <h2>Status</h2>
-            <p>{status.message}</p>
-            <dl>
-              <div>
-                <dt>Endpoint</dt>
-                <dd>POST /api/auth/register</dd>
               </div>
-              <div>
-                <dt>Backend</dt>
-                <dd>{apiUrl}</dd>
-              </div>
-            </dl>
-          </aside>
-        </section>
+            </label>
+          </div>
+
+          <button className="primary-button auth-submit-button" disabled={isSubmitting} type="submit">
+            {isSubmitting ? "Registering..." : "Create account"}
+          </button>
+
+          <div className={`auth-status auth-status-${status.type}`}>
+            <strong>Status</strong>
+            <span>{status.message}</span>
+          </div>
+
+          <div className="auth-form-footer">
+            <button className="secondary-button" disabled={isSubmitting} type="button" onClick={() => setForm(initialForm)}>
+              Clear
+            </button>
+            <span>
+              Already have an account?
+              <button type="button" onClick={() => onLogout("login")}>
+                Login
+              </button>
+            </span>
+          </div>
+        </form>
       </section>
     </main>
   );

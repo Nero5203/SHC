@@ -1,35 +1,40 @@
+import {
+  ArrowRight,
+  Bot,
+  FolderOpen,
+  Link2,
+  Lock,
+  Server,
+  ShieldCheck
+} from "./icons.jsx";
+
 const highlights = [
   {
-    title: "Team file storage",
-    text: "Store files in folders, keep versions organized, and route uploads to your storage nodes with room-aware allocation."
+    title: "Secure storage",
+    text: "Upload to your own storage-node network, keep folders organized, and monitor capacity from one place.",
+    icon: ShieldCheck
   },
   {
-    title: "Secure link sharing",
-    text: "Create share links, control expiration, and keep file delivery fast without sending large attachments around."
+    title: "Link sharing",
+    text: "Share files and folders with expiration-aware links and download controls already backed by your API.",
+    icon: Link2
   },
   {
-    title: "Admin oversight",
-    text: "Manage users, plans, purchases, storage nodes, and system settings from one backend-connected dashboard."
+    title: "AI suggestions",
+    text: "Surface useful cleanup, organization, and activity suggestions directly from user file behavior.",
+    icon: Bot
   },
   {
-    title: "AI workspace help",
-    text: "Surface file insights and suggestions from real activity so the product can guide users back to active work."
+    title: "Storage nodes",
+    text: "Run SHC DRIVE on your own machines and keep the infrastructure visible to admins in real time.",
+    icon: Server
   }
 ];
 
-const modules = [
-  "Users and roles",
-  "File storage",
-  "Link sharing",
-  "Storage nodes",
-  "System settings",
-  "Subscriptions and purchases"
-];
-
-const stats = [
-  { value: "3-node ready", label: "Built around your shared storage-node idea" },
-  { value: "Role-based", label: "Separate admin and user dashboards after login" },
-  { value: "Backend-first", label: "Connected to your API flow for real auth and data" }
+const quickStats = [
+  { value: "Role-aware", label: "Separate user and admin workspaces after login" },
+  { value: "Real API", label: "Auth, files, sharing, billing, and nodes already wired" },
+  { value: "Node-ready", label: "Fits your 3-laptop storage-node model from day one" }
 ];
 
 function MainLandingPage({ onNavigate }) {
@@ -38,119 +43,137 @@ function MainLandingPage({ onNavigate }) {
       <section className="landing-hero">
         <header className="landing-nav">
           <div className="landing-brand">
-            <div className="landing-brand-mark">S</div>
+            <div className="landing-brand-mark" aria-hidden="true" />
             <div>
-              <strong>SHC</strong>
-              <span>Shared Hybrid Cloud</span>
+              <strong>SHC DRIVE</strong>
+              <span>Secure cloud workspace</span>
             </div>
           </div>
 
           <nav className="landing-actions" aria-label="Main navigation">
-            <button className="nav-text-button" type="button" onClick={() => onNavigate("login")}>
-              Sign in
+            <button className="nav-text-button" type="button" onClick={() => document.getElementById("landing-features")?.scrollIntoView({ behavior: "smooth" })}>
+              Features
             </button>
-            <button className="primary-button hero-cta-button" type="button" onClick={() => onNavigate("register")}>
-              Start with your team
+            <button className="nav-text-button" type="button" onClick={() => document.getElementById("landing-pricing")?.scrollIntoView({ behavior: "smooth" })}>
+              Pricing
+            </button>
+            <button className="secondary-button hero-cta-button" type="button" onClick={() => onNavigate("login")}>
+              Login
             </button>
           </nav>
         </header>
 
         <div className="landing-hero-content">
           <div className="landing-copy">
-            <p className="landing-kicker">Shared storage for real teams</p>
-            <h1>Bring your files, storage nodes, and team workflows together.</h1>
+            <p className="landing-kicker">
+              <Lock size={14} />
+              Secure. Smart. Simple.
+            </p>
+            <h1>
+              Store, share, and manage your files
+              <span> securely</span>
+            </h1>
             <p className="landing-summary">
-              SHC gives your team one place to upload, organize, share, and manage content across your own storage-node setup,
-              with separate spaces for users, admins, subscriptions, and system control.
+              SHC DRIVE gives your team one place to upload, organize, share, and manage content across your own storage-node setup,
+              with user dashboards, admin controls, subscriptions, notifications, and AI suggestions already connected to the backend.
             </p>
 
             <div className="landing-cta-row">
               <button className="primary-button landing-primary" type="button" onClick={() => onNavigate("register")}>
-                Create account
+                Get Started Free
               </button>
-              <button className="secondary-button landing-secondary" type="button" onClick={() => onNavigate("login")}>
-                Open sign in
+              <button className="landing-link-button" type="button" onClick={() => onNavigate("login")}>
+                See how it works
+                <ArrowRight size={16} />
               </button>
             </div>
 
-            <ul className="landing-module-strip" aria-label="Platform modules">
-              {modules.map((module) => (
-                <li key={module}>{module}</li>
-              ))}
-            </ul>
+            <div className="landing-workspace-preview">
+              <div className="landing-workspace-sidebar">
+                <div className="landing-workspace-logo">
+                  <div className="landing-brand-mark small" aria-hidden="true" />
+                  <span>SHC DRIVE</span>
+                </div>
+                <button className="landing-mini-nav active" type="button">My Files</button>
+                <button className="landing-mini-nav" type="button">Shared</button>
+                <button className="landing-mini-nav" type="button">Recent</button>
+                <button className="landing-mini-nav" type="button">Trash</button>
+              </div>
+
+              <div className="landing-workspace-main">
+                <div className="landing-workspace-folders">
+                  <div className="landing-folder-card">
+                    <FolderOpen size={22} />
+                    <span>Projects</span>
+                  </div>
+                  <div className="landing-folder-card">
+                    <FolderOpen size={22} />
+                    <span>Documents</span>
+                  </div>
+                  <div className="landing-folder-card">
+                    <FolderOpen size={22} />
+                    <span>Photos</span>
+                  </div>
+                </div>
+
+                <div className="landing-workspace-files">
+                  <div className="landing-file-tile pdf">PDF</div>
+                  <div className="landing-file-tile sheet">XLS</div>
+                  <div className="landing-file-tile doc">DOC</div>
+                  <div className="landing-file-tile upload">+</div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="landing-visual" aria-hidden="true">
-            <div className="workspace-scene">
-              <div className="workspace-screen workspace-screen-main">
-                <div className="screen-topbar">
-                  <span />
-                  <span />
-                  <span />
-                </div>
-
-                <div className="screen-body">
-                  <div className="screen-sidebar">
-                    <div className="sidebar-chip active">Storage</div>
-                    <div className="sidebar-chip">Shared links</div>
-                    <div className="sidebar-chip">AI</div>
-                    <div className="sidebar-chip">Billing</div>
-                  </div>
-
-                  <div className="screen-panel">
-                    <div className="panel-header-row">
-                      <div>
-                        <strong>Project workspace</strong>
-                        <small>Uploads, folders, shares</small>
-                      </div>
-                      <div className="storage-pill">Node online</div>
-                    </div>
-
-                    <div className="file-list">
-                      <div className="file-row">
-                        <span className="file-dot blue" />
-                        <strong>Campaign-Brief.pdf</strong>
-                        <small>Shared with team</small>
-                      </div>
-                      <div className="file-row">
-                        <span className="file-dot coral" />
-                        <strong>Q3-Launch</strong>
-                        <small>Folder</small>
-                      </div>
-                      <div className="file-row">
-                        <span className="file-dot green" />
-                        <strong>Budget-v4.xlsx</strong>
-                        <small>Protected</small>
-                      </div>
-                    </div>
-
-                    <div className="capacity-block">
-                      <div className="capacity-copy">
-                        <strong>Cluster capacity</strong>
-                        <small>3 laptops acting as storage nodes</small>
-                      </div>
-                      <div className="capacity-bar">
-                        <span className="capacity-fill" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="workspace-screen workspace-screen-side">
-                <strong>Activity</strong>
-                <div className="activity-item">AI suggestion created</div>
-                <div className="activity-item">Shared link expires in 7 days</div>
-                <div className="activity-item">Purchase recorded for Standard plan</div>
-              </div>
+          <div className="landing-auth-card">
+            <div className="landing-auth-icon">
+              <Lock size={28} />
             </div>
+            <h2>Welcome back</h2>
+            <p>Login to access your SHC DRIVE account.</p>
+
+            <div className="landing-auth-fields">
+              <label>
+                <span>Email</span>
+                <div className="landing-auth-input">you@example.com</div>
+              </label>
+              <label>
+                <span>Password</span>
+                <div className="landing-auth-input">Enter your password</div>
+              </label>
+            </div>
+
+            <div className="landing-auth-row">
+              <span>Remember me</span>
+              <button className="landing-text-link" type="button" onClick={() => onNavigate("login")}>
+                Open login
+              </button>
+            </div>
+
+            <button className="primary-button landing-auth-submit" type="button" onClick={() => onNavigate("login")}>
+              Login
+            </button>
+
+            <div className="landing-auth-divider">
+              <span />
+              <span>or</span>
+              <span />
+            </div>
+
+            <p className="landing-auth-footer">
+              Don&apos;t have an account?
+              <button className="landing-text-link" type="button" onClick={() => onNavigate("register")}>
+                Create an account
+              </button>
+            </p>
           </div>
         </div>
       </section>
 
       <section className="landing-proof">
         <div className="landing-proof-inner">
-          {stats.map((stat) => (
+          {quickStats.map((stat) => (
             <div key={stat.label} className="proof-stat">
               <strong>{stat.value}</strong>
               <span>{stat.label}</span>
@@ -159,19 +182,22 @@ function MainLandingPage({ onNavigate }) {
         </div>
       </section>
 
-      <section className="landing-section landing-section-light">
+      <section className="landing-section landing-section-light" id="landing-features">
         <div className="section-heading">
           <p className="eyebrow">Why teams use it</p>
-          <h2>Built around the modules your project already has.</h2>
+          <h2>Built around the backend modules you already have.</h2>
           <p>
-            Instead of a fake marketing shell, this homepage leads into the actual flows you already wired:
-            registration, login, admin dashboards, file storage, purchases, and sharing.
+            This is not a fake marketing shell. It leads into the real flows you already wired:
+            registration, login, dashboards, file storage, sharing, subscriptions, purchases, and infrastructure management.
           </p>
         </div>
 
         <div className="landing-feature-grid">
           {highlights.map((item) => (
             <article key={item.title} className="landing-feature">
+              <div className="landing-feature-icon">
+                <item.icon size={20} />
+              </div>
               <h3>{item.title}</h3>
               <p>{item.text}</p>
             </article>
@@ -179,11 +205,11 @@ function MainLandingPage({ onNavigate }) {
         </div>
       </section>
 
-      <section className="landing-section landing-section-dark">
+      <section className="landing-section landing-section-dark" id="landing-pricing">
         <div className="workflow-band">
           <div className="workflow-copy">
             <p className="eyebrow">For admins</p>
-            <h2>See your cloud platform as one operating surface.</h2>
+            <h2>Run your cloud platform like one operating surface.</h2>
             <p>
               Track users, assign roles, review purchases, manage subscriptions, monitor storage-node health,
               and adjust system settings without hopping between disconnected tools.
@@ -238,9 +264,9 @@ function MainLandingPage({ onNavigate }) {
 
       <section className="landing-footer-cta">
         <div className="landing-footer-copy">
-          <h2>Start with the public homepage, then flow into the real product.</h2>
+          <h2>Start with SHC DRIVE, then continue straight into the real product.</h2>
           <p>
-            Open registration for new teammates or sign in and continue directly into the dashboard your role allows.
+            Register a teammate, sign in, and move directly into the dashboard your role is allowed to use.
           </p>
         </div>
 

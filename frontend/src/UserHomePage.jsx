@@ -1,5 +1,19 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
+  Bell,
+  Bot,
+  ChevronRight,
+  CreditCard,
+  FolderOpen,
+  LayoutDashboard,
+  Link2,
+  LogOut,
+  Search,
+  Sparkles,
+  Upload,
+  UserCircle2
+} from "./icons.jsx";
+import {
   getJson,
   postJson,
   putJson,
@@ -9,21 +23,9 @@ import {
   defaultApiUrl,
   getUserIdFromToken,
   getUserNameFromToken,
-  getPermissionsFromToken,
-  getRolesFromToken,
   clearAuth,
   isAuthenticated
 } from "./apiClient.js";
-
-const userDashboardModules = [
-  { title: "My Files", area: "Storage", permissions: ["File.Read"], fallbackUser: true },
-  { title: "Upload Files", area: "Storage", permissions: ["File.Upload"] },
-  { title: "Folders", area: "Storage", permissions: ["Folder.Create"] },
-  { title: "Link Sharing", area: "Sharing", permissions: ["File.Share", "Folder.Share"] },
-  { title: "AI Suggestions", area: "Assistant", permissions: [], fallbackUser: true },
-  { title: "Notifications", area: "Activity", permissions: [], fallbackUser: true },
-  { title: "Subscription", area: "Billing", permissions: [], fallbackUser: true }
-];
 
 const sharePermissionOptions = [
   { value: "0", label: "View" },
@@ -310,8 +312,8 @@ function getAiSuggestionTypeLabel(suggestion) {
 }
 
 function UserHomePage({ onLogout }) {
-  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem("shc.apiUrl") || defaultApiUrl);
-  const [activeTab, setActiveTab] = useState("files");
+  const apiUrl = localStorage.getItem("shc.apiUrl") || defaultApiUrl;
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   const [profile, setProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -372,19 +374,6 @@ function UserHomePage({ onLogout }) {
   const tokenUserName = getUserNameFromToken() || "User";
   const userDisplayName = getProfileDisplayName(profile, tokenUserName);
   const userEmail = getProfileValue(profile, "email", "Email");
-  const roles = getRolesFromToken();
-  const permissions = getPermissionsFromToken();
-  const permissionSet = new Set(permissions.map((permission) => permission.toLowerCase()));
-  const hasUserRole = roles.some((role) => role.toLowerCase() === "user" || role.toLowerCase() === "admin");
-  const authorizedModules = userDashboardModules.filter((module) =>
-    module.permissions.some((permission) => permissionSet.has(permission.toLowerCase()))
-    || (module.fallbackUser && hasUserRole)
-  );
-
-  function updateApiUrl(value) {
-    setApiUrl(value);
-    localStorage.setItem("shc.apiUrl", value);
-  }
 
   const fetchProfile = useCallback(async () => {
     if (!userId) return;
@@ -983,6 +972,52 @@ function UserHomePage({ onLogout }) {
   const storageUsed = entitlements?.StorageLimitBytes ? (entitlements.StorageLimitBytes * 0.3) : 0;
   const storageLimit = entitlements?.StorageLimitBytes || 0;
   const storagePercentage = storageLimit > 0 ? Math.min((storageUsed / storageLimit) * 100, 100) : 0;
+  const workspaceItemCount = folderContents.folders.length + folderContents.files.length;
+  const activeSharedLinksCount = sharedLinks.filter((link) => getBooleanValue(link, "isActive", "IsActive")).length;
+  const recentFiles = [...folderContents.files].slice(0, 5);
+  const quickFolders = [...folderContents.folders].slice(0, 3);
+  const aiPreviewItems = [...aiSuggestions].slice(0, 4);
+  const recentNotifications = [...notifications].slice(0, 5);
+  const latestSubscriptionName = latestSubscription ? getValue(latestSubscription, "planName", "PlanName") : "No subscription";
+  const latestSubscriptionStatus = latestSubscription ? getSubscriptionStatusLabel(latestSubscription) : "Not subscribed";
+  const pageIntro = {
+    dashboard: "Here is what is happening across your SHC DRIVE workspace today.",
+    files: "Browse folders, upload files, and manage the items stored in your workspace.",
+    sharing: "Create, review, and control shared links for files and folders.",
+    ai: "Review suggestions generated from your file activity and organization patterns.",
+    notifications: "Stay on top of storage alerts, sharing activity, and account updates.",
+    subscription: "Review your plan, billing status, and available storage entitlements."
+  }[activeTab] || "Manage your workspace.";
+  const activeTabTitle = {
+    dashboard: "Dashboard",
+    files: "My Files",
+    sharing: "Shared Links",
+    ai: "AI Suggestions",
+    notifications: "Notifications",
+    subscription: "Subscription"
+  }[activeTab] || "Dashboard";
+  const userOverviewCards = [
+    {
+      label: "Workspace items",
+      value: String(workspaceItemCount).padStart(2, "0"),
+      detail: "Files and folders in the current view"
+    },
+    {
+      label: "Unread alerts",
+      value: String(unreadCount).padStart(2, "0"),
+      detail: "Notifications that still need your attention"
+    },
+    {
+      label: "Active share links",
+      value: String(activeSharedLinksCount).padStart(2, "0"),
+      detail: "Links currently available to other people"
+    },
+    {
+      label: "Current plan",
+      value: latestSubscriptionName,
+      detail: latestSubscriptionStatus
+    }
+  ];
 
   const [redirecting, setRedirecting] = useState(false);
 
@@ -998,10 +1033,10 @@ function UserHomePage({ onLogout }) {
       <main className="app-shell">
         <aside className="sidebar">
           <div className="brand">
-            <div className="brand-mark">S</div>
+            <div className="brand-mark" aria-hidden="true" />
             <div>
-              <strong>SHC</strong>
-              <span>Cloud Console</span>
+              <strong>SHC DRIVE</strong>
+              <span>Secure cloud workspace</span>
             </div>
           </div>
         </aside>
@@ -1019,40 +1054,60 @@ function UserHomePage({ onLogout }) {
 
   return (
     <main className="app-shell">
-      <aside className="sidebar">
+      <aside className="sidebar sidebar-elevated">
         <div className="brand">
-          <div className="brand-mark">S</div>
+          <div className="brand-mark" aria-hidden="true" />
           <div>
-            <strong>SHC</strong>
-            <span>Cloud Console</span>
+            <strong>SHC DRIVE</strong>
+            <span>Personal workspace</span>
           </div>
         </div>
 
-        <nav className="module-list" aria-label="Frontend modules">
+        <div className="sidebar-copy">
+          <p className="sidebar-section-label">Your workspace</p>
+          <p>Move through files, shares, AI suggestions, billing, and account activity from one place.</p>
+        </div>
+
+        <nav className="module-list workspace-module-list" aria-label="Frontend modules">
+          <button className={`module-item ${activeTab === "dashboard" ? "active" : ""}`} onClick={() => setActiveTab("dashboard")} type="button">
+            <span className="module-item-icon"><LayoutDashboard size={18} /></span>
+            <span>Dashboard</span>
+            <small>Overview</small>
+          </button>
           <button className={`module-item ${activeTab === "files" ? "active" : ""}`} onClick={() => { setActiveTab("files"); fetchFolderContents(currentFolder); }} type="button">
+            <span className="module-item-icon"><FolderOpen size={18} /></span>
             <span>My Files</span>
             <small>Storage</small>
           </button>
           <button className={`module-item ${activeTab === "sharing" ? "active" : ""}`} onClick={() => { setActiveTab("sharing"); fetchSharedLinks(); }} type="button">
+            <span className="module-item-icon"><Link2 size={18} /></span>
             <span>Link Sharing</span>
             <small>Links</small>
           </button>
           <button className={`module-item ${activeTab === "ai" ? "active" : ""}`} onClick={() => { setActiveTab("ai"); fetchAiSuggestions(); }} type="button">
+            <span className="module-item-icon"><Sparkles size={18} /></span>
             <span>AI Suggestions</span>
             <small>{aiSuggestions.length > 0 ? aiSuggestions.length : ""}</small>
           </button>
           <button className={`module-item ${activeTab === "notifications" ? "active" : ""}`} onClick={() => setActiveTab("notifications")} type="button">
+            <span className="module-item-icon"><Bell size={18} /></span>
             <span>Notifications</span>
             <small>{unreadCount > 0 ? unreadCount : ""}</small>
           </button>
           <button className={`module-item ${activeTab === "subscription" ? "active" : ""}`} onClick={() => setActiveTab("subscription")} type="button">
+            <span className="module-item-icon"><CreditCard size={18} /></span>
             <span>Subscription</span>
             <small>Plan</small>
           </button>
         </nav>
 
-        <div style={{ marginTop: "auto" }}>
+        <div className="sidebar-footer workspace-sidebar-footer">
+          <div className="workspace-download-card">
+            <strong>SHC DRIVE</strong>
+            <span>Private storage, file sharing, notifications, and AI suggestions in one place.</span>
+          </div>
           <button className="module-item" onClick={handleLogout} type="button">
+            <span className="module-item-icon"><LogOut size={18} /></span>
             <span>Logout</span>
             <small>Exit</small>
           </button>
@@ -1060,16 +1115,172 @@ function UserHomePage({ onLogout }) {
       </aside>
 
       <section className="page">
-        <header className="topbar">
-          <div>
-            <p className="eyebrow">Dashboard</p>
-            <h1>Welcome, {userDisplayName}</h1>
+        <header className="workspace-topbar">
+          <div className="workspace-search">
+            <Search size={18} />
+            <input readOnly value="" placeholder="Search files, folders, and more..." />
           </div>
-          <label className="api-field">
-            API URL
-            <input value={apiUrl} onChange={(event) => updateApiUrl(event.target.value)} />
-          </label>
+          <div className="workspace-topbar-actions">
+            <button
+              className="primary-button workspace-upload-button"
+              onClick={() => {
+                setActiveTab("files");
+                handleUploadClick();
+              }}
+              type="button"
+            >
+              <Upload size={18} />
+              Upload
+            </button>
+            <button className="workspace-icon-button" onClick={() => setActiveTab("notifications")} type="button" aria-label="Notifications">
+              <Bell size={18} />
+              {unreadCount > 0 && <span className="workspace-badge">{unreadCount}</span>}
+            </button>
+            <div className="workspace-profile-chip">
+              <div className="workspace-profile-avatar">
+                <UserCircle2 size={22} />
+              </div>
+              <div>
+                <strong>{userDisplayName}</strong>
+                <span>{userEmail || "Signed-in session"}</span>
+              </div>
+            </div>
+          </div>
         </header>
+
+        <section className="workspace-page-heading">
+          <div>
+            <p className="eyebrow">User Workspace</p>
+            <h1>Welcome back, {userDisplayName}.</h1>
+            <p>{pageIntro}</p>
+          </div>
+        </section>
+
+        <section className="dashboard-hero dashboard-hero-user">
+          <div className="hero-metric-grid">
+            {userOverviewCards.map((card) => (
+              <article className="hero-metric-card" key={card.label}>
+                <span>{card.label}</span>
+                <strong>{card.value}</strong>
+                <small>{card.detail}</small>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {activeTab === "dashboard" && (
+          <section className="content-grid dashboard-content-grid">
+            <section className="dashboard-main-column">
+              <div className="panel dashboard-list-panel">
+                <div className="dashboard-section-header">
+                  <div>
+                    <h2>Recent Files</h2>
+                    <p>Your latest workspace items from the current view.</p>
+                  </div>
+                  <button className="dashboard-link-button" onClick={() => setActiveTab("files")} type="button">
+                    View all files
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+
+                {recentFiles.length === 0 ? (
+                  <p className="empty-text">No uploaded files yet. Start by opening My Files and uploading one.</p>
+                ) : (
+                  <div className="dashboard-mini-list">
+                    {recentFiles.map((file) => (
+                      <article className="dashboard-mini-row" key={getFileId(file)}>
+                        <div>
+                          <strong>{getFileName(file)}</strong>
+                          <span>{formatDate(getValue(file, "uploadedAt", "UploadedAt") || getValue(file, "updatedAt", "UpdatedAt"))}</span>
+                        </div>
+                        <span>{formatBytes(Number(getValue(file, "sizeInBytes", "SizeInBytes")) || 0)}</span>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="panel dashboard-list-panel">
+                <div className="dashboard-section-header">
+                  <div>
+                    <h2>Quick Access</h2>
+                    <p>Jump back into your main folders quickly.</p>
+                  </div>
+                </div>
+
+                {quickFolders.length === 0 ? (
+                  <p className="empty-text">No folders yet. Create your first folder in My Files.</p>
+                ) : (
+                  <div className="quick-folder-grid">
+                    {quickFolders.map((folder) => (
+                      <button className="quick-folder-card" key={getFolderId(folder)} onClick={() => { setActiveTab("files"); openFolder(getFolderId(folder)); }} type="button">
+                        <FolderOpen size={22} />
+                        <strong>{getFolderName(folder)}</strong>
+                        <span>Open folder</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <aside className="side-panels dashboard-right-column">
+              <section className="panel dashboard-side-card">
+                <div className="dashboard-section-header compact">
+                  <div>
+                    <h2>AI Suggestions</h2>
+                    <p>Fresh actions you can review next.</p>
+                  </div>
+                  <button className="dashboard-link-button" onClick={() => setActiveTab("ai")} type="button">
+                    View all
+                  </button>
+                </div>
+                {aiPreviewItems.length === 0 ? (
+                  <p className="empty-text">No suggestions yet.</p>
+                ) : (
+                  <div className="dashboard-mini-list">
+                    {aiPreviewItems.map((suggestion) => (
+                      <article className="dashboard-mini-row" key={getAiSuggestionId(suggestion)}>
+                        <div>
+                          <strong>{getValue(suggestion, "title", "Title") || "Suggestion"}</strong>
+                          <span>{getAiSuggestionTypeLabel(suggestion)}</span>
+                        </div>
+                        <Bot size={18} />
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className="panel dashboard-side-card">
+                <div className="dashboard-section-header compact">
+                  <div>
+                    <h2>Recent Activity</h2>
+                    <p>Unread and recent notifications.</p>
+                  </div>
+                  <button className="dashboard-link-button" onClick={() => setActiveTab("notifications")} type="button">
+                    View all
+                  </button>
+                </div>
+                {recentNotifications.length === 0 ? (
+                  <p className="empty-text">No notifications yet.</p>
+                ) : (
+                  <div className="dashboard-mini-list">
+                    {recentNotifications.map((notification) => (
+                      <article className="dashboard-mini-row" key={getNotificationId(notification)}>
+                        <div>
+                          <strong>{getValue(notification, "title", "Title") || getNotificationTypeLabel(notification)}</strong>
+                          <span>{formatDate(getValue(notification, "createdAt", "CreatedAt"))}</span>
+                        </div>
+                        {!getBooleanValue(notification, "isRead", "IsRead") && <span className="status-dot" />}
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </aside>
+          </section>
+        )}
 
         {activeTab === "files" && (
           <section className="content-grid">
@@ -1079,6 +1290,11 @@ function UserHomePage({ onLogout }) {
                   <div>
                     <h2>My Files</h2>
                     <p>Browse and manage your files and folders.</p>
+                    <div className="files-header-meta">
+                      <span className="files-summary-pill">{folderContents.folders.length} folders</span>
+                      <span className="files-summary-pill">{folderContents.files.length} files</span>
+                      <span className="files-summary-pill">{currentFolder ? "Inside folder" : "Root workspace"}</span>
+                    </div>
                   </div>
                   <div className="files-actions">
                     <form className="new-folder-form" onSubmit={handleCreateFolder}>
@@ -1107,7 +1323,7 @@ function UserHomePage({ onLogout }) {
 
                 {currentFolder && (
                   <button className="breadcrumb" onClick={goToParentFolder} type="button">
-                    ← Back to root
+                    Back to root
                   </button>
                 )}
 
@@ -1346,18 +1562,6 @@ function UserHomePage({ onLogout }) {
                     )}
                   </div>
                 )}
-              </div>
-
-              <div className="panel access-card">
-                <h2>Your Access</h2>
-                <div className="pill-list compact">
-                  {roles.length > 0 ? roles.map((role) => <span key={role}>{role}</span>) : <span>No role in token</span>}
-                </div>
-                <div className="permission-list compact">
-                  {authorizedModules.length > 0
-                    ? authorizedModules.map((module) => <span key={module.title}>{module.title}</span>)
-                    : <span>No dashboard modules found</span>}
-                </div>
               </div>
             </aside>
           </section>

@@ -1,11 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Bell,
+  CreditCard,
+  LayoutDashboard,
+  Plus,
+  Search,
+  Server,
+  Settings,
+  Shield,
+  ShoppingCart,
+  UserCircle2,
+  Users
+} from "./icons.jsx";
+import {
   clearAuth,
   defaultApiUrl,
   deleteJson,
   getJson,
   getPermissionsFromToken,
-  getRolesFromToken,
   getUserNameFromToken,
   isAdminToken,
   isAuthenticated,
@@ -146,9 +158,17 @@ const adminModules = [
   }
 ];
 
+const dashboardModule = {
+  key: "dashboard",
+  title: "Dashboard",
+  area: "Overview",
+  route: "Multiple",
+  description: "A live overview of users, storage, billing, and platform status."
+};
+
 function AdminDashboardPage({ onLogout }) {
-  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem("shc.apiUrl") || defaultApiUrl);
-  const [activeModuleKey, setActiveModuleKey] = useState("users");
+  const apiUrl = localStorage.getItem("shc.apiUrl") || defaultApiUrl;
+  const [activeModuleKey, setActiveModuleKey] = useState("dashboard");
   const [counts, setCounts] = useState({});
   const [loadingCounts, setLoadingCounts] = useState(false);
   const [adminUsers, setAdminUsers] = useState([]);
@@ -188,7 +208,6 @@ function AdminDashboardPage({ onLogout }) {
   const [savingSystemSettings, setSavingSystemSettings] = useState(false);
   const [allowedExtensionDraft, setAllowedExtensionDraft] = useState("");
 
-  const roles = getRolesFromToken();
   const permissions = getPermissionsFromToken();
   const isAdmin = isAdminToken();
   const displayName = cleanDisplayName(getUserNameFromToken());
@@ -202,17 +221,16 @@ function AdminDashboardPage({ onLogout }) {
     );
   }, [isAdmin, permissions]);
 
-  const activeModule = visibleModules.find((module) => module.key === activeModuleKey) ?? visibleModules[0];
+  const navigationModules = useMemo(
+    () => [dashboardModule, ...visibleModules],
+    [visibleModules]
+  );
+  const activeModule = navigationModules.find((module) => module.key === activeModuleKey) ?? navigationModules[0];
   const allowedExtensionList = parseAllowedFileExtensions(systemSettingsForm.allowedFileExtensions);
   const usersById = useMemo(
     () => Object.fromEntries(userDirectory.map((user) => [getValue(user, "userId", "UserId"), user])),
     [userDirectory]
   );
-
-  function updateApiUrl(value) {
-    setApiUrl(value);
-    localStorage.setItem("shc.apiUrl", value);
-  }
 
   const loadUsersWithRoles = useCallback(async () => {
     setLoadingUsers(true);
@@ -758,10 +776,10 @@ function AdminDashboardPage({ onLogout }) {
   }, [onLogout]);
 
   useEffect(() => {
-    if (!activeModule && visibleModules.length > 0) {
-      setActiveModuleKey(visibleModules[0].key);
+    if (!activeModule && navigationModules.length > 0) {
+      setActiveModuleKey(navigationModules[0].key);
     }
-  }, [activeModule, visibleModules]);
+  }, [activeModule, navigationModules]);
 
   useEffect(() => {
     const countableModules = visibleModules.filter((module) => module.countPath);
@@ -828,37 +846,99 @@ function AdminDashboardPage({ onLogout }) {
     }
   }, [activeModuleKey, loadSystemSettings]);
 
+  useEffect(() => {
+    if (activeModuleKey === "dashboard") {
+      if (userDirectory.length === 0) {
+        loadUserDirectory();
+      }
+      loadUsersWithRoles();
+      loadStorageNodes();
+      loadPurchases();
+      loadSubscriptionDashboard();
+    }
+  }, [activeModuleKey, loadPurchases, loadStorageNodes, loadSubscriptionDashboard, loadUserDirectory, loadUsersWithRoles, userDirectory.length]);
+
+  const adminOverviewCards = [
+    {
+      label: "Authorized modules",
+      value: String(visibleModules.length).padStart(2, "0"),
+      detail: "Areas currently available to this admin token"
+    },
+    {
+      label: "Users",
+      value: formatCount(counts.users, loadingCounts),
+      detail: "Registered accounts available in the system"
+    },
+    {
+      label: "Storage nodes",
+      value: formatCount(counts.storage, loadingCounts),
+      detail: "Infrastructure endpoints connected to storage"
+    },
+    {
+      label: "Purchases",
+      value: formatCount(counts.purchases, loadingCounts),
+      detail: "Billing records currently stored in the platform"
+    }
+  ];
+  const recentAdminUsers = adminUsers.slice(0, 5);
+  const recentPurchases = purchases.slice(0, 5);
+  const recentSubscriptions = subscriptions.slice(0, 4);
+  const healthyNodesCount = storageNodes.filter((node) => getNodeStatusValue(node) === "0").length;
+  const nodeUsagePairs = storageNodes.slice(0, 4).map((node) => {
+    const total = Number(getValue(node, "totalCapacityBytes", "TotalCapacityBytes")) || 0;
+    const used = Number(getValue(node, "usedCapacityBytes", "UsedCapacityBytes")) || 0;
+    const percent = total > 0 ? Math.min((used / total) * 100, 100) : 0;
+
+    return {
+      id: getValue(node, "storageNodeId", "StorageNodeId"),
+      name: getValue(node, "name", "Name") || "Storage node",
+      percent
+    };
+  });
+
   return (
     <main className="app-shell">
-      <aside className="sidebar">
+      <aside className="sidebar sidebar-elevated">
         <div className="brand">
-          <div className="brand-mark">S</div>
+          <div className="brand-mark" aria-hidden="true" />
           <div>
-            <strong>SHC</strong>
-            <span>Admin Console</span>
+            <strong>SHC DRIVE</strong>
+            <span>Admin console</span>
           </div>
         </div>
 
-        <nav className="module-list" aria-label="Admin modules">
-          {visibleModules.map((module) => (
-            <button
-              className={`module-item ${activeModule?.key === module.key ? "active" : ""}`}
-              key={module.key}
-              onClick={() => setActiveModuleKey(module.key)}
-              type="button"
-            >
-              <span>{module.title}</span>
-              <small>{module.area}</small>
-            </button>
-          ))}
+        <div className="sidebar-copy">
+          <p className="sidebar-section-label">Control center</p>
+          <p>Operate users, infrastructure, billing, and platform settings from one workspace.</p>
+        </div>
+
+        <nav className="module-list workspace-module-list" aria-label="Admin modules">
+          {navigationModules.map((module) => {
+            const ModuleIcon = getAdminModuleIcon(module.key);
+
+            return (
+              <button
+                className={`module-item ${activeModule?.key === module.key ? "active" : ""}`}
+                key={module.key}
+                onClick={() => setActiveModuleKey(module.key)}
+                type="button"
+              >
+                <span className="module-item-icon"><ModuleIcon size={18} /></span>
+                <span>{module.title}</span>
+                <small>{module.area}</small>
+              </button>
+            );
+          })}
         </nav>
 
         <div className="sidebar-footer">
           <button className="module-item" onClick={() => onLogout("home")} type="button">
+            <span className="module-item-icon"><UserCircle2 size={18} /></span>
             <span>User Dashboard</span>
             <small>Switch</small>
           </button>
           <button className="module-item" onClick={handleLogout} type="button">
+            <span className="module-item-icon"><Shield size={18} /></span>
             <span>Logout</span>
             <small>Exit</small>
           </button>
@@ -866,32 +946,61 @@ function AdminDashboardPage({ onLogout }) {
       </aside>
 
       <section className="page">
-        <header className="topbar">
-          <div>
-            <p className="eyebrow">Admin Dashboard</p>
-            <h1>{displayName ? `Welcome admin, ${displayName}` : "Welcome admin"}</h1>
+        <header className="workspace-topbar">
+          <div className="workspace-search">
+            <Search size={18} />
+            <input readOnly value="" placeholder="Search users, files, nodes, and more..." />
           </div>
-          <label className="api-field">
-            API URL
-            <input value={apiUrl} onChange={(event) => updateApiUrl(event.target.value)} />
-          </label>
+          <div className="workspace-topbar-actions">
+            <button className="primary-button workspace-upload-button" onClick={() => setActiveModuleKey("users")} type="button">
+              <Plus size={18} />
+              Open Users
+            </button>
+            <button className="workspace-icon-button" type="button" aria-label="Admin notifications">
+              <Bell size={18} />
+              <span className="workspace-badge">{visibleModules.length}</span>
+            </button>
+            <div className="workspace-profile-chip">
+              <div className="workspace-profile-avatar">
+                <UserCircle2 size={22} />
+              </div>
+              <div>
+                <strong>{displayName || "Admin"}</strong>
+                <span>{activeModule?.title || "Dashboard"}</span>
+              </div>
+            </div>
+          </div>
         </header>
 
-        <section className="content-grid admin-dashboard-grid">
-          <section className="admin-main">
-            {!["users", "storage", "purchases", "subscriptions", "settings"].includes(activeModule?.key) && (
-              <>
-                <div className="section-heading">
-                  <h2>Authorized Modules</h2>
-                  <p>These are the backend areas your token allows you to use.</p>
-                </div>
+        <section className="workspace-page-heading">
+          <div>
+            <p className="eyebrow">Admin Dashboard</p>
+            <h1>{displayName ? `Welcome back, ${displayName}.` : "Welcome back, Admin."}</h1>
+            <p>
+              {activeModule?.description || "Monitor the cloud workspace, review operational activity, and move between the modules your token is allowed to manage."}
+            </p>
+          </div>
+        </section>
 
+        <section className="dashboard-hero dashboard-hero-admin">
+          <div className="hero-metric-grid">
+            {adminOverviewCards.map((card) => (
+              <article className="hero-metric-card" key={card.label}>
+                <span>{card.label}</span>
+                <strong>{card.value}</strong>
+                <small>{card.detail}</small>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="content-grid admin-dashboard-grid dashboard-main-grid">
+          <section className="admin-main">
+            {activeModule?.key === "dashboard" && (
+              <>
                 <div className="admin-module-grid">
                   {visibleModules.map((module) => (
-                    <article
-                      className={`panel module-card ${activeModule?.key === module.key ? "selected" : ""}`}
-                      key={module.key}
-                    >
+                    <article className="panel module-card selected" key={module.key}>
                       <div>
                         <span className="module-area">{module.area}</span>
                         <h2>{module.title}</h2>
@@ -903,6 +1012,62 @@ function AdminDashboardPage({ onLogout }) {
                       </div>
                     </article>
                   ))}
+                </div>
+
+                <div className="dashboard-split-grid">
+                  <section className="panel dashboard-list-panel">
+                    <div className="dashboard-section-header">
+                      <div>
+                        <h2>Recent User Signups</h2>
+                        <p>Accounts currently available in your admin view.</p>
+                      </div>
+                      <button className="dashboard-link-button" onClick={() => setActiveModuleKey("users")} type="button">
+                        Open users
+                      </button>
+                    </div>
+                    {recentAdminUsers.length === 0 ? (
+                      <p className="empty-text">No users loaded yet.</p>
+                    ) : (
+                      <div className="dashboard-mini-list">
+                        {recentAdminUsers.map((user) => (
+                          <article className="dashboard-mini-row" key={getValue(user, "userId", "UserId")}>
+                            <div>
+                              <strong>{getUserDisplayName(user)}</strong>
+                              <span>{getValue(user, "email", "Email")}</span>
+                            </div>
+                            <span>{getValue(user, "username", "Username")}</span>
+                          </article>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+
+                  <section className="panel dashboard-list-panel">
+                    <div className="dashboard-section-header">
+                      <div>
+                        <h2>Recent Purchases</h2>
+                        <p>Latest billing records currently returned by the backend.</p>
+                      </div>
+                      <button className="dashboard-link-button" onClick={() => setActiveModuleKey("purchases")} type="button">
+                        Open purchases
+                      </button>
+                    </div>
+                    {recentPurchases.length === 0 ? (
+                      <p className="empty-text">No purchases loaded yet.</p>
+                    ) : (
+                      <div className="dashboard-mini-list">
+                        {recentPurchases.map((purchase) => (
+                          <article className="dashboard-mini-row" key={getValue(purchase, "purchaseId", "PurchaseId")}>
+                            <div>
+                              <strong>{getUserLookupLabel(getValue(purchase, "userId", "UserId"), usersById)}</strong>
+                              <span>{getValue(purchase, "currency", "Currency")} {getValue(purchase, "amount", "Amount")}</span>
+                            </div>
+                            <span>{getPurchaseStatusLabel(purchase)}</span>
+                          </article>
+                        ))}
+                      </div>
+                    )}
+                  </section>
                 </div>
               </>
             )}
@@ -1960,26 +2125,91 @@ function AdminDashboardPage({ onLogout }) {
           </section>
 
           <aside className="side-panels">
-            <section className="panel">
-              <h2>Roles</h2>
-              <div className="pill-list">
-                {roles.length > 0 ? roles.map((role) => <span key={role}>{role}</span>) : <span>No roles in token</span>}
-              </div>
+            <section className="panel dashboard-side-card">
+              <h2>Infrastructure Snapshot</h2>
+              <dl className="dashboard-side-list">
+                <div>
+                  <dt>Healthy nodes</dt>
+                  <dd>{healthyNodesCount}</dd>
+                </div>
+                <div>
+                  <dt>Total nodes</dt>
+                  <dd>{storageNodes.length}</dd>
+                </div>
+                <div>
+                  <dt>Count status</dt>
+                  <dd>{loadingCounts ? "Refreshing" : "Ready"}</dd>
+                </div>
+              </dl>
+              {nodeUsagePairs.length > 0 && (
+                <div className="dashboard-mini-list compact">
+                  {nodeUsagePairs.map((node) => (
+                    <article className="dashboard-mini-row" key={node.id}>
+                      <div>
+                        <strong>{node.name}</strong>
+                        <span>Usage</span>
+                      </div>
+                      <span>{node.percent.toFixed(0)}%</span>
+                    </article>
+                  ))}
+                </div>
+              )}
             </section>
 
-            <section className="panel">
-              <h2>Permissions</h2>
-              <div className="permission-list">
-                {permissions.length > 0
-                  ? permissions.map((permission) => <span key={permission}>{permission}</span>)
-                  : <span>No permissions in token</span>}
-              </div>
+            <section className="panel dashboard-side-card">
+              <h2>Billing Snapshot</h2>
+              <dl className="dashboard-side-list">
+                <div>
+                  <dt>Visible modules</dt>
+                  <dd>{visibleModules.length}</dd>
+                </div>
+                <div>
+                  <dt>Subscriptions</dt>
+                  <dd>{subscriptions.length}</dd>
+                </div>
+                <div>
+                  <dt>Permission entries</dt>
+                  <dd>{permissions.length}</dd>
+                </div>
+              </dl>
+              {recentSubscriptions.length > 0 && (
+                <div className="dashboard-mini-list compact">
+                  {recentSubscriptions.map((subscription) => (
+                    <article className="dashboard-mini-row" key={getValue(subscription, "subscriptionId", "SubscriptionId")}>
+                      <div>
+                        <strong>{getValue(subscription, "planName", "PlanName") || "Subscription"}</strong>
+                        <span>{getUserIdsText(subscription, usersById)}</span>
+                      </div>
+                      <span>{getSubscriptionStatusLabel(subscription)}</span>
+                    </article>
+                  ))}
+                </div>
+              )}
             </section>
           </aside>
         </section>
       </section>
     </main>
   );
+}
+
+function getAdminModuleIcon(key) {
+  switch (key) {
+    case "dashboard":
+      return LayoutDashboard;
+    case "users":
+      return Users;
+    case "storage":
+      return Server;
+    case "settings":
+      return Settings;
+    case "purchases":
+      return ShoppingCart;
+    case "subscriptions":
+      return CreditCard;
+    default:
+      return Shield;
+  }
 }
 
 function formatCount(countInfo, isLoading) {
