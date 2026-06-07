@@ -401,13 +401,7 @@ namespace adapters.Driven.Persistence.Data
                 .HasForeignKey(fa => fa.FileItemId);
 
             modelBuilder.Entity<AISuggestion>()
-                .HasOne<FileItem>()
-                .WithMany()
-                .HasForeignKey(ai => ai.FileItemId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<AISuggestion>()
-                .HasOne<User>()
+                .HasOne(ai => ai.User)
                 .WithMany()
                 .HasForeignKey(ai => ai.UserId)
                 .OnDelete(DeleteBehavior.Cascade);

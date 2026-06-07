@@ -66,6 +66,8 @@ using Microsoft.OpenApi.Models;
 using Stripe;
 using application.UseCases.AI;
 using application.Ports.Driven.AI;
+using application.Ports.Driving.AI;
+using adapters.Driven.Persistence.Repositories.AI;
 
 
 
@@ -314,9 +316,12 @@ builder.Services.AddScoped<IRegisterUserUseCase, RegisterUserUseCase>();
 builder.Services.AddScoped<ILoginUserUseCase, LoginUserUseCase>();
 builder.Services.AddScoped<ILogoutUserUseCase, LogoutUserUseCase>();
 builder.Services.AddScoped<IRefreshTokenRepository, EfRefreshTokenRepository>();
-builder.Services.AddScoped<IFileActivityRepository, EfFileActivityRepository>();
-builder.Services.AddScoped<IAISuggestionRepository, EfAISuggestionRepository>();
-builder.Services.AddScoped<AISuggestionUseCase>();
+builder.Services.AddScoped<IFileActivityRepository, FileActivityRepository>();
+builder.Services.AddScoped<IAISuggestionRepository, AISuggestionRepository>();
+builder.Services.AddScoped<IGenerateAISuggestionsUseCase, AISuggestionUseCase>();
+builder.Services.AddScoped<IGetPendingAISuggestionsUseCase, GetPendingAISuggestionsUseCase>();
+builder.Services.AddScoped<IAcceptAISuggestionUseCase, AcceptAISuggestionUseCase>();
+builder.Services.AddScoped<IDismissAISuggestionUseCase, DismissAISuggestionUseCase>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

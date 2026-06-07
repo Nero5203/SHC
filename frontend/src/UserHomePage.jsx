@@ -20,6 +20,7 @@ const userDashboardModules = [
   { title: "Upload Files", area: "Storage", permissions: ["File.Upload"] },
   { title: "Folders", area: "Storage", permissions: ["Folder.Create"] },
   { title: "Link Sharing", area: "Sharing", permissions: ["File.Share", "Folder.Share"] },
+  { title: "AI Suggestions", area: "Assistant", permissions: [], fallbackUser: true },
   { title: "Notifications", area: "Activity", permissions: [], fallbackUser: true },
   { title: "Subscription", area: "Billing", permissions: [], fallbackUser: true }
 ];
@@ -265,6 +266,49 @@ function getNotificationIconLabel(notification) {
   }
 }
 
+function getAiSuggestionId(suggestion) {
+  return getValue(suggestion, "id", "Id");
+}
+
+function getAiSuggestionTypeLabel(suggestion) {
+  const type = getValue(suggestion, "type", "Type");
+
+  switch (String(type).toLowerCase()) {
+    case "0":
+    case "continueworking":
+      return "Continue Working";
+    case "1":
+    case "frequentlyused":
+      return "Frequently Used";
+    case "2":
+    case "recommendedfile":
+      return "Recommended File";
+    case "3":
+    case "duplicatefile":
+      return "Duplicate File";
+    case "4":
+    case "deletefile":
+      return "Delete File";
+    case "5":
+    case "storagecleanup":
+      return "Storage Cleanup";
+    case "6":
+    case "renamefile":
+      return "Rename File";
+    case "7":
+    case "movefile":
+      return "Move File";
+    case "8":
+    case "addtags":
+      return "Add Tags";
+    case "9":
+    case "reviewsharedlink":
+      return "Review Shared Link";
+    default:
+      return "Suggestion";
+  }
+}
+
 function UserHomePage({ onLogout }) {
   const [apiUrl, setApiUrl] = useState(() => localStorage.getItem("shc.apiUrl") || defaultApiUrl);
   const [activeTab, setActiveTab] = useState("files");
@@ -286,6 +330,9 @@ function UserHomePage({ onLogout }) {
   const [loadingNotifications, setLoadingNotifications] = useState(true);
   const [notificationFilter, setNotificationFilter] = useState("all");
   const [notificationActionKey, setNotificationActionKey] = useState("");
+  const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [loadingAiSuggestions, setLoadingAiSuggestions] = useState(true);
+  const [aiSuggestionActionKey, setAiSuggestionActionKey] = useState("");
   const [sharedLinks, setSharedLinks] = useState([]);
   const [loadingSharedLinks, setLoadingSharedLinks] = useState(true);
   const [shareActionKey, setShareActionKey] = useState("");
@@ -385,6 +432,18 @@ function UserHomePage({ onLogout }) {
     }
   }, [apiUrl, userId]);
 
+  const fetchAiSuggestions = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const items = await getJson(apiUrl, `/api/ai-suggestions/user/${userId}/pending`);
+      setAiSuggestions(Array.isArray(items) ? items : []);
+    } catch (error) {
+      console.error("Failed to fetch AI suggestions:", error);
+    } finally {
+      setLoadingAiSuggestions(false);
+    }
+  }, [apiUrl, userId]);
+
   const fetchSharedLinks = useCallback(async () => {
     if (!userId) return;
     try {
@@ -422,9 +481,10 @@ function UserHomePage({ onLogout }) {
     fetchProfile();
     fetchSubscriptionData();
     fetchNotifications();
+    fetchAiSuggestions();
     fetchSharedLinks();
     fetchFolderContents();
-  }, [onLogout, fetchProfile, fetchSubscriptionData, fetchNotifications, fetchSharedLinks, fetchFolderContents]);
+  }, [onLogout, fetchProfile, fetchSubscriptionData, fetchNotifications, fetchAiSuggestions, fetchSharedLinks, fetchFolderContents]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -491,6 +551,49 @@ function UserHomePage({ onLogout }) {
       alert(`Failed to delete notification: ${error.message}`);
     } finally {
       setNotificationActionKey("");
+    }
+  };
+
+  const handleGenerateAiSuggestions = async () => {
+    if (!userId) return;
+
+    setAiSuggestionActionKey("generate");
+    try {
+      const items = await postJson(apiUrl, `/api/ai-suggestions/user/${userId}/generate`, {});
+      setAiSuggestions(Array.isArray(items) ? items : []);
+    } catch (error) {
+      alert(`Failed to generate suggestions: ${error.message}`);
+    } finally {
+      setAiSuggestionActionKey("");
+      setLoadingAiSuggestions(false);
+    }
+  };
+
+  const handleAcceptAiSuggestion = async (suggestionId) => {
+    if (!suggestionId) return;
+
+    setAiSuggestionActionKey(`${suggestionId}:accept`);
+    try {
+      await putJson(apiUrl, `/api/ai-suggestions/${suggestionId}/accept`, {});
+      await fetchAiSuggestions();
+    } catch (error) {
+      alert(`Failed to accept suggestion: ${error.message}`);
+    } finally {
+      setAiSuggestionActionKey("");
+    }
+  };
+
+  const handleDismissAiSuggestion = async (suggestionId) => {
+    if (!suggestionId) return;
+
+    setAiSuggestionActionKey(`${suggestionId}:dismiss`);
+    try {
+      await putJson(apiUrl, `/api/ai-suggestions/${suggestionId}/dismiss`, {});
+      await fetchAiSuggestions();
+    } catch (error) {
+      alert(`Failed to dismiss suggestion: ${error.message}`);
+    } finally {
+      setAiSuggestionActionKey("");
     }
   };
 
@@ -934,6 +1037,10 @@ function UserHomePage({ onLogout }) {
             <span>Link Sharing</span>
             <small>Links</small>
           </button>
+          <button className={`module-item ${activeTab === "ai" ? "active" : ""}`} onClick={() => { setActiveTab("ai"); fetchAiSuggestions(); }} type="button">
+            <span>AI Suggestions</span>
+            <small>{aiSuggestions.length > 0 ? aiSuggestions.length : ""}</small>
+          </button>
           <button className={`module-item ${activeTab === "notifications" ? "active" : ""}`} onClick={() => setActiveTab("notifications")} type="button">
             <span>Notifications</span>
             <small>{unreadCount > 0 ? unreadCount : ""}</small>
@@ -1365,6 +1472,92 @@ function UserHomePage({ onLogout }) {
                       </div>
                     )}
                   </>
+                )}
+              </div>
+            </section>
+          </section>
+        )}
+
+        {activeTab === "ai" && (
+          <section className="content-grid">
+            <section className="notifications-panel">
+              <div className="panel">
+                <div className="notifications-header">
+                  <h2>AI Suggestions</h2>
+                  <div className="notifications-toolbar">
+                    <button
+                      className="secondary-button"
+                      onClick={fetchAiSuggestions}
+                      type="button"
+                      disabled={loadingAiSuggestions || aiSuggestionActionKey === "generate"}
+                    >
+                      {loadingAiSuggestions ? "Refreshing..." : "Refresh"}
+                    </button>
+                    <button
+                      className="primary-button"
+                      onClick={handleGenerateAiSuggestions}
+                      type="button"
+                      disabled={aiSuggestionActionKey === "generate"}
+                    >
+                      {aiSuggestionActionKey === "generate" ? "Generating..." : "Generate Suggestions"}
+                    </button>
+                  </div>
+                </div>
+
+                {loadingAiSuggestions ? (
+                  <p className="loading-text">Loading AI suggestions...</p>
+                ) : aiSuggestions.length === 0 ? (
+                  <p className="empty-text">No pending AI suggestions yet. Generate suggestions from your recent file activity.</p>
+                ) : (
+                  <div className="ai-suggestion-list">
+                    {aiSuggestions.map((suggestion) => {
+                      const suggestionId = getAiSuggestionId(suggestion);
+                      const fileName = getValue(suggestion, "fileName", "FileName") || "General suggestion";
+                      const title = getValue(suggestion, "title", "Title") || "Suggestion";
+                      const description = getValue(suggestion, "description", "Description");
+                      const createdAt = getValue(suggestion, "createdAt", "CreatedAt");
+
+                      return (
+                        <article className="ai-suggestion-card" key={suggestionId}>
+                          <div className="ai-suggestion-card-header">
+                            <div>
+                              <strong>{title}</strong>
+                              <small>{fileName}</small>
+                            </div>
+                            <span className="notification-type-badge unread">
+                              {getAiSuggestionTypeLabel(suggestion)}
+                            </span>
+                          </div>
+
+                          <p className="ai-suggestion-description">{description}</p>
+
+                          <div className="shared-link-meta">
+                            <span>Created: {formatDate(createdAt)}</span>
+                            <span>Target file: {fileName}</span>
+                          </div>
+
+                          <div className="ai-suggestion-actions">
+                            <button
+                              className="primary-button"
+                              onClick={() => handleAcceptAiSuggestion(suggestionId)}
+                              type="button"
+                              disabled={aiSuggestionActionKey === `${suggestionId}:accept` || aiSuggestionActionKey === `${suggestionId}:dismiss`}
+                            >
+                              {aiSuggestionActionKey === `${suggestionId}:accept` ? "Accepting..." : "Accept"}
+                            </button>
+                            <button
+                              className="secondary-button"
+                              onClick={() => handleDismissAiSuggestion(suggestionId)}
+                              type="button"
+                              disabled={aiSuggestionActionKey === `${suggestionId}:accept` || aiSuggestionActionKey === `${suggestionId}:dismiss`}
+                            >
+                              {aiSuggestionActionKey === `${suggestionId}:dismiss` ? "Dismissing..." : "Dismiss"}
+                            </button>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </section>

@@ -1455,6 +1455,43 @@ h3 {
   margin-top: 12px;
 }
 
+.ai-suggestion-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.ai-suggestion-card {
+  border: 1px solid #edf1f5;
+  border-radius: 8px;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+  background: #ffffff;
+}
+
+.ai-suggestion-card-header,
+.ai-suggestion-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ai-suggestion-card-header small {
+  display: block;
+  margin-top: 4px;
+  color: #667386;
+  font-size: 12px;
+}
+
+.ai-suggestion-description {
+  color: #4a586a;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .notifications-toolbar,
 .notification-filters,
 .notification-top-row,

@@ -14,6 +14,11 @@ namespace adapters.Driven.Persistence.Repositories.AI
         }
         public async Task AddRangeAsync(List<AISuggestion> suggestions)
         {
+            if (suggestions.Count == 0)
+            {
+                return;
+            }
+
             await _context.AISuggestions.AddRangeAsync(suggestions);
             await _context.SaveChangesAsync();
         }
@@ -26,12 +31,26 @@ namespace adapters.Driven.Persistence.Repositories.AI
                 s.Type == suggestionType &&
                 s.Status == AISuggestionStatus.Pending);
         }
-        public async Task<List<AISuggestion>> GetPendingByUserAsync(Guid userId)
+        public async Task<IReadOnlyList<AISuggestion>> GetPendingByUserAsync(Guid userId)
         {
             return await _context.AISuggestions
                 .Where(s => s.UserId == userId && s.Status == AISuggestionStatus.Pending)
                 .Include(s => s.FileItem)
+                .OrderByDescending(s => s.CreatedAt)
                 .ToListAsync();
+        }
+
+        public async Task<AISuggestion?> GetByIdAsync(Guid suggestionId)
+        {
+            return await _context.AISuggestions
+                .Include(s => s.FileItem)
+                .FirstOrDefaultAsync(s => s.Id == suggestionId);
+        }
+
+        public async Task UpdateAsync(AISuggestion suggestion)
+        {
+            _context.AISuggestions.Update(suggestion);
+            await _context.SaveChangesAsync();
         }
     }
 }

@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SHC.Domain.Entities.Permissions.Enums;
 using application.Ports.Driven.FileStorage;
-using application.Ports.Driven.AI;
 using domain.Entities.FileStorage.Enums;
 
 namespace api.Controllers
@@ -29,7 +28,6 @@ namespace api.Controllers
         private readonly IShareFileUseCase _shareFileUseCase;
         private readonly IAuthorizationService _authorizationService;
         private readonly IFileActivityRepository _fileActivityRepository;
-        private readonly IAISuggestionRepository _aiSuggestionRepository;
 
         public FilesController(
             IUploadFileUseCase uploadFileUseCase,
@@ -41,8 +39,7 @@ namespace api.Controllers
             IDeleteFileUseCase deleteFileUseCase,
             IShareFileUseCase shareFileUseCase,
             IAuthorizationService authorizationService,
-            IFileActivityRepository fileActivityRepository,
-            IAISuggestionRepository aiSuggestionRepository)
+            IFileActivityRepository fileActivityRepository)
         {
             _uploadFileUseCase = uploadFileUseCase;
             _getFileByIdUseCase = getFileByIdUseCase;
@@ -54,7 +51,6 @@ namespace api.Controllers
             _shareFileUseCase = shareFileUseCase;
             _authorizationService = authorizationService;
             _fileActivityRepository = fileActivityRepository;
-            _aiSuggestionRepository = aiSuggestionRepository;
         }
 
         [HttpPost("upload")]

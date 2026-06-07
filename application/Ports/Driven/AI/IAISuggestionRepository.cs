@@ -7,5 +7,8 @@ namespace application.Ports.Driven.AI
     {
         Task AddRangeAsync(List<AISuggestion> suggestions);
         Task<bool> ExistsAsync(Guid userId, Guid fileItemId, AISuggestionType suggestionType);
+        Task<IReadOnlyList<AISuggestion>> GetPendingByUserAsync(Guid userId);
+        Task<AISuggestion?> GetByIdAsync(Guid suggestionId);
+        Task UpdateAsync(AISuggestion suggestion);
     }
 }
