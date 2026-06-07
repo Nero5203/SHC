@@ -2,11 +2,22 @@ namespace Domain.Entities.AI.Enums
 {
     public enum AISuggestionType
     {
+        // Activity
+        ContinueWorking,
+        FrequentlyUsed,
+        RecommendedFile,
+
+        // Cleanup
+        DuplicateFile,
+        DeleteFile,
+        StorageCleanup,
+
+        // Organization
         RenameFile,
         MoveFile,
-        DeleteFile,
-        ReviewSharedLink,
-        StorageCleanup,
-        AddTags
+        AddTags,
+
+        // Security
+        ReviewSharedLink
     }
 }

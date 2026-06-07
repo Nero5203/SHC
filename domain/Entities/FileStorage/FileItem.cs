@@ -2,6 +2,7 @@ using Domain.Entities.AI;
 using Domain.Entities.Users;
 using Domain.Entities.StorageNodes;
 using Domain.Entities.LinkSharing;
+using domain.Entities.FileStorage;
 
 
 
@@ -16,6 +17,7 @@ namespace Domain.Entities.FileStorage
         public string FileType { get; set; } = null!;
         public long FileSize { get; set; }
         public string Url { get; set; } = null!;
+        public string ContentHash { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public bool IsDeleted { get; set; }
@@ -31,5 +33,6 @@ namespace Domain.Entities.FileStorage
         public ICollection <Notification> Notifications { get; set; } = new List<Notification>();
         public ICollection<AISuggestion> AISuggestions { get; set; } = new List<AISuggestion>();
         public AIFileInsight? AIFileInsight { get; set; }
+        public ICollection<FileActivity> FileActivities { get; set; } = new List<FileActivity>();
     }
 }

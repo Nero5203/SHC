@@ -1,3 +1,4 @@
+using domain.Entities.FileStorage;
 using Domain.Entities.AI;
 using Domain.Entities.Auth;
 using Domain.Entities.LinkSharing;
@@ -24,5 +25,6 @@ namespace Domain.Entities.Users
 
         public UserCredential UserCredentials { get; set; } = null!;
         public UserSetting UserSettings { get; set; } = new ();
+        public ICollection<FileActivity> FileActivities { get; set; } = new List<FileActivity>();
     }
 }

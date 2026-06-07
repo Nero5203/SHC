@@ -64,6 +64,8 @@ using application.Common.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi.Models;
 using Stripe;
+using application.UseCases.AI;
+using application.Ports.Driven.AI;
 
 
 
@@ -310,6 +312,9 @@ builder.Services.AddScoped<IRegisterUserUseCase, RegisterUserUseCase>();
 builder.Services.AddScoped<ILoginUserUseCase, LoginUserUseCase>();
 builder.Services.AddScoped<ILogoutUserUseCase, LogoutUserUseCase>();
 builder.Services.AddScoped<IRefreshTokenRepository, EfRefreshTokenRepository>();
+builder.Services.AddScoped<IFileActivityRepository, EfFileActivityRepository>();
+builder.Services.AddScoped<IAISuggestionRepository, EfAISuggestionRepository>();
+builder.Services.AddScoped<AISuggestionUseCase>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
