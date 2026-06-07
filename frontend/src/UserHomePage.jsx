@@ -55,6 +55,51 @@ function getProfileValue(profile, ...keys) {
   return "";
 }
 
+function getValue(source, ...keys) {
+  for (const key of keys) {
+    const value = source?.[key];
+    if (value !== undefined && value !== null && String(value).trim()) {
+      return String(value).trim();
+    }
+  }
+
+  return "";
+}
+
+function getArrayValue(source, ...keys) {
+  for (const key of keys) {
+    const value = source?.[key];
+    if (Array.isArray(value)) {
+      return value;
+    }
+  }
+
+  return [];
+}
+
+function normalizeFolderContents(data) {
+  return {
+    folders: getArrayValue(data, "folders", "Folders"),
+    files: getArrayValue(data, "files", "Files")
+  };
+}
+
+function getFileId(file) {
+  return getValue(file, "fileItemId", "FileItemId");
+}
+
+function getFileName(file) {
+  return getValue(file, "fileName", "FileName") || "Unnamed file";
+}
+
+function getFolderId(folder) {
+  return getValue(folder, "folderId", "FolderId");
+}
+
+function getFolderName(folder) {
+  return getValue(folder, "name", "Name") || "Unnamed folder";
+}
+
 function getProfileDisplayName(profile, fallbackName) {
   const firstName = getProfileValue(profile, "firstName", "FirstName");
   const lastName = getProfileValue(profile, "lastName", "LastName");
@@ -96,6 +141,8 @@ function UserHomePage({ onLogout }) {
   const [deletingId, setDeletingId] = useState(null);
   const [renamingId, setRenamingId] = useState(null);
   const [renameValue, setRenameValue] = useState("");
+  const [moveTargetByFile, setMoveTargetByFile] = useState({});
+  const [movingId, setMovingId] = useState(null);
 
   const fileInputRef = useRef(null);
 
@@ -166,7 +213,7 @@ function UserHomePage({ onLogout }) {
         ? `/api/folders/user/${userId}/contents?folderId=${folderId}`
         : `/api/folders/user/${userId}/contents`;
       const data = await getJson(apiUrl, url);
-      setFolderContents(data);
+      setFolderContents(normalizeFolderContents(data));
       setCurrentFolder(folderId);
     } catch (error) {
       console.error("Failed to fetch folder contents:", error);
@@ -231,13 +278,21 @@ function UserHomePage({ onLogout }) {
   };
 
   const handleDownload = async (fileItem) => {
-    setDownloadProgress(fileItem.FileItemId);
+    const fileItemId = getFileId(fileItem);
+    const fileName = getFileName(fileItem);
+
+    if (!fileItemId) {
+      alert("File id was not found.");
+      return;
+    }
+
+    setDownloadProgress(fileItemId);
     try {
-      const blob = await downloadFileBlob(apiUrl, fileItem.FileItemId);
+      const blob = await downloadFileBlob(apiUrl, fileItemId);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = fileItem.FileName;
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -250,10 +305,18 @@ function UserHomePage({ onLogout }) {
   };
 
   const handleDeleteFile = async (fileItem) => {
-    if (!window.confirm(`Delete "${fileItem.FileName}"?`)) return;
-    setDeletingId(fileItem.FileItemId);
+    const fileItemId = getFileId(fileItem);
+    const fileName = getFileName(fileItem);
+
+    if (!fileItemId) {
+      alert("File id was not found.");
+      return;
+    }
+
+    if (!window.confirm(`Delete "${fileName}"?`)) return;
+    setDeletingId(fileItemId);
     try {
-      await deleteJson(apiUrl, `/api/files/${fileItem.FileItemId}`);
+      await deleteJson(apiUrl, `/api/files/${fileItemId}`);
       await fetchFolderContents(currentFolder);
     } catch (error) {
       alert(`Failed to delete file: ${error.message}`);
@@ -263,10 +326,18 @@ function UserHomePage({ onLogout }) {
   };
 
   const handleDeleteFolder = async (folder) => {
-    if (!window.confirm(`Delete folder "${folder.Name}" and all its contents?`)) return;
-    setDeletingId(folder.FolderId);
+    const folderId = getFolderId(folder);
+    const folderName = getFolderName(folder);
+
+    if (!folderId) {
+      alert("Folder id was not found.");
+      return;
+    }
+
+    if (!window.confirm(`Delete folder "${folderName}" and all its contents?`)) return;
+    setDeletingId(folderId);
     try {
-      await deleteJson(apiUrl, `/api/folders/${folder.FolderId}`);
+      await deleteJson(apiUrl, `/api/folders/${folderId}`);
       await fetchFolderContents(currentFolder);
     } catch (error) {
       alert(`Failed to delete folder: ${error.message}`);
@@ -276,8 +347,11 @@ function UserHomePage({ onLogout }) {
   };
 
   const startRename = (item) => {
-    setRenamingId(item.FileItemId || item.FolderId);
-    setRenameValue(item.FileName || item.Name);
+    const itemId = getFileId(item) || getFolderId(item);
+    const itemName = getFileId(item) ? getFileName(item) : getFolderName(item);
+
+    setRenamingId(itemId);
+    setRenameValue(itemName);
   };
 
   const cancelRename = () => {
@@ -292,32 +366,18 @@ function UserHomePage({ onLogout }) {
       return;
     }
 
-    const isFile = !!item.FileItemId;
-    const id = isFile ? item.FileItemId : item.FolderId;
+    const isFile = !!getFileId(item);
+    const id = isFile ? getFileId(item) : getFolderId(item);
     const endpoint = isFile
       ? `/api/files/${id}/rename`
       : `/api/folders/${id}/rename`;
 
     try {
       const body = isFile
-        ? { NewName: trimmed }
-        : { NewName: trimmed };
+        ? { FileItemId: id, NewName: trimmed }
+        : { FolderId: id, NewName: trimmed };
 
-      const response = await fetch(`${apiUrl.replace(/\/$/, "")}${endpoint}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("shc.authToken")}`
-        },
-        body: JSON.stringify(body)
-      });
-
-      if (!response.ok) {
-        const contentType = response.headers.get("content-type") ?? "";
-        const payload = contentType.includes("application/json") ? await response.json() : await response.text();
-        const message = typeof payload === "string" && payload ? payload : payload?.title ?? payload?.message ?? `Request failed with ${response.status}`;
-        throw new Error(message);
-      }
+      await putJson(apiUrl, endpoint, body);
 
       await fetchFolderContents(currentFolder);
     } catch (error) {
@@ -325,6 +385,27 @@ function UserHomePage({ onLogout }) {
     } finally {
       setRenamingId(null);
       setRenameValue("");
+    }
+  };
+
+  const handleMoveFile = async (fileItem) => {
+    const fileItemId = getFileId(fileItem);
+    const targetFolderId = moveTargetByFile[fileItemId];
+
+    if (!fileItemId || !targetFolderId) return;
+
+    setMovingId(fileItemId);
+    try {
+      await putJson(apiUrl, `/api/files/${fileItemId}/move`, {
+        FileItemId: fileItemId,
+        TargetFolderId: targetFolderId
+      });
+      setMoveTargetByFile((current) => ({ ...current, [fileItemId]: "" }));
+      await fetchFolderContents(currentFolder);
+    } catch (error) {
+      alert(`Failed to move file: ${error.message}`);
+    } finally {
+      setMovingId(null);
     }
   };
 
@@ -492,11 +573,13 @@ function UserHomePage({ onLogout }) {
                 ) : (
                   <div className="file-list">
                     {folderContents.folders.map((folder) => {
-                      const isRenaming = renamingId === folder.FolderId;
-                      const isDeleting = deletingId === folder.FolderId;
+                      const folderId = getFolderId(folder);
+                      const folderName = getFolderName(folder);
+                      const isRenaming = renamingId === folderId;
+                      const isDeleting = deletingId === folderId;
 
                       return (
-                        <div key={folder.FolderId} className="file-item folder">
+                        <div key={folderId} className="file-item folder">
                           <div className="file-icon folder-icon">📁</div>
                           <div className="file-info">
                             {isRenaming ? (
@@ -513,14 +596,14 @@ function UserHomePage({ onLogout }) {
                                 autoFocus
                               />
                             ) : (
-                              <strong onClick={() => openFolder(folder.FolderId)}>{folder.Name}</strong>
+                              <strong onClick={() => openFolder(folderId)}>{folderName}</strong>
                             )}
-                            <small>Folder • Created {formatDate(folder.CreatedAt)}</small>
+                            <small>Folder • Created {formatDate(getValue(folder, "createdAt", "CreatedAt"))}</small>
                           </div>
                           <div className="file-actions">
                             <button
                               className="icon-button"
-                              onClick={() => openFolder(folder.FolderId)}
+                              onClick={() => openFolder(folderId)}
                               title="Open"
                               type="button"
                               disabled={isRenaming}
@@ -550,12 +633,19 @@ function UserHomePage({ onLogout }) {
                       );
                     })}
                     {folderContents.files.map((file) => {
-                      const isRenaming = renamingId === file.FileItemId;
-                      const isDeleting = deletingId === file.FileItemId;
-                      const isDownloading = downloadProgress === file.FileItemId;
+                      const fileItemId = getFileId(file);
+                      const fileName = getFileName(file);
+                      const fileType = getValue(file, "fileType", "FileType") || "Unknown";
+                      const fileSize = Number(getValue(file, "fileSize", "FileSize")) || 0;
+                      const isRenaming = renamingId === fileItemId;
+                      const isDeleting = deletingId === fileItemId;
+                      const isDownloading = downloadProgress === fileItemId;
+                      const isMoving = movingId === fileItemId;
+                      const moveTarget = moveTargetByFile[fileItemId] ?? "";
+                      const targetFolders = folderContents.folders.filter((folder) => getFolderId(folder));
 
                       return (
-                        <div key={file.FileItemId} className="file-item">
+                        <div key={fileItemId} className="file-item">
                           <div className="file-icon">📄</div>
                           <div className="file-info">
                             {isRenaming ? (
@@ -572,9 +662,9 @@ function UserHomePage({ onLogout }) {
                                 autoFocus
                               />
                             ) : (
-                              <strong>{file.FileName}</strong>
+                              <strong>{fileName}</strong>
                             )}
-                            <small>{file.FileType || "Unknown"} • {formatBytes(file.FileSize)}</small>
+                            <small>{fileType} • {formatBytes(fileSize)}</small>
                           </div>
                           <div className="file-actions">
                             <button
@@ -595,6 +685,39 @@ function UserHomePage({ onLogout }) {
                             >
                               Rename
                             </button>
+                            {targetFolders.length > 0 && (
+                              <div className="move-control">
+                                <select
+                                  value={moveTarget}
+                                  onChange={(event) =>
+                                    setMoveTargetByFile((current) => ({
+                                      ...current,
+                                      [fileItemId]: event.target.value
+                                    }))
+                                  }
+                                  disabled={isRenaming || isDeleting || isDownloading || isMoving}
+                                >
+                                  <option value="">Move to...</option>
+                                  {targetFolders.map((folder) => {
+                                    const targetFolderId = getFolderId(folder);
+
+                                    return (
+                                      <option key={targetFolderId} value={targetFolderId}>
+                                        {getFolderName(folder)}
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+                                <button
+                                  className="icon-button"
+                                  onClick={() => handleMoveFile(file)}
+                                  type="button"
+                                  disabled={!moveTarget || isRenaming || isDeleting || isDownloading || isMoving}
+                                >
+                                  {isMoving ? "Moving..." : "Move"}
+                                </button>
+                              </div>
+                            )}
                             <button
                               className="icon-button danger"
                               onClick={() => handleDeleteFile(file)}

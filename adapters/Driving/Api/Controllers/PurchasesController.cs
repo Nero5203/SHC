@@ -10,6 +10,7 @@ namespace api.Controllers
     public class PurchasesController : ControllerBase
     {
         private readonly ICreatePurchaseUseCase _createPurchaseUseCase;
+        private readonly IGetAllPurchasesUseCase _getAllPurchasesUseCase;
         private readonly IGetPurchaseByIdUseCase _getPurchaseByIdUseCase;
         private readonly IGetPurchasesByUserIdUseCase _getPurchasesByUserIdUseCase;
         private readonly IUpdatePurchaseStatusUseCase _updatePurchaseStatusUseCase;
@@ -18,6 +19,7 @@ namespace api.Controllers
 
         public PurchasesController(
             ICreatePurchaseUseCase createPurchaseUseCase,
+            IGetAllPurchasesUseCase getAllPurchasesUseCase,
             IGetPurchaseByIdUseCase getPurchaseByIdUseCase,
             IGetPurchasesByUserIdUseCase getPurchasesByUserIdUseCase,
             IUpdatePurchaseStatusUseCase updatePurchaseStatusUseCase,
@@ -25,6 +27,7 @@ namespace api.Controllers
             IMapper mapper)
         {
             _createPurchaseUseCase = createPurchaseUseCase;
+            _getAllPurchasesUseCase = getAllPurchasesUseCase;
             _getPurchaseByIdUseCase = getPurchaseByIdUseCase;
             _getPurchasesByUserIdUseCase = getPurchasesByUserIdUseCase;
             _updatePurchaseStatusUseCase = updatePurchaseStatusUseCase;
@@ -41,18 +44,21 @@ namespace api.Controllers
                 dto.Amount,
                 dto.Currency);
 
-            var response = new PurchaseResponseDto
-            {
-                PurchaseId = purchase.PurchaseId,
-                UserId = purchase.UserId,
-                SubscriptionId = purchase.SubscriptionId,
-                Amount = purchase.Amount,
-                Currency = purchase.Currency,
-                PurchasedAt = purchase.PurchasedAt,
-                Status = purchase.Status
-            };
+            var response = MapPurchase(purchase);
 
             return CreatedAtAction(nameof(GetPurchaseById), new { purchaseId = purchase.PurchaseId }, response);
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<IReadOnlyList<PurchaseResponseDto>>> GetAllPurchases()
+        {
+            var purchases = await _getAllPurchasesUseCase.ExecuteAsync();
+
+            var response = purchases
+                .Select(MapPurchase)
+                .ToList();
+
+            return Ok(response);
         }
 
         [HttpGet("{purchaseId:guid}")]
@@ -65,18 +71,7 @@ namespace api.Controllers
                 return NotFound();
             }
 
-            var response = new PurchaseResponseDto
-            {
-                PurchaseId = purchase.PurchaseId,
-                UserId = purchase.UserId,
-                SubscriptionId = purchase.SubscriptionId,
-                Amount = purchase.Amount,
-                Currency = purchase.Currency,
-                PurchasedAt = purchase.PurchasedAt,
-                Status = purchase.Status
-            };
-
-            return Ok(response);
+            return Ok(MapPurchase(purchase));
         }
 
         [HttpGet("user/{userId:guid}")]
@@ -84,16 +79,9 @@ namespace api.Controllers
         {
             var purchases = await _getPurchasesByUserIdUseCase.ExecuteAsync(userId);
 
-            var response = purchases.Select(purchase => new PurchaseResponseDto
-            {
-                PurchaseId = purchase.PurchaseId,
-                UserId = purchase.UserId,
-                SubscriptionId = purchase.SubscriptionId,
-                Amount = purchase.Amount,
-                Currency = purchase.Currency,
-                PurchasedAt = purchase.PurchasedAt,
-                Status = purchase.Status
-            }).ToList();
+            var response = purchases
+                .Select(MapPurchase)
+                .ToList();
 
             return Ok(response);
         }
@@ -110,18 +98,7 @@ namespace api.Controllers
                 return NotFound();
             }
 
-            var response = new PurchaseResponseDto
-            {
-                PurchaseId = purchase.PurchaseId,
-                UserId = purchase.UserId,
-                SubscriptionId = purchase.SubscriptionId,
-                Amount = purchase.Amount,
-                Currency = purchase.Currency,
-                PurchasedAt = purchase.PurchasedAt,
-                Status = purchase.Status
-            };
-
-            return Ok(response);
+            return Ok(MapPurchase(purchase));
         }
 
         [HttpGet("{purchaseId:guid}/invoice")]
@@ -137,6 +114,20 @@ namespace api.Controllers
             var response = _mapper.Map<InvoiceResponseDto>(invoice);
 
             return Ok(response);
+        }
+
+        private static PurchaseResponseDto MapPurchase(Domain.Entities.Purchases.Purchase purchase)
+        {
+            return new PurchaseResponseDto
+            {
+                PurchaseId = purchase.PurchaseId,
+                UserId = purchase.UserId,
+                SubscriptionId = purchase.SubscriptionId,
+                Amount = purchase.Amount,
+                Currency = purchase.Currency,
+                PurchasedAt = purchase.PurchasedAt,
+                Status = purchase.Status
+            };
         }
     }
 }
