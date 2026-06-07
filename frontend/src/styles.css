@@ -621,6 +621,39 @@ h3 {
   gap: 16px;
 }
 
+.subscription-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.subscription-overview-card {
+  border: 1px solid #edf1f5;
+  border-radius: 8px;
+  padding: 14px;
+  display: grid;
+  gap: 6px;
+  background: #fbfdff;
+}
+
+.subscription-overview-card span {
+  color: #667386;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.subscription-overview-card strong {
+  color: #263447;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.subscription-overview-card small {
+  color: #8a97a8;
+  font-size: 12px;
+}
+
 .subscription-plan-form {
   border: 1px solid #edf1f5;
   border-radius: 8px;
@@ -764,6 +797,11 @@ h3 {
 .subscription-status.status-past-due {
   background: #fff6df;
   color: #9a6b18;
+}
+
+.subscription-status.status-pending {
+  background: #edf4ff;
+  color: #2f6f9f;
 }
 
 .subscription-search-row {
@@ -1154,6 +1192,7 @@ h3 {
   .storage-node-form-grid,
   .subscription-plan-form-grid,
   .subscription-plan-grid,
+  .subscription-overview-grid,
   .subscription-search-row,
   .purchase-search-row,
   .settings-form-grid,
@@ -1414,6 +1453,120 @@ h3 {
   display: grid;
   gap: 2px;
   margin-top: 12px;
+}
+
+.shared-link-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.shared-link-card {
+  border: 1px solid #edf1f5;
+  border-radius: 8px;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.shared-link-card-header,
+.shared-link-actions,
+.shared-link-edit-actions,
+.share-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.shared-link-card-header small {
+  display: block;
+  margin-top: 4px;
+  color: #667386;
+  font-size: 12px;
+}
+
+.shared-link-url-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.shared-link-url-row input,
+.shared-link-edit-grid input,
+.share-dialog-form input,
+.share-dialog-form select {
+  width: 100%;
+  height: 40px;
+  border: 1px solid #d8e0e8;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #263447;
+  padding: 0 10px;
+  min-width: 0;
+}
+
+.shared-link-meta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  color: #667386;
+  font-size: 12px;
+}
+
+.shared-link-edit-grid,
+.share-dialog-form {
+  display: grid;
+  gap: 10px;
+}
+
+.shared-link-edit-grid label,
+.share-dialog-form label {
+  display: grid;
+  gap: 6px;
+  color: #667386;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.shared-link-edit-grid .toggle-row {
+  min-height: 40px;
+  border: 1px solid #d8e0e8;
+  border-radius: 8px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px;
+  color: #263447;
+}
+
+.shared-link-edit-grid .toggle-row input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #2c8f8a;
+}
+
+.share-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(24, 34, 49, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.share-dialog {
+  width: min(100%, 520px);
+  border: 1px solid #d9e1ea;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 16px 40px rgba(24, 36, 51, 0.18);
+  padding: 18px;
+  display: grid;
+  gap: 14px;
 }
 
 .notification-item {

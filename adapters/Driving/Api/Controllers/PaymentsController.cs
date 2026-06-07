@@ -20,14 +20,24 @@ namespace api.Controllers
             Guid purchaseId,
             CreateCheckoutSessionDto dto)
         {
-            var checkoutResult = await _createCheckoutSessionUseCase.ExecuteAsync(purchaseId, dto.SuccessUrl, dto.CancelUrl);
-
-            return Ok(new CheckoutSessionResponseDto
+            try
             {
-                PurchaseId = purchaseId,
-                CheckoutSessionId = checkoutResult.CheckoutSessionId,
-                CheckoutUrl = checkoutResult.CheckoutUrl
-            });
+                var checkoutResult = await _createCheckoutSessionUseCase.ExecuteAsync(purchaseId, dto.SuccessUrl, dto.CancelUrl);
+
+                return Ok(new CheckoutSessionResponseDto
+                {
+                    PurchaseId = purchaseId,
+                    CheckoutSessionId = checkoutResult.CheckoutSessionId,
+                    CheckoutUrl = checkoutResult.CheckoutUrl
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Problem(
+                    detail: ex.Message,
+                    statusCode: StatusCodes.Status503ServiceUnavailable,
+                    title: "Stripe is not configured");
+            }
         }
     }
 }

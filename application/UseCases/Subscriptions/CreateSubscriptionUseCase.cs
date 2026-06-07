@@ -27,6 +27,14 @@ namespace application.UseCases.Subscriptions
                 throw new InvalidOperationException("Subscription plan is not available.");
             }
 
+            var existingPendingSubscription = await _subscriptionRepository
+                .GetPendingSubscriptionByUserIdAndPlanIdAsync(userId, subscriptionPlanId);
+
+            if (existingPendingSubscription != null)
+            {
+                return existingPendingSubscription;
+            }
+
             var now = DateTime.UtcNow;
             var periodEnd = SubscriptionPeriodCalculator.AddBillingPeriod(now, plan.BillingInterval);
 
@@ -36,7 +44,7 @@ namespace application.UseCases.Subscriptions
                 SubscriptionPlanId = subscriptionPlanId,
                 Status = trialEndsAt.HasValue && trialEndsAt.Value > now
                     ? SubscriptionStatus.Trialing
-                    : SubscriptionStatus.Active,
+                    : SubscriptionStatus.Pending,
                 StartedAt = now,
                 CurrentPeriodStart = now,
                 CurrentPeriodEnd = periodEnd,

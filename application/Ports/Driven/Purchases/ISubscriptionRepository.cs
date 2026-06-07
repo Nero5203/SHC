@@ -13,6 +13,7 @@ namespace application.Ports.Driven.Purchases
         Task<IReadOnlyList<Subscription>> GetSubscriptionsAsync();
         Task<Subscription?> GetSubscriptionByIdAsync(Guid subscriptionId);
         Task<IReadOnlyList<Subscription>> GetSubscriptionsByUserIdAsync(Guid userId);
+        Task<Subscription?> GetPendingSubscriptionByUserIdAndPlanIdAsync(Guid userId, Guid subscriptionPlanId);
         Task<Subscription?> GetActiveSubscriptionByUserIdAsync(Guid userId, DateTime utcNow);
         Task UpdateSubscriptionAsync(Subscription subscription);
     }

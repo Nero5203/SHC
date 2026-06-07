@@ -15,7 +15,24 @@ namespace application.UseCases.LinkSharing
 
         public async Task<SharedLink?> ExecuteAsync(string tokenUrl)
         {
-            return await _sharedLinkRepository.GetByTokenUrlAsync(tokenUrl);
+            var sharedLink = await _sharedLinkRepository.GetByTokenUrlAsync(tokenUrl);
+
+            if (sharedLink == null || !sharedLink.IsActive)
+            {
+                return null;
+            }
+
+            if (sharedLink.ExpirationDate.HasValue && sharedLink.ExpirationDate.Value <= DateTime.UtcNow)
+            {
+                sharedLink.IsActive = false;
+                sharedLink.UpdatedAt = DateTime.UtcNow;
+
+                await _sharedLinkRepository.UpdateAsync(sharedLink);
+
+                return null;
+            }
+
+            return sharedLink;
         }
     }
 }

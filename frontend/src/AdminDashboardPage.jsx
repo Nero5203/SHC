@@ -45,7 +45,8 @@ const subscriptionStatusOptions = [
   { value: "1", label: "Active" },
   { value: "2", label: "Past Due" },
   { value: "3", label: "Cancelled" },
-  { value: "4", label: "Expired" }
+  { value: "4", label: "Expired" },
+  { value: "5", label: "Pending" }
 ];
 
 const emptyStorageNodeForm = {
@@ -151,6 +152,7 @@ function AdminDashboardPage({ onLogout }) {
   const [counts, setCounts] = useState({});
   const [loadingCounts, setLoadingCounts] = useState(false);
   const [adminUsers, setAdminUsers] = useState([]);
+  const [userDirectory, setUserDirectory] = useState([]);
   const [availableRoles, setAvailableRoles] = useState([]);
   const [userRoleMap, setUserRoleMap] = useState({});
   const [selectedRoleByUser, setSelectedRoleByUser] = useState({});
@@ -202,6 +204,10 @@ function AdminDashboardPage({ onLogout }) {
 
   const activeModule = visibleModules.find((module) => module.key === activeModuleKey) ?? visibleModules[0];
   const allowedExtensionList = parseAllowedFileExtensions(systemSettingsForm.allowedFileExtensions);
+  const usersById = useMemo(
+    () => Object.fromEntries(userDirectory.map((user) => [getValue(user, "userId", "UserId"), user])),
+    [userDirectory]
+  );
 
   function updateApiUrl(value) {
     setApiUrl(value);
@@ -222,6 +228,7 @@ function AdminDashboardPage({ onLogout }) {
       const safeRoles = Array.isArray(roleList) ? roleList : [];
 
       setAdminUsers(safeUsers);
+      setUserDirectory(safeUsers);
       setAvailableRoles(safeRoles);
 
       const userRoleEntries = await Promise.all(
@@ -243,6 +250,15 @@ function AdminDashboardPage({ onLogout }) {
       setUsersError(error.message);
     } finally {
       setLoadingUsers(false);
+    }
+  }, [apiUrl]);
+
+  const loadUserDirectory = useCallback(async () => {
+    try {
+      const users = await getJson(apiUrl, "/api/users");
+      setUserDirectory(Array.isArray(users) ? users : []);
+    } catch (error) {
+      // The billing screens can still render ids if user lookup fails.
     }
   }, [apiUrl]);
 
@@ -398,14 +414,17 @@ function AdminDashboardPage({ onLogout }) {
     setPurchasesError("");
 
     try {
-      const data = await getJson(apiUrl, "/api/purchases");
+      const [data] = await Promise.all([
+        getJson(apiUrl, "/api/purchases"),
+        userDirectory.length === 0 ? loadUserDirectory() : Promise.resolve()
+      ]);
       setPurchases(Array.isArray(data) ? data : []);
     } catch (error) {
       setPurchasesError(error.message);
     } finally {
       setLoadingPurchases(false);
     }
-  }, [apiUrl]);
+  }, [apiUrl, loadUserDirectory, userDirectory.length]);
 
   async function handleFindPurchase(event) {
     event.preventDefault();
@@ -428,8 +447,12 @@ function AdminDashboardPage({ onLogout }) {
 
   async function handleFindUserPurchases(event) {
     event.preventDefault();
-    const userId = purchaseUserIdSearch.trim();
-    if (!userId) return;
+    const userId = resolveUserIdFromSearch(purchaseUserIdSearch, userDirectory);
+    if (!userId) {
+      setPurchasesError("User was not found. Use username, email, or user id.");
+      setPurchases([]);
+      return;
+    }
 
     setLoadingPurchases(true);
     setPurchasesError("");
@@ -511,7 +534,8 @@ function AdminDashboardPage({ onLogout }) {
     try {
       const [plansData, subscriptionsData] = await Promise.all([
         getJson(apiUrl, "/api/subscriptions/plans?activeOnly=false"),
-        getJson(apiUrl, "/api/subscriptions")
+        getJson(apiUrl, "/api/subscriptions"),
+        userDirectory.length === 0 ? loadUserDirectory() : Promise.resolve()
       ]);
 
       const safePlans = Array.isArray(plansData) ? plansData : [];
@@ -532,7 +556,7 @@ function AdminDashboardPage({ onLogout }) {
     } finally {
       setLoadingSubscriptions(false);
     }
-  }, [apiUrl]);
+  }, [apiUrl, loadUserDirectory, userDirectory.length]);
 
   async function handleSaveSubscriptionPlan(event) {
     event.preventDefault();
@@ -575,8 +599,12 @@ function AdminDashboardPage({ onLogout }) {
 
   async function handleFindUserSubscriptions(event) {
     event.preventDefault();
-    const userId = subscriptionUserIdSearch.trim();
-    if (!userId) return;
+    const userId = resolveUserIdFromSearch(subscriptionUserIdSearch, userDirectory);
+    if (!userId) {
+      setSubscriptionsError("User was not found. Use username, email, or user id.");
+      setSubscriptions([]);
+      return;
+    }
 
     setLoadingSubscriptions(true);
     setSubscriptionsError("");
@@ -778,15 +806,21 @@ function AdminDashboardPage({ onLogout }) {
 
   useEffect(() => {
     if (activeModuleKey === "purchases") {
+      if (userDirectory.length === 0) {
+        loadUserDirectory();
+      }
       loadPurchases();
     }
-  }, [activeModuleKey, loadPurchases]);
+  }, [activeModuleKey, loadPurchases, loadUserDirectory, userDirectory.length]);
 
   useEffect(() => {
     if (activeModuleKey === "subscriptions") {
+      if (userDirectory.length === 0) {
+        loadUserDirectory();
+      }
       loadSubscriptionDashboard();
     }
-  }, [activeModuleKey, loadSubscriptionDashboard]);
+  }, [activeModuleKey, loadSubscriptionDashboard, loadUserDirectory, userDirectory.length]);
 
   useEffect(() => {
     if (activeModuleKey === "settings") {
@@ -1248,11 +1282,12 @@ function AdminDashboardPage({ onLogout }) {
                   </form>
                   <form onSubmit={handleFindUserPurchases}>
                     <label>
-                      Find by User Id
+                      Find by User
                       <div>
                         <input
                           value={purchaseUserIdSearch}
                           onChange={(event) => setPurchaseUserIdSearch(event.target.value)}
+                          placeholder="Username, email, or user id"
                         />
                         <button className="secondary-button" type="submit">Find</button>
                       </div>
@@ -1304,10 +1339,13 @@ function AdminDashboardPage({ onLogout }) {
                           return (
                             <tr key={purchaseId}>
                               <td>
-                                <strong>{purchaseId}</strong>
+                                <strong>{purchaseId.slice(0, 8)}...</strong>
                                 <span>{formatDate(getValue(purchase, "purchasedAt", "PurchasedAt"))}</span>
                               </td>
-                              <td>{getValue(purchase, "userId", "UserId")}</td>
+                              <td>
+                                <strong>{getUserLookupLabel(getValue(purchase, "userId", "UserId"), usersById)}</strong>
+                                <span>{getValue(purchase, "userId", "UserId")}</span>
+                              </td>
                               <td>{getValue(purchase, "subscriptionId", "SubscriptionId")}</td>
                               <td>{formatMoney(getValue(purchase, "amount", "Amount"), getValue(purchase, "currency", "Currency"))}</td>
                               <td>
@@ -1464,6 +1502,29 @@ function AdminDashboardPage({ onLogout }) {
                 </form>
 
                 <section className="subscription-plan-list">
+                  <div className="subscription-overview-grid">
+                    <article className="subscription-overview-card">
+                      <span>Total Plans</span>
+                      <strong>{subscriptionPlans.length}</strong>
+                      <small>Active and inactive plans</small>
+                    </article>
+                    <article className="subscription-overview-card">
+                      <span>Active Plans</span>
+                      <strong>{subscriptionPlans.filter((plan) => getBooleanValue(plan, "isActive", "IsActive")).length}</strong>
+                      <small>Visible to users</small>
+                    </article>
+                    <article className="subscription-overview-card">
+                      <span>Subscriptions</span>
+                      <strong>{subscriptions.length}</strong>
+                      <small>Current loaded records</small>
+                    </article>
+                    <article className="subscription-overview-card">
+                      <span>Pending</span>
+                      <strong>{subscriptions.filter((item) => getSubscriptionStatusValue(item) === "5").length}</strong>
+                      <small>Waiting for payment</small>
+                    </article>
+                  </div>
+
                   <div className="section-heading">
                     <h2>Plans</h2>
                     <p>All active and inactive plans.</p>
@@ -1517,11 +1578,12 @@ function AdminDashboardPage({ onLogout }) {
                 <div className="subscription-search-row">
                   <form onSubmit={handleFindUserSubscriptions}>
                     <label>
-                      Find Subscriptions By User Id
+                      Find Subscriptions By User
                       <div>
                         <input
                           value={subscriptionUserIdSearch}
                           onChange={(event) => setSubscriptionUserIdSearch(event.target.value)}
+                          placeholder="Username, email, or user id"
                         />
                         <button className="secondary-button" type="submit">Find</button>
                       </div>
@@ -1558,10 +1620,10 @@ function AdminDashboardPage({ onLogout }) {
                           return (
                             <tr key={subscriptionId}>
                               <td>
-                                <strong>{subscriptionId}</strong>
+                                <strong>{subscriptionId.slice(0, 8)}...</strong>
                                 <span>{getValue(subscription, "providerSubscriptionId", "ProviderSubscriptionId") || "No provider id"}</span>
                               </td>
-                              <td>{getUserIdsText(subscription)}</td>
+                              <td>{getUserIdsText(subscription, usersById)}</td>
                               <td>
                                 <strong>{getValue(subscription, "planName", "PlanName")}</strong>
                                 <span>{getValue(subscription, "subscriptionPlanId", "SubscriptionPlanId")}</span>
@@ -2082,7 +2144,7 @@ function getSubscriptionStatusValue(subscription) {
 
 function getSubscriptionStatusLabel(subscription) {
   const status = getSubscriptionStatusValue(subscription);
-  return subscriptionStatusOptions.find((option) => option.value === status)?.label ?? "Trialing";
+  return subscriptionStatusOptions.find((option) => option.value === status)?.label ?? "Pending";
 }
 
 function mapSubscriptionPlanToForm(plan) {
@@ -2099,13 +2161,49 @@ function mapSubscriptionPlanToForm(plan) {
   };
 }
 
-function getUserIdsText(subscription) {
+function getUserLookupLabel(userId, usersById) {
+  const user = usersById[userId];
+  if (!user) {
+    return userId || "Unknown user";
+  }
+
+  return getUserDisplayName(user);
+}
+
+function getUserIdsText(subscription, usersById) {
   const userIds = subscription?.userIds ?? subscription?.UserIds ?? [];
   if (!Array.isArray(userIds) || userIds.length === 0) {
     return "No users";
   }
 
-  return userIds.join(", ");
+  return userIds
+    .map((userId) => getUserLookupLabel(userId, usersById))
+    .join(", ");
+}
+
+function resolveUserIdFromSearch(value, userDirectory) {
+  const rawValue = String(value ?? "").trim();
+  const query = rawValue.toLowerCase();
+  if (!query) {
+    return "";
+  }
+
+  const directMatch = userDirectory.find((user) => {
+    const userId = getValue(user, "userId", "UserId").toLowerCase();
+    const username = getValue(user, "username", "Username").toLowerCase();
+    const email = getValue(user, "email", "Email").toLowerCase();
+    const fullName = `${getValue(user, "firstName", "FirstName")} ${getValue(user, "lastName", "LastName")}`.trim().toLowerCase();
+
+    return userId === query || username === query || email === query || fullName === query;
+  });
+
+  if (directMatch) {
+    return getValue(directMatch, "userId", "UserId");
+  }
+
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(rawValue)
+    ? rawValue
+    : "";
 }
 
 function formatBytes(bytes) {

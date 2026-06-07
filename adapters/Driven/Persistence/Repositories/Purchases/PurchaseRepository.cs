@@ -42,6 +42,14 @@ namespace adapters.Driven.Persistence.Repositories.Purchases
                 .ToListAsync();
         }
 
+        public async Task<Purchase?> GetPendingBySubscriptionIdAsync(Guid subscriptionId)
+        {
+            return await _context.Purchases
+                .Where(p => p.SubscriptionId == subscriptionId && p.Status == PurchaseStatus.Pending)
+                .OrderByDescending(p => p.PurchasedAt)
+                .FirstOrDefaultAsync();
+        }
+
         public async Task<Invoice?> GetInvoiceByPurchaseIdAsync(Guid purchaseId)
         {
             return await _context.Invoices

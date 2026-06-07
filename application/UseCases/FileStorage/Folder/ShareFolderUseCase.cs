@@ -37,7 +37,7 @@ namespace application.UseCases.FileStorage.Folder
                 UserId = folder.UserId,
                 TargetId = folder.FolderId,
                 TargetType = ShareTargetType.Folder,
-                ExpirationDate = expiresAt,
+                ExpirationDate = expiresAt ?? DateTime.UtcNow.AddDays(7),
                 IsActive = true,
                 CreatedAt = now,
                 UpdatedAt = now,

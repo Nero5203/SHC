@@ -6,8 +6,6 @@ namespace application.Ports.Driving.Purchases
     {
         Task<Purchase> ExecuteAsync(
             Guid userId,
-            Guid subscriptionId,
-            decimal amount,
-            string currency);
+            Guid subscriptionId);
     }
 }

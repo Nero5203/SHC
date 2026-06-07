@@ -37,7 +37,7 @@ namespace application.UseCases.FileStorage.File
                 UserId = fileItem.UserId,
                 TargetId = fileItem.FileItemId,
                 TargetType = ShareTargetType.File,
-                ExpirationDate = expiresAt,
+                ExpirationDate = expiresAt ?? DateTime.UtcNow.AddDays(7),
                 IsActive = true,
                 CreatedAt = now,
                 UpdatedAt = now,

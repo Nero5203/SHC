@@ -9,6 +9,7 @@ namespace application.Ports.Driven.Purchases
         Task<IReadOnlyList<Purchase>> GetAllAsync();
         Task<Purchase?> GetByIdAsync(Guid purchaseId);
         Task<IReadOnlyList<Purchase>> GetByUserIdAsync(Guid userId);
+        Task<Purchase?> GetPendingBySubscriptionIdAsync(Guid subscriptionId);
         Task<Invoice?> GetInvoiceByPurchaseIdAsync(Guid purchaseId);
         Task UpdateStatusAsync(Purchase purchase, PurchaseStatus status);
         Task UpdateAsync(Purchase purchase);

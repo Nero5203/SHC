@@ -24,6 +24,30 @@ const userDashboardModules = [
   { title: "Subscription", area: "Billing", permissions: [], fallbackUser: true }
 ];
 
+const sharePermissionOptions = [
+  { value: "0", label: "View" },
+  { value: "1", label: "Download" },
+  { value: "2", label: "Edit" }
+];
+
+const emptyShareForm = {
+  permission: "0"
+};
+
+const billingIntervalOptions = [
+  { value: "0", label: "Monthly" },
+  { value: "1", label: "Yearly" }
+];
+
+const subscriptionStatusOptions = [
+  { value: "0", label: "Trialing" },
+  { value: "1", label: "Active" },
+  { value: "2", label: "Past Due" },
+  { value: "3", label: "Cancelled" },
+  { value: "4", label: "Expired" },
+  { value: "5", label: "Pending" }
+];
+
 function formatBytes(bytes) {
   if (bytes === 0) return "0 B";
   const k = 1024;
@@ -40,6 +64,20 @@ function formatDate(dateString) {
     day: "numeric",
     year: "numeric"
   });
+}
+
+function formatMoney(amount, currency) {
+  const value = Number(amount);
+  const safeCurrency = currency || "EUR";
+
+  if (Number.isNaN(value)) {
+    return `${amount ?? 0} ${safeCurrency}`;
+  }
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: safeCurrency
+  }).format(value);
 }
 
 function getProfileValue(profile, ...keys) {
@@ -100,6 +138,49 @@ function getFolderName(folder) {
   return getValue(folder, "name", "Name") || "Unnamed folder";
 }
 
+function getSharedLinkId(link) {
+  return getValue(link, "sharedLinkId", "SharedLinkId");
+}
+
+function getShareUrl(apiUrl, link) {
+  const directShareUrl = getValue(link, "shareUrl", "ShareUrl");
+  if (directShareUrl) {
+    return `${apiUrl.replace(/\/$/, "")}${directShareUrl}`;
+  }
+
+  const tokenUrl = getValue(link, "tokenUrl", "TokenUrl");
+  if (!tokenUrl) return "";
+
+  return `${apiUrl.replace(/\/$/, "")}/api/shared-links/token/${tokenUrl}`;
+}
+
+function getShareTargetTypeLabel(link) {
+  const targetType = getValue(link, "targetType", "TargetType");
+  if (targetType === "0" || targetType.toLowerCase() === "file") return "File";
+  if (targetType === "1" || targetType.toLowerCase() === "folder") return "Folder";
+  return "Item";
+}
+
+function getSharePermissionLabel(link) {
+  const canEdit = getBooleanValue(link, "canEdit", "CanEdit");
+  const allowDownload = getBooleanValue(link, "allowDownload", "AllowDownload");
+
+  if (canEdit) return "Edit";
+  if (allowDownload) return "Download";
+  return "View";
+}
+
+function getBooleanValue(source, ...keys) {
+  for (const key of keys) {
+    const value = source?.[key];
+    if (value !== undefined && value !== null) {
+      return value === true || String(value).toLowerCase() === "true";
+    }
+  }
+
+  return false;
+}
+
 function getProfileDisplayName(profile, fallbackName) {
   const firstName = getProfileValue(profile, "firstName", "FirstName");
   const lastName = getProfileValue(profile, "lastName", "LastName");
@@ -110,6 +191,34 @@ function getProfileDisplayName(profile, fallbackName) {
   return fullName || username || email || fallbackName;
 }
 
+function getBillingIntervalValue(plan) {
+  const interval = getValue(plan, "billingInterval", "BillingInterval");
+  const matchingOption = billingIntervalOptions.find((option) =>
+    option.value === interval || option.label.toLowerCase() === interval.toLowerCase()
+  );
+
+  return matchingOption?.value ?? "0";
+}
+
+function getBillingIntervalLabel(plan) {
+  const interval = getBillingIntervalValue(plan);
+  return billingIntervalOptions.find((option) => option.value === interval)?.label ?? "Monthly";
+}
+
+function getSubscriptionStatusValue(subscriptionItem) {
+  const status = getValue(subscriptionItem, "status", "Status");
+  const matchingOption = subscriptionStatusOptions.find((option) =>
+    option.value === status || option.label.toLowerCase().replace(/\s/g, "") === status.toLowerCase().replace(/\s/g, "")
+  );
+
+  return matchingOption?.value ?? "5";
+}
+
+function getSubscriptionStatusLabel(subscriptionItem) {
+  const status = getSubscriptionStatusValue(subscriptionItem);
+  return subscriptionStatusOptions.find((option) => option.value === status)?.label ?? "Pending";
+}
+
 function UserHomePage({ onLogout }) {
   const [apiUrl, setApiUrl] = useState(() => localStorage.getItem("shc.apiUrl") || defaultApiUrl);
   const [activeTab, setActiveTab] = useState("files");
@@ -118,12 +227,30 @@ function UserHomePage({ onLogout }) {
   const [loadingProfile, setLoadingProfile] = useState(true);
 
   const [subscription, setSubscription] = useState(null);
+  const [userSubscriptions, setUserSubscriptions] = useState([]);
+  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
   const [entitlements, setEntitlements] = useState(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
+  const [subscriptionActionKey, setSubscriptionActionKey] = useState("");
+  const [subscriptionError, setSubscriptionError] = useState("");
+  const [checkoutMessage, setCheckoutMessage] = useState("");
 
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loadingNotifications, setLoadingNotifications] = useState(true);
+  const [sharedLinks, setSharedLinks] = useState([]);
+  const [loadingSharedLinks, setLoadingSharedLinks] = useState(true);
+  const [shareActionKey, setShareActionKey] = useState("");
+  const [shareForm, setShareForm] = useState(emptyShareForm);
+  const [shareTarget, setShareTarget] = useState(null);
+  const [shareResult, setShareResult] = useState(null);
+  const [editingSharedLinkId, setEditingSharedLinkId] = useState(null);
+  const [editingSharedLinkForm, setEditingSharedLinkForm] = useState({
+    expirationDate: null,
+    canView: true,
+    canEdit: false,
+    allowDownload: true
+  });
 
   const [folderContents, setFolderContents] = useState({ folders: [], files: [] });
   const [currentFolder, setCurrentFolder] = useState(null);
@@ -179,12 +306,16 @@ function UserHomePage({ onLogout }) {
   const fetchSubscriptionData = useCallback(async () => {
     if (!userId) return;
     try {
-      const [activeSub, userEntitlements] = await Promise.all([
+      const [activeSub, userEntitlements, plans, subscriptions] = await Promise.all([
         getJson(apiUrl, `/api/subscriptions/user/${userId}/active`).catch(() => null),
-        getJson(apiUrl, `/api/subscriptions/user/${userId}/entitlements`).catch(() => null)
+        getJson(apiUrl, `/api/subscriptions/user/${userId}/entitlements`).catch(() => null),
+        getJson(apiUrl, "/api/subscriptions/plans?activeOnly=true").catch(() => []),
+        getJson(apiUrl, `/api/subscriptions/user/${userId}`).catch(() => [])
       ]);
       setSubscription(activeSub);
       setEntitlements(userEntitlements);
+      setSubscriptionPlans(Array.isArray(plans) ? plans : []);
+      setUserSubscriptions(Array.isArray(subscriptions) ? subscriptions : []);
     } catch (error) {
       console.error("Failed to fetch subscription:", error);
     } finally {
@@ -202,6 +333,18 @@ function UserHomePage({ onLogout }) {
       console.error("Failed to fetch notifications:", error);
     } finally {
       setLoadingNotifications(false);
+    }
+  }, [apiUrl, userId]);
+
+  const fetchSharedLinks = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const links = await getJson(apiUrl, `/api/shared-links/user/${userId}`);
+      setSharedLinks(Array.isArray(links) ? links : []);
+    } catch (error) {
+      console.error("Failed to fetch shared links:", error);
+    } finally {
+      setLoadingSharedLinks(false);
     }
   }, [apiUrl, userId]);
 
@@ -230,8 +373,32 @@ function UserHomePage({ onLogout }) {
     fetchProfile();
     fetchSubscriptionData();
     fetchNotifications();
+    fetchSharedLinks();
     fetchFolderContents();
-  }, [onLogout, fetchProfile, fetchSubscriptionData, fetchNotifications, fetchFolderContents]);
+  }, [onLogout, fetchProfile, fetchSubscriptionData, fetchNotifications, fetchSharedLinks, fetchFolderContents]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const checkoutStatus = params.get("checkout");
+
+    if (!checkoutStatus) {
+      return;
+    }
+
+    if (checkoutStatus === "success") {
+      setCheckoutMessage("Payment completed. Your subscription will update after Stripe confirms the payment.");
+      fetchSubscriptionData();
+    } else if (checkoutStatus === "cancelled") {
+      setCheckoutMessage("Checkout was cancelled. Your subscription remains pending until payment is completed.");
+      fetchSubscriptionData();
+    }
+
+    params.delete("checkout");
+    params.delete("purchaseId");
+    const nextQuery = params.toString();
+    const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}`;
+    window.history.replaceState({}, "", nextUrl);
+  }, [fetchSubscriptionData]);
 
   const handleCreateFolder = async (event) => {
     event.preventDefault();
@@ -409,6 +576,111 @@ function UserHomePage({ onLogout }) {
     }
   };
 
+  const openShareDialog = (targetType, item) => {
+    setShareTarget({
+      targetType,
+      itemId: targetType === "file" ? getFileId(item) : getFolderId(item),
+      name: targetType === "file" ? getFileName(item) : getFolderName(item)
+    });
+    setShareForm(emptyShareForm);
+    setShareResult(null);
+  };
+
+  const closeShareDialog = () => {
+    setShareTarget(null);
+    setShareForm(emptyShareForm);
+  };
+
+  const handleCreateShareLink = async (event) => {
+    event.preventDefault();
+    if (!shareTarget || !userId) return;
+
+    const actionKey = `${shareTarget.targetType}:${shareTarget.itemId}:share`;
+    setShareActionKey(actionKey);
+
+    try {
+      const endpoint = shareTarget.targetType === "file"
+        ? `/api/files/${shareTarget.itemId}/share`
+        : `/api/folders/${shareTarget.itemId}/share`;
+
+      const body = shareTarget.targetType === "file"
+        ? {
+            FileItemId: shareTarget.itemId,
+            Permission: Number(shareForm.permission)
+          }
+        : {
+            FolderId: shareTarget.itemId,
+            Permission: Number(shareForm.permission)
+          };
+
+      const response = await postJson(apiUrl, endpoint, body);
+      setShareResult(response);
+      await fetchSharedLinks();
+    } catch (error) {
+      alert(`Failed to create share link: ${error.message}`);
+    } finally {
+      setShareActionKey("");
+    }
+  };
+
+  const startEditSharedLink = (link) => {
+    setEditingSharedLinkId(getSharedLinkId(link));
+    setEditingSharedLinkForm({
+      expirationDate: getValue(link, "expirationDate", "ExpirationDate") || null,
+      canView: getBooleanValue(link, "canView", "CanView"),
+      canEdit: getBooleanValue(link, "canEdit", "CanEdit"),
+      allowDownload: getBooleanValue(link, "allowDownload", "AllowDownload")
+    });
+  };
+
+  const cancelEditSharedLink = () => {
+    setEditingSharedLinkId(null);
+  };
+
+  const handleUpdateSharedLink = async (sharedLinkId) => {
+    setShareActionKey(`${sharedLinkId}:update`);
+
+    try {
+      await putJson(apiUrl, `/api/shared-links/${sharedLinkId}`, {
+        ExpirationDate: editingSharedLinkForm.expirationDate,
+        CanView: editingSharedLinkForm.canView,
+        CanEdit: editingSharedLinkForm.canEdit,
+        AllowDownload: editingSharedLinkForm.allowDownload
+      });
+
+      setEditingSharedLinkId(null);
+      await fetchSharedLinks();
+    } catch (error) {
+      alert(`Failed to update share link: ${error.message}`);
+    } finally {
+      setShareActionKey("");
+    }
+  };
+
+  const handleDeactivateSharedLink = async (sharedLinkId) => {
+    setShareActionKey(`${sharedLinkId}:deactivate`);
+
+    try {
+      await putJson(apiUrl, `/api/shared-links/${sharedLinkId}/deactivate`, {});
+      await fetchSharedLinks();
+    } catch (error) {
+      alert(`Failed to deactivate share link: ${error.message}`);
+    } finally {
+      setShareActionKey("");
+    }
+  };
+
+  const handleCopyShareUrl = async (link) => {
+    const shareUrl = getShareUrl(apiUrl, link);
+    if (!shareUrl) return;
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+    } catch (error) {
+      window.prompt("Copy this share URL:", shareUrl);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       const refreshToken = localStorage.getItem("shc.refreshToken");
@@ -430,6 +702,71 @@ function UserHomePage({ onLogout }) {
   const goToParentFolder = () => {
     if (currentFolder) {
       fetchFolderContents(null);
+    }
+  };
+
+  const latestSubscription = subscription || userSubscriptions[0] || null;
+
+  const handleSubscribeToPlan = async (plan) => {
+    if (!userId) {
+      alert("User was not found in the current session.");
+      return;
+    }
+
+    const planId = getValue(plan, "subscriptionPlanId", "SubscriptionPlanId");
+    if (!planId) {
+      alert("Subscription plan id was not found.");
+      return;
+    }
+
+    setSubscriptionError("");
+    setCheckoutMessage("");
+    setSubscriptionActionKey(planId);
+
+    try {
+      const createdSubscription = await postJson(apiUrl, "/api/subscriptions", {
+        UserId: userId,
+        SubscriptionPlanId: planId,
+        TrialEndsAt: null,
+        AutoRenew: true,
+        ProviderSubscriptionId: null
+      });
+
+      const subscriptionId = getValue(createdSubscription, "subscriptionId", "SubscriptionId");
+
+      if (!subscriptionId) {
+        throw new Error("Subscription was created without an id.");
+      }
+
+      const createdPurchase = await postJson(apiUrl, "/api/purchases", {
+        UserId: userId,
+        SubscriptionId: subscriptionId
+      });
+
+      const purchaseId = getValue(createdPurchase, "purchaseId", "PurchaseId");
+
+      if (!purchaseId) {
+        throw new Error("Purchase was created without an id.");
+      }
+
+      const baseUrl = `${window.location.origin}${window.location.pathname}`;
+      const checkout = await postJson(apiUrl, `/api/purchases/${purchaseId}/checkout`, {
+        SuccessUrl: `${baseUrl}?checkout=success&purchaseId=${purchaseId}`,
+        CancelUrl: `${baseUrl}?checkout=cancelled&purchaseId=${purchaseId}`
+      });
+
+      const checkoutUrl = getValue(checkout, "checkoutUrl", "CheckoutUrl");
+
+      if (!checkoutUrl) {
+        throw new Error("Stripe checkout URL was not returned.");
+      }
+
+      await fetchSubscriptionData();
+      window.location.assign(checkoutUrl);
+    } catch (error) {
+      setSubscriptionError(error.message);
+    } finally {
+      setSubscriptionActionKey("");
     }
   };
 
@@ -485,6 +822,10 @@ function UserHomePage({ onLogout }) {
           <button className={`module-item ${activeTab === "files" ? "active" : ""}`} onClick={() => { setActiveTab("files"); fetchFolderContents(currentFolder); }} type="button">
             <span>My Files</span>
             <small>Storage</small>
+          </button>
+          <button className={`module-item ${activeTab === "sharing" ? "active" : ""}`} onClick={() => { setActiveTab("sharing"); fetchSharedLinks(); }} type="button">
+            <span>Link Sharing</span>
+            <small>Links</small>
           </button>
           <button className={`module-item ${activeTab === "notifications" ? "active" : ""}`} onClick={() => setActiveTab("notifications")} type="button">
             <span>Notifications</span>
@@ -620,6 +961,15 @@ function UserHomePage({ onLogout }) {
                               Rename
                             </button>
                             <button
+                              className="icon-button"
+                              onClick={() => openShareDialog("folder", folder)}
+                              title="Share"
+                              type="button"
+                              disabled={isRenaming || isDeleting}
+                            >
+                              Share
+                            </button>
+                            <button
                               className="icon-button danger"
                               onClick={() => handleDeleteFolder(folder)}
                               title="Delete"
@@ -684,6 +1034,15 @@ function UserHomePage({ onLogout }) {
                               disabled={isRenaming || isDeleting || isDownloading}
                             >
                               Rename
+                            </button>
+                            <button
+                              className="icon-button"
+                              onClick={() => openShareDialog("file", file)}
+                              title="Share"
+                              type="button"
+                              disabled={isRenaming || isDeleting || isDownloading}
+                            >
+                              Share
                             </button>
                             {targetFolders.length > 0 && (
                               <div className="move-control">
@@ -825,42 +1184,303 @@ function UserHomePage({ onLogout }) {
           </section>
         )}
 
-        {activeTab === "subscription" && (
+        {activeTab === "sharing" && (
           <section className="content-grid">
-            <section className="subscription-panel">
+            <section className="sharing-panel">
               <div className="panel">
-                <h2>Subscription Details</h2>
-                {loadingSubscription ? (
-                  <p className="loading-text">Loading subscription...</p>
-                ) : subscription ? (
-                  <div className="subscription-info">
-                    <div className="subscription-row">
-                      <span>Plan</span>
-                      <strong>{subscription.PlanName}</strong>
-                    </div>
-                    <div className="subscription-row">
-                      <span>Status</span>
-                      <strong className={`status-${subscription.Status?.toLowerCase() || "unknown"}`}>
-                        {subscription.Status}
-                      </strong>
-                    </div>
-                    <div className="subscription-row">
-                      <span>Current Period</span>
-                      <span>{formatDate(subscription.CurrentPeriodStart)} - {formatDate(subscription.CurrentPeriodEnd)}</span>
-                    </div>
-                    {subscription.AutoRenew && (
-                      <div className="subscription-row">
-                        <span>Auto Renew</span>
-                        <span>Yes</span>
-                      </div>
-                    )}
-                  </div>
+                <div className="notifications-header">
+                  <h2>My Shared Links</h2>
+                  <button className="secondary-button" onClick={fetchSharedLinks} type="button" disabled={loadingSharedLinks}>
+                    {loadingSharedLinks ? "Refreshing..." : "Refresh"}
+                  </button>
+                </div>
+
+                {loadingSharedLinks ? (
+                  <p className="loading-text">Loading shared links...</p>
+                ) : sharedLinks.length === 0 ? (
+                  <p className="empty-text">No shared links yet. Share a file or folder from My Files.</p>
                 ) : (
-                  <p className="empty-text">No active subscription.</p>
+                  <div className="shared-link-list">
+                    {sharedLinks.map((link) => {
+                      const sharedLinkId = getSharedLinkId(link);
+                      const isEditing = editingSharedLinkId === sharedLinkId;
+                      const shareUrl = getShareUrl(apiUrl, link);
+                      const isActive = getBooleanValue(link, "isActive", "IsActive");
+
+                      return (
+                        <article className="shared-link-card" key={sharedLinkId}>
+                          <div className="shared-link-card-header">
+                            <div>
+                              <strong>{getShareTargetTypeLabel(link)} Link</strong>
+                              <small>{getSharePermissionLabel(link)} access</small>
+                            </div>
+                            <span className={`plan-state ${isActive ? "active" : "inactive"}`}>
+                              {isActive ? "Active" : "Inactive"}
+                            </span>
+                          </div>
+
+                          <div className="shared-link-url-row">
+                            <input readOnly value={shareUrl} />
+                            <button className="secondary-button" onClick={() => handleCopyShareUrl(link)} type="button">
+                              Copy
+                            </button>
+                          </div>
+
+                          {isEditing ? (
+                            <div className="shared-link-edit-grid">
+                              <label className="toggle-row">
+                                <input
+                                  type="checkbox"
+                                  checked={editingSharedLinkForm.canView}
+                                  onChange={(event) =>
+                                    setEditingSharedLinkForm((current) => ({
+                                      ...current,
+                                      canView: event.target.checked
+                                    }))
+                                  }
+                                />
+                                Can view
+                              </label>
+                              <label className="toggle-row">
+                                <input
+                                  type="checkbox"
+                                  checked={editingSharedLinkForm.allowDownload}
+                                  onChange={(event) =>
+                                    setEditingSharedLinkForm((current) => ({
+                                      ...current,
+                                      allowDownload: event.target.checked
+                                    }))
+                                  }
+                                />
+                                Allow download
+                              </label>
+                              <label className="toggle-row">
+                                <input
+                                  type="checkbox"
+                                  checked={editingSharedLinkForm.canEdit}
+                                  onChange={(event) =>
+                                    setEditingSharedLinkForm((current) => ({
+                                      ...current,
+                                      canEdit: event.target.checked
+                                    }))
+                                  }
+                                />
+                                Can edit
+                              </label>
+                              <div className="shared-link-edit-actions">
+                                <button
+                                  className="primary-button"
+                                  onClick={() => handleUpdateSharedLink(sharedLinkId)}
+                                  type="button"
+                                  disabled={shareActionKey === `${sharedLinkId}:update`}
+                                >
+                                  {shareActionKey === `${sharedLinkId}:update` ? "Saving..." : "Save"}
+                                </button>
+                                <button className="secondary-button" onClick={cancelEditSharedLink} type="button">
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="shared-link-meta">
+                              <span>Expires: {formatDate(getValue(link, "expirationDate", "ExpirationDate")) || "No expiry"}</span>
+                              <span>Created: {formatDate(getValue(link, "createdAt", "CreatedAt"))}</span>
+                            </div>
+                          )}
+
+                          {!isEditing && (
+                            <div className="shared-link-actions">
+                              <button className="secondary-button" onClick={() => startEditSharedLink(link)} type="button">
+                                Edit
+                              </button>
+                              <button
+                                className="secondary-button"
+                                onClick={() => handleDeactivateSharedLink(sharedLinkId)}
+                                type="button"
+                                disabled={!isActive || shareActionKey === `${sharedLinkId}:deactivate`}
+                              >
+                                {shareActionKey === `${sharedLinkId}:deactivate` ? "Deactivating..." : "Deactivate"}
+                              </button>
+                            </div>
+                          )}
+                        </article>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </section>
           </section>
+        )}
+
+        {activeTab === "subscription" && (
+          <section className="content-grid">
+            <section className="subscription-panel">
+              <div className="panel">
+                <h2>Subscription</h2>
+                {loadingSubscription ? (
+                  <p className="loading-text">Loading subscription...</p>
+                ) : (
+                  <>
+                    {subscriptionError && (
+                      <p className="inline-error">{subscriptionError}</p>
+                    )}
+
+                    {checkoutMessage && (
+                      <div className="purchase-result-box">
+                        <strong>Stripe checkout</strong>
+                        <span>{checkoutMessage}</span>
+                      </div>
+                    )}
+
+                    <div className="subscription-info">
+                      <div className="subscription-row">
+                        <span>Current plan</span>
+                        <strong>{latestSubscription ? getValue(latestSubscription, "planName", "PlanName") : "No subscription yet"}</strong>
+                      </div>
+                      <div className="subscription-row">
+                        <span>Status</span>
+                        <strong className={`status-${getSubscriptionStatusLabel(latestSubscription).toLowerCase().replace(/\s/g, "-")}`}>
+                          {latestSubscription ? getSubscriptionStatusLabel(latestSubscription) : "Not subscribed"}
+                        </strong>
+                      </div>
+                      <div className="subscription-row">
+                        <span>Current period</span>
+                        <span>
+                          {latestSubscription
+                            ? `${formatDate(getValue(latestSubscription, "currentPeriodStart", "CurrentPeriodStart"))} - ${formatDate(getValue(latestSubscription, "currentPeriodEnd", "CurrentPeriodEnd"))}`
+                            : "No billing period yet"}
+                        </span>
+                      </div>
+                      <div className="subscription-row">
+                        <span>Storage limit</span>
+                        <span>{formatBytes(entitlements?.StorageLimitBytes || 0)}</span>
+                      </div>
+                    </div>
+
+                    <section className="subscription-plan-list">
+                      <div className="subscriptions-admin-header">
+                        <div>
+                          <p className="eyebrow">Plans</p>
+                          <h3>Choose a subscription plan</h3>
+                          <p>Select one of the plans created in the admin dashboard and continue to Stripe checkout.</p>
+                        </div>
+                      </div>
+
+                      {subscriptionPlans.length === 0 ? (
+                        <p className="empty-text">No active subscription plans are available yet.</p>
+                      ) : (
+                        <div className="subscription-plan-grid">
+                          {subscriptionPlans.map((plan) => {
+                            const planId = getValue(plan, "subscriptionPlanId", "SubscriptionPlanId");
+                            const currentPlanId = latestSubscription ? getValue(latestSubscription, "subscriptionPlanId", "SubscriptionPlanId") : "";
+                            const currentStatus = latestSubscription ? getSubscriptionStatusValue(latestSubscription) : "";
+                            const isCurrentPlan = currentPlanId === planId && (currentStatus === "0" || currentStatus === "1");
+                            const isPendingPlan = currentPlanId === planId && currentStatus === "5";
+
+                            return (
+                              <article className="subscription-plan-card" key={planId}>
+                                <div>
+                                  <strong>{getValue(plan, "name", "Name")}</strong>
+                                  <p>{getValue(plan, "description", "Description") || "No description provided."}</p>
+                                </div>
+
+                                <dl>
+                                  <div>
+                                    <dt>Price</dt>
+                                    <dd>{formatMoney(getValue(plan, "price", "Price"), getValue(plan, "currency", "Currency"))}</dd>
+                                  </div>
+                                  <div>
+                                    <dt>Interval</dt>
+                                    <dd>{getBillingIntervalLabel(plan)}</dd>
+                                  </div>
+                                  <div>
+                                    <dt>Storage</dt>
+                                    <dd>{formatBytes(Number(getValue(plan, "storageLimitBytes", "StorageLimitBytes")) || 0)}</dd>
+                                  </div>
+                                  <div>
+                                    <dt>Max file size</dt>
+                                    <dd>{formatBytes(Number(getValue(plan, "maxFileSizeBytes", "MaxFileSizeBytes")) || 0)}</dd>
+                                  </div>
+                                </dl>
+
+                                <div className="subscription-plan-card-footer">
+                                  <span className={`plan-state ${isCurrentPlan ? "active" : isPendingPlan ? "inactive" : "active"}`}>
+                                    {isCurrentPlan ? "Current Plan" : isPendingPlan ? "Payment Pending" : "Available"}
+                                  </span>
+                                  <button
+                                    className="primary-button"
+                                    type="button"
+                                    onClick={() => handleSubscribeToPlan(plan)}
+                                    disabled={!!subscriptionActionKey || isCurrentPlan || isPendingPlan}
+                                  >
+                                    {subscriptionActionKey === planId
+                                      ? "Redirecting..."
+                                      : isCurrentPlan
+                                        ? "Current Plan"
+                                        : isPendingPlan
+                                          ? "Pending"
+                                          : "Choose Plan"}
+                                  </button>
+                                </div>
+                              </article>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </section>
+                  </>
+                )}
+              </div>
+            </section>
+          </section>
+        )}
+
+        {shareTarget && (
+          <div className="share-dialog-backdrop" onClick={closeShareDialog}>
+            <div className="share-dialog" onClick={(event) => event.stopPropagation()}>
+              <div className="share-dialog-header">
+                <div>
+                  <p className="eyebrow">Link Sharing</p>
+                  <h2>Share {shareTarget.name}</h2>
+                </div>
+                <button className="secondary-button" onClick={closeShareDialog} type="button">
+                  Close
+                </button>
+              </div>
+
+              <form className="share-dialog-form" onSubmit={handleCreateShareLink}>
+                <label>
+                  Permission
+                  <select
+                    value={shareForm.permission}
+                    onChange={(event) => setShareForm((current) => ({ ...current, permission: event.target.value }))}
+                  >
+                    {sharePermissionOptions.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  className="primary-button"
+                  disabled={shareActionKey === `${shareTarget.targetType}:${shareTarget.itemId}:share`}
+                  type="submit"
+                >
+                  {shareActionKey === `${shareTarget.targetType}:${shareTarget.itemId}:share` ? "Creating..." : "Create Link"}
+                </button>
+              </form>
+
+              {shareResult && (
+                <div className="purchase-result-box">
+                  <strong>Share link created</strong>
+                  <a href={getShareUrl(apiUrl, shareResult)} target="_blank" rel="noreferrer">
+                    Open shared link
+                  </a>
+                  <span>{getShareUrl(apiUrl, shareResult)}</span>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </section>
     </main>

@@ -38,15 +38,20 @@ namespace api.Controllers
         [HttpPost]
         public async Task<ActionResult<PurchaseResponseDto>> CreatePurchase(CreatePurchaseDto dto)
         {
-            var purchase = await _createPurchaseUseCase.ExecuteAsync(
-                dto.UserId,
-                dto.SubscriptionId,
-                dto.Amount,
-                dto.Currency);
+            try
+            {
+                var purchase = await _createPurchaseUseCase.ExecuteAsync(
+                    dto.UserId,
+                    dto.SubscriptionId);
 
-            var response = MapPurchase(purchase);
+                var response = MapPurchase(purchase);
 
-            return CreatedAtAction(nameof(GetPurchaseById), new { purchaseId = purchase.PurchaseId }, response);
+                return CreatedAtAction(nameof(GetPurchaseById), new { purchaseId = purchase.PurchaseId }, response);
+            }
+            catch (InvalidOperationException exception)
+            {
+                return BadRequest(new { message = exception.Message });
+            }
         }
 
         [HttpGet]

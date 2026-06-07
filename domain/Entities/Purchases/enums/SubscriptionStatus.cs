@@ -6,6 +6,7 @@ namespace Domain.Entities.Purchases.Enums
         Active,
         PastDue,
         Cancelled,
-        Expired
+        Expired,
+        Pending
     }
 }

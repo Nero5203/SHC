@@ -83,6 +83,21 @@ namespace adapters.Driven.Persistence.Repositories.Purchases
                 .ToListAsync();
         }
 
+        public async Task<Subscription?> GetPendingSubscriptionByUserIdAndPlanIdAsync(Guid userId, Guid subscriptionPlanId)
+        {
+            return await _context.UserSubscriptions
+                .Where(userSubscription => userSubscription.UserId == userId && userSubscription.RemovedAt == null)
+                .Select(userSubscription => userSubscription.Subscription)
+                .Include(subscription => subscription.SubscriptionPlan)
+                .Include(subscription => subscription.UserSubscriptions)
+                .Where(subscription =>
+                    subscription.SubscriptionPlanId == subscriptionPlanId &&
+                    subscription.Status == SubscriptionStatus.Pending &&
+                    subscription.EndedAt == null)
+                .OrderByDescending(subscription => subscription.StartedAt)
+                .FirstOrDefaultAsync();
+        }
+
         public async Task<Subscription?> GetActiveSubscriptionByUserIdAsync(Guid userId, DateTime utcNow)
         {
             return await _context.UserSubscriptions
