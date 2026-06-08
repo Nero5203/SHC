@@ -164,6 +164,14 @@ function getSharedLinkId(link) {
   return getValue(link, "sharedLinkId", "SharedLinkId");
 }
 
+function getTrashedItemId(item) {
+  return getValue(item, "trashedItemId", "TrashedItemId");
+}
+
+function getTrashItemType(item) {
+  return getValue(item, "itemType", "ItemType") || "Item";
+}
+
 function getShareUrl(apiUrl, link) {
   const directShareUrl = getValue(link, "shareUrl", "ShareUrl");
   if (directShareUrl) {
@@ -379,6 +387,9 @@ function UserHomePage({ onLogout }) {
   const [folderContents, setFolderContents] = useState({ folders: [], files: [] });
   const [currentFolder, setCurrentFolder] = useState(null);
   const [loadingFiles, setLoadingFiles] = useState(true);
+  const [trashedItems, setTrashedItems] = useState([]);
+  const [loadingTrash, setLoadingTrash] = useState(true);
+  const [trashActionKey, setTrashActionKey] = useState("");
 
   const [newFolderName, setNewFolderName] = useState("");
   const [creatingFolder, setCreatingFolder] = useState(false);
@@ -518,6 +529,19 @@ function UserHomePage({ onLogout }) {
     }
   }, [apiUrl, userId]);
 
+  const fetchTrash = useCallback(async () => {
+    if (!userId) return;
+    setLoadingTrash(true);
+    try {
+      const items = await getJson(apiUrl, `/api/trash/user/${userId}`);
+      setTrashedItems(Array.isArray(items) ? items : []);
+    } catch (error) {
+      console.error("Failed to fetch trash:", error);
+    } finally {
+      setLoadingTrash(false);
+    }
+  }, [apiUrl, userId]);
+
   useEffect(() => {
     if (!isAuthenticated()) {
       onLogout("login");
@@ -530,7 +554,8 @@ function UserHomePage({ onLogout }) {
     fetchAiSuggestions();
     fetchSharedLinks();
     fetchFolderContents();
-  }, [onLogout, fetchProfile, fetchUserSettings, fetchSubscriptionData, fetchNotifications, fetchAiSuggestions, fetchSharedLinks, fetchFolderContents]);
+    fetchTrash();
+  }, [onLogout, fetchProfile, fetchUserSettings, fetchSubscriptionData, fetchNotifications, fetchAiSuggestions, fetchSharedLinks, fetchFolderContents, fetchTrash]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -597,6 +622,46 @@ function UserHomePage({ onLogout }) {
       alert(`Failed to delete notification: ${error.message}`);
     } finally {
       setNotificationActionKey("");
+    }
+  };
+
+  const handleRestoreTrashedItem = async (item) => {
+    const trashedItemId = getTrashedItemId(item);
+    if (!trashedItemId) return;
+
+    setTrashActionKey(`${trashedItemId}:restore`);
+    try {
+      await putJson(apiUrl, `/api/trash/${trashedItemId}/restore`, {});
+      await Promise.all([
+        fetchTrash(),
+        fetchFolderContents(currentFolder)
+      ]);
+    } catch (error) {
+      alert(`Failed to restore item: ${error.message}`);
+    } finally {
+      setTrashActionKey("");
+    }
+  };
+
+  const handlePermanentlyDeleteTrashedItem = async (item) => {
+    const trashedItemId = getTrashedItemId(item);
+    if (!trashedItemId) return;
+
+    const itemName = getValue(item, "name", "Name") || "this item";
+    const confirmed = window.confirm(`Permanently delete ${itemName}? This cannot be undone.`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    setTrashActionKey(`${trashedItemId}:delete`);
+    try {
+      await deleteJson(apiUrl, `/api/trash/${trashedItemId}`);
+      await fetchTrash();
+    } catch (error) {
+      alert(`Failed to permanently delete item: ${error.message}`);
+    } finally {
+      setTrashActionKey("");
     }
   };
 
@@ -1114,6 +1179,7 @@ function UserHomePage({ onLogout }) {
     ai: "Review suggestions generated from your file activity and organization patterns.",
     notifications: "Stay on top of storage alerts, sharing activity, and account updates.",
     subscription: "Review your plan, billing status, and available storage entitlements.",
+    trash: "Review deleted files and folders, restore them, or permanently remove them.",
     settings: "Update your profile details, workspace preferences, and notification settings."
   }[activeTab] || "Manage your workspace.";
   const activeTabTitle = {
@@ -1123,6 +1189,7 @@ function UserHomePage({ onLogout }) {
     ai: "AI Suggestions",
     notifications: "Notifications",
     subscription: "Subscription",
+    trash: "Trash",
     settings: "Settings"
   }[activeTab] || "Dashboard";
   const userOverviewCards = [
@@ -1227,6 +1294,11 @@ function UserHomePage({ onLogout }) {
             <span className="module-item-icon"><CreditCard size={18} /></span>
             <span>Subscription</span>
             <small>Plan</small>
+          </button>
+          <button className={`module-item ${activeTab === "trash" ? "active" : ""}`} onClick={() => { setActiveTab("trash"); fetchTrash(); }} type="button">
+            <span className="module-item-icon">T</span>
+            <span>Trash</span>
+            <small>{trashedItems.length > 0 ? trashedItems.length : ""}</small>
           </button>
           <button className={`module-item ${activeTab === "settings" ? "active" : ""}`} onClick={() => { setActiveTab("settings"); fetchUserSettings(); }} type="button">
             <span className="module-item-icon"><Settings size={18} /></span>
@@ -2148,6 +2220,82 @@ function UserHomePage({ onLogout }) {
                       )}
                     </section>
                   </>
+                )}
+              </div>
+            </section>
+          </section>
+        )}
+
+        {activeTab === "trash" && (
+          <section className="content-grid">
+            <section className="files-panel">
+              <div className="panel">
+                <div className="files-header">
+                  <div>
+                    <p className="eyebrow">Deleted Items</p>
+                    <h2>Trash</h2>
+                    <p>Restore deleted files and folders, or permanently remove them from SHC DRIVE.</p>
+                    <div className="files-header-meta">
+                      <span className="files-summary-pill">{trashedItems.length} deleted item{trashedItems.length === 1 ? "" : "s"}</span>
+                    </div>
+                  </div>
+                  <button className="secondary-button" onClick={fetchTrash} type="button" disabled={loadingTrash}>
+                    {loadingTrash ? "Refreshing..." : "Refresh"}
+                  </button>
+                </div>
+
+                {loadingTrash ? (
+                  <p className="loading-text">Loading trash...</p>
+                ) : trashedItems.length === 0 ? (
+                  <p className="empty-text">Trash is empty.</p>
+                ) : (
+                  <div className="file-list">
+                    {trashedItems.map((item) => {
+                      const trashedItemId = getTrashedItemId(item);
+                      const itemType = getTrashItemType(item);
+                      const itemName = getValue(item, "name", "Name") || "Deleted item";
+                      const itemSize = Number(getValue(item, "size", "Size")) || 0;
+                      const deletedAt = getValue(item, "deletedAt", "DeletedAt");
+                      const expiresAt = getValue(item, "expiresAt", "ExpiresAt");
+                      const isRestoreAction = trashActionKey === `${trashedItemId}:restore`;
+                      const isDeleteAction = trashActionKey === `${trashedItemId}:delete`;
+
+                      return (
+                        <article className="file-item trash-item" key={trashedItemId}>
+                          <div className={`file-icon ${itemType.toLowerCase() === "folder" ? "folder-icon" : ""}`}>
+                            {itemType.toLowerCase() === "folder" ? "Folder" : "File"}
+                          </div>
+                          <div className="file-details">
+                            <strong>{itemName}</strong>
+                            <span>{itemType}</span>
+                            <small>
+                              Deleted {formatDate(deletedAt)}
+                              {expiresAt ? ` | Expires ${formatDate(expiresAt)}` : ""}
+                              {itemSize > 0 ? ` | ${formatBytes(itemSize)}` : ""}
+                            </small>
+                          </div>
+                          <div className="file-actions">
+                            <button
+                              className="secondary-button"
+                              onClick={() => handleRestoreTrashedItem(item)}
+                              type="button"
+                              disabled={isRestoreAction || isDeleteAction}
+                            >
+                              {isRestoreAction ? "Restoring..." : "Restore"}
+                            </button>
+                            <button
+                              className="icon-button danger"
+                              onClick={() => handlePermanentlyDeleteTrashedItem(item)}
+                              type="button"
+                              disabled={isRestoreAction || isDeleteAction}
+                            >
+                              {isDeleteAction ? "Deleting..." : "Delete Forever"}
+                            </button>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </section>

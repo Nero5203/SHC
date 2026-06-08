@@ -105,6 +105,14 @@ namespace api.Controllers
             {
                 return BadRequest(ex.Message);
             }
+            catch (HttpRequestException ex)
+            {
+                return BadRequest($"Storage node request failed: {ex.Message}");
+            }
+            catch (IOException ex)
+            {
+                return BadRequest($"Storage node file operation failed: {ex.Message}");
+            }
         }
 
         [HttpGet("{fileItemId:guid}")]

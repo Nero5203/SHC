@@ -67,5 +67,11 @@ namespace adapters.Driven.Persistence.Repositories.FileStorage
             _context.FileItems.Update(fileItem);
             await _context.SaveChangesAsync();
         }
+
+        public async Task DeleteAsync(FileItem fileItem)
+        {
+            _context.FileItems.Remove(fileItem);
+            await _context.SaveChangesAsync();
+        }
     }
 }

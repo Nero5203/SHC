@@ -8,6 +8,7 @@ namespace adapters.Driven.Persistence.Repositories.FileStorage
 {
     public class StorageNodeAllocator : IStorageNodeAllocator
     {
+        private static int _nextNodeIndex = -1;
         private readonly ShcDbContext _context;
 
         public StorageNodeAllocator(ShcDbContext context)
@@ -17,12 +18,22 @@ namespace adapters.Driven.Persistence.Repositories.FileStorage
 
         public async Task<StorageNode?> GetBestAvailableNodeAsync(long requiredBytes)
         {
-            return await _context.StorageNodes
+            var availableNodes = await _context.StorageNodes
                 .Where(sn =>
                     sn.Status == NodeStatus.Online &&
                     sn.TotalCapacityBytes >= sn.UsedCapacityBytes + requiredBytes)
-                .OrderByDescending(sn => sn.TotalCapacityBytes - sn.UsedCapacityBytes)
-                .FirstOrDefaultAsync();
+                .OrderBy(sn => sn.CreatedAt)
+                .ThenBy(sn => sn.StorageNodeId)
+                .ToListAsync();
+
+            if (availableNodes.Count == 0)
+            {
+                return null;
+            }
+
+            var selectedIndex = Interlocked.Increment(ref _nextNodeIndex) % availableNodes.Count;
+
+            return availableNodes[selectedIndex];
         }
     }
 }

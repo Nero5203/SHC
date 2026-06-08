@@ -9,5 +9,6 @@ namespace application.Ports.Driven.FileStorage
         Task<IReadOnlyList<FileItem>> GetByFolderIdAsync(Guid userId, Guid? folderId);
         Task<IReadOnlyList<FileItem>> SearchAsync(Guid userId, string? query, Guid? folderId);
         Task UpdateAsync(FileItem fileItem);
+        Task DeleteAsync(FileItem fileItem);
     }
 }

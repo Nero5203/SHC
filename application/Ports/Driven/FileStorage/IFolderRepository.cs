@@ -10,5 +10,8 @@ namespace application.Ports.Driven.FileStorage
         Task<bool> IsDescendantAsync(Guid folderId, Guid possibleDescendantId);
         Task UpdateAsync(Folder folder);
         Task SoftDeleteTreeAsync(Folder folder);
+        Task RestoreTreeAsync(Folder folder);
+        Task<IReadOnlyList<FileItem>> GetTreeFileItemsAsync(Guid folderId);
+        Task HardDeleteTreeAsync(Folder folder);
     }
 }

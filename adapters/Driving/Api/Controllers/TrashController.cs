@@ -1,11 +1,14 @@
 using application.Dto.Trash;
 using application.Ports.Driving.Trash;
+using application.Ports.Driving.Auth;
 using Domain.Entities.Trash;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/trash")]
     public class TrashController : ControllerBase
     {
@@ -14,24 +17,35 @@ namespace api.Controllers
         private readonly IGetTrashedItemsByUserIdUseCase _getTrashedItemsByUserIdUseCase;
         private readonly IRestoreTrashedItemUseCase _restoreTrashedItemUseCase;
         private readonly IPermanentlyDeleteTrashedItemUseCase _permanentlyDeleteTrashedItemUseCase;
+        private readonly ICurrentUserService _currentUserService;
+        private readonly IUserAuthorizationService _userAuthorizationService;
 
         public TrashController(
             ICreateTrashedItemUseCase createTrashedItemUseCase,
             IGetTrashedItemByIdUseCase getTrashedItemByIdUseCase,
             IGetTrashedItemsByUserIdUseCase getTrashedItemsByUserIdUseCase,
             IRestoreTrashedItemUseCase restoreTrashedItemUseCase,
-            IPermanentlyDeleteTrashedItemUseCase permanentlyDeleteTrashedItemUseCase)
+            IPermanentlyDeleteTrashedItemUseCase permanentlyDeleteTrashedItemUseCase,
+            ICurrentUserService currentUserService,
+            IUserAuthorizationService userAuthorizationService)
         {
             _createTrashedItemUseCase = createTrashedItemUseCase;
             _getTrashedItemByIdUseCase = getTrashedItemByIdUseCase;
             _getTrashedItemsByUserIdUseCase = getTrashedItemsByUserIdUseCase;
             _restoreTrashedItemUseCase = restoreTrashedItemUseCase;
             _permanentlyDeleteTrashedItemUseCase = permanentlyDeleteTrashedItemUseCase;
+            _currentUserService = currentUserService;
+            _userAuthorizationService = userAuthorizationService;
         }
 
         [HttpPost]
         public async Task<ActionResult<TrashedItemResponseDto>> CreateTrashedItem(CreateTrashedItemDto dto)
         {
+            if (!CanAccessUser(dto.UserId))
+            {
+                return Forbid();
+            }
+
             var trashedItem = await _createTrashedItemUseCase.ExecuteAsync(
                 dto.UserId,
                 dto.OriginalItemId,
@@ -58,12 +72,22 @@ namespace api.Controllers
                 return NotFound();
             }
 
+            if (!CanAccessUser(trashedItem.UserId))
+            {
+                return Forbid();
+            }
+
             return Ok(MapTrashedItem(trashedItem));
         }
 
         [HttpGet("user/{userId:guid}")]
         public async Task<ActionResult<IReadOnlyList<TrashedItemResponseDto>>> GetTrashedItemsByUserId(Guid userId)
         {
+            if (!CanAccessUser(userId))
+            {
+                return Forbid();
+            }
+
             var trashedItems = await _getTrashedItemsByUserIdUseCase.ExecuteAsync(userId);
 
             var response = trashedItems
@@ -76,6 +100,18 @@ namespace api.Controllers
         [HttpPut("{trashedItemId:guid}/restore")]
         public async Task<ActionResult<TrashedItemResponseDto>> RestoreTrashedItem(Guid trashedItemId)
         {
+            var existingTrashedItem = await _getTrashedItemByIdUseCase.ExecuteAsync(trashedItemId);
+
+            if (existingTrashedItem == null)
+            {
+                return NotFound();
+            }
+
+            if (!CanAccessUser(existingTrashedItem.UserId))
+            {
+                return Forbid();
+            }
+
             var trashedItem = await _restoreTrashedItemUseCase.ExecuteAsync(trashedItemId);
 
             if (trashedItem == null)
@@ -89,6 +125,18 @@ namespace api.Controllers
         [HttpDelete("{trashedItemId:guid}")]
         public async Task<IActionResult> PermanentlyDeleteTrashedItem(Guid trashedItemId)
         {
+            var trashedItem = await _getTrashedItemByIdUseCase.ExecuteAsync(trashedItemId);
+
+            if (trashedItem == null)
+            {
+                return NotFound();
+            }
+
+            if (!CanAccessUser(trashedItem.UserId))
+            {
+                return Forbid();
+            }
+
             var deleted = await _permanentlyDeleteTrashedItemUseCase.ExecuteAsync(trashedItemId);
 
             if (!deleted)
@@ -115,6 +163,11 @@ namespace api.Controllers
                 RestoredAt = trashedItem.RestoredAt,
                 ExpiresAt = trashedItem.ExpiresAt
             };
+        }
+
+        private bool CanAccessUser(Guid userId)
+        {
+            return _userAuthorizationService.IsAdmin() || _currentUserService.UserId == userId;
         }
     }
 }
