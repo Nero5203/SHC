@@ -8,8 +8,11 @@
 
   <ItemGroup>
     <Compile Remove="Driving\Api\**\*.cs" />
+    <Compile Remove="Driving\StorageNode\**\*.cs" />
     <EmbeddedResource Remove="Driving\Api\**\*" />
+    <EmbeddedResource Remove="Driving\StorageNode\**\*" />
     <None Remove="Driving\Api\**\*" />
+    <None Remove="Driving\StorageNode\**\*" />
   </ItemGroup>
 
   <ItemGroup>

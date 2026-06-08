@@ -9,6 +9,7 @@ import {
   Link2,
   LogOut,
   Search,
+  Settings,
   Sparkles,
   Upload,
   UserCircle2
@@ -35,6 +36,24 @@ const sharePermissionOptions = [
 
 const emptyShareForm = {
   permission: "0"
+};
+
+const emptyProfileForm = {
+  username: "",
+  firstName: "",
+  lastName: "",
+  profilePictureUrl: "",
+  phoneNumber: ""
+};
+
+const emptySettingsForm = {
+  theme: "light",
+  language: "en",
+  defaultView: "list",
+  emailNotifications: true,
+  pushNotifications: true,
+  showProfilePicture: true,
+  showActivityStatus: true
 };
 
 const billingIntervalOptions = [
@@ -317,6 +336,14 @@ function UserHomePage({ onLogout }) {
 
   const [profile, setProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [profileForm, setProfileForm] = useState(emptyProfileForm);
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  const [userSettings, setUserSettings] = useState(null);
+  const [settingsForm, setSettingsForm] = useState(emptySettingsForm);
+  const [loadingSettings, setLoadingSettings] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsMessage, setSettingsMessage] = useState("");
 
   const [subscription, setSubscription] = useState(null);
   const [userSubscriptions, setUserSubscriptions] = useState([]);
@@ -380,10 +407,39 @@ function UserHomePage({ onLogout }) {
     try {
       const user = await getJson(apiUrl, `/api/users/${userId}`);
       setProfile(user);
+      setProfileForm({
+        username: getProfileValue(user, "username", "Username"),
+        firstName: getProfileValue(user, "firstName", "FirstName"),
+        lastName: getProfileValue(user, "lastName", "LastName"),
+        profilePictureUrl: getProfileValue(user, "profilePictureUrl", "ProfilePictureUrl"),
+        phoneNumber: getProfileValue(user, "phoneNumber", "PhoneNumber")
+      });
     } catch (error) {
       console.error("Failed to fetch profile:", error);
     } finally {
       setLoadingProfile(false);
+    }
+  }, [apiUrl, userId]);
+
+  const fetchUserSettings = useCallback(async () => {
+    if (!userId) return;
+    setLoadingSettings(true);
+    try {
+      const settings = await getJson(apiUrl, `/api/users/${userId}/settings`);
+      setUserSettings(settings);
+      setSettingsForm({
+        theme: getValue(settings, "theme", "Theme") || "light",
+        language: getValue(settings, "language", "Language") || "en",
+        defaultView: getValue(settings, "defaultView", "DefaultView") || "list",
+        emailNotifications: getBooleanValue(settings, "emailNotifications", "EmailNotifications"),
+        pushNotifications: getBooleanValue(settings, "pushNotifications", "PushNotifications"),
+        showProfilePicture: getBooleanValue(settings, "showProfilePicture", "ShowProfilePicture"),
+        showActivityStatus: getBooleanValue(settings, "showActivityStatus", "ShowActivityStatus")
+      });
+    } catch (error) {
+      console.error("Failed to fetch user settings:", error);
+    } finally {
+      setLoadingSettings(false);
     }
   }, [apiUrl, userId]);
 
@@ -468,12 +524,13 @@ function UserHomePage({ onLogout }) {
       return;
     }
     fetchProfile();
+    fetchUserSettings();
     fetchSubscriptionData();
     fetchNotifications();
     fetchAiSuggestions();
     fetchSharedLinks();
     fetchFolderContents();
-  }, [onLogout, fetchProfile, fetchSubscriptionData, fetchNotifications, fetchAiSuggestions, fetchSharedLinks, fetchFolderContents]);
+  }, [onLogout, fetchProfile, fetchUserSettings, fetchSubscriptionData, fetchNotifications, fetchAiSuggestions, fetchSharedLinks, fetchFolderContents]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -540,6 +597,76 @@ function UserHomePage({ onLogout }) {
       alert(`Failed to delete notification: ${error.message}`);
     } finally {
       setNotificationActionKey("");
+    }
+  };
+
+  const handleProfileFormChange = (field, value) => {
+    setSettingsMessage("");
+    setProfileForm((current) => ({
+      ...current,
+      [field]: value
+    }));
+  };
+
+  const handleSettingsFormChange = (field, value) => {
+    setSettingsMessage("");
+    setSettingsForm((current) => ({
+      ...current,
+      [field]: value
+    }));
+  };
+
+  const handleSaveProfile = async (event) => {
+    event.preventDefault();
+    if (!userId) return;
+
+    setSavingProfile(true);
+    setSettingsMessage("");
+
+    try {
+      const updatedProfile = await putJson(apiUrl, `/api/users/${userId}`, {
+        Username: profileForm.username || null,
+        FirstName: profileForm.firstName || null,
+        LastName: profileForm.lastName || null,
+        ProfilePictureUrl: profileForm.profilePictureUrl || null,
+        PhoneNumber: profileForm.phoneNumber || null
+      });
+
+      setProfile(updatedProfile);
+      setSettingsMessage("Profile updated.");
+      await fetchProfile();
+    } catch (error) {
+      setSettingsMessage(`Failed to update profile: ${error.message}`);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleSaveSettings = async (event) => {
+    event.preventDefault();
+    if (!userId) return;
+
+    setSavingSettings(true);
+    setSettingsMessage("");
+
+    try {
+      const updatedSettings = await putJson(apiUrl, `/api/users/${userId}/settings`, {
+        Theme: settingsForm.theme,
+        Language: settingsForm.language,
+        DefaultView: settingsForm.defaultView,
+        EmailNotifications: settingsForm.emailNotifications,
+        PushNotifications: settingsForm.pushNotifications,
+        ShowProfilePicture: settingsForm.showProfilePicture,
+        ShowActivityStatus: settingsForm.showActivityStatus
+      });
+
+      setUserSettings(updatedSettings);
+      setSettingsMessage("Settings updated.");
+      await fetchUserSettings();
+    } catch (error) {
+      setSettingsMessage(`Failed to update settings: ${error.message}`);
+    } finally {
+      setSavingSettings(false);
     }
   };
 
@@ -986,7 +1113,8 @@ function UserHomePage({ onLogout }) {
     sharing: "Create, review, and control shared links for files and folders.",
     ai: "Review suggestions generated from your file activity and organization patterns.",
     notifications: "Stay on top of storage alerts, sharing activity, and account updates.",
-    subscription: "Review your plan, billing status, and available storage entitlements."
+    subscription: "Review your plan, billing status, and available storage entitlements.",
+    settings: "Update your profile details, workspace preferences, and notification settings."
   }[activeTab] || "Manage your workspace.";
   const activeTabTitle = {
     dashboard: "Dashboard",
@@ -994,7 +1122,8 @@ function UserHomePage({ onLogout }) {
     sharing: "Shared Links",
     ai: "AI Suggestions",
     notifications: "Notifications",
-    subscription: "Subscription"
+    subscription: "Subscription",
+    settings: "Settings"
   }[activeTab] || "Dashboard";
   const userOverviewCards = [
     {
@@ -1098,6 +1227,11 @@ function UserHomePage({ onLogout }) {
             <span className="module-item-icon"><CreditCard size={18} /></span>
             <span>Subscription</span>
             <small>Plan</small>
+          </button>
+          <button className={`module-item ${activeTab === "settings" ? "active" : ""}`} onClick={() => { setActiveTab("settings"); fetchUserSettings(); }} type="button">
+            <span className="module-item-icon"><Settings size={18} /></span>
+            <span>Settings</span>
+            <small>Account</small>
           </button>
         </nav>
 
@@ -2016,6 +2150,183 @@ function UserHomePage({ onLogout }) {
                   </>
                 )}
               </div>
+            </section>
+          </section>
+        )}
+
+        {activeTab === "settings" && (
+          <section className="content-grid">
+            <section className="settings-admin-panel">
+              <div className="settings-admin-header">
+                <div>
+                  <p className="eyebrow">Account</p>
+                  <h2>User Settings</h2>
+                  <p>Profile details and workspace preferences for your SHC DRIVE account.</p>
+                </div>
+                <button className="secondary-button" onClick={() => { fetchProfile(); fetchUserSettings(); }} type="button">
+                  Refresh
+                </button>
+              </div>
+
+              {settingsMessage && (
+                <div className="purchase-result-box">
+                  <span>{settingsMessage}</span>
+                </div>
+              )}
+
+              <form className="settings-form" onSubmit={handleSaveProfile}>
+                <section className="settings-section">
+                  <div>
+                    <h3>Profile</h3>
+                    <p>Contact and display details for your account.</p>
+                  </div>
+
+                  {loadingProfile ? (
+                    <p className="loading-text">Loading profile...</p>
+                  ) : (
+                    <div className="settings-form-grid">
+                      <label>
+                        Username
+                        <input
+                          value={profileForm.username}
+                          onChange={(event) => handleProfileFormChange("username", event.target.value)}
+                          placeholder="username"
+                        />
+                      </label>
+                      <label>
+                        First name
+                        <input
+                          value={profileForm.firstName}
+                          onChange={(event) => handleProfileFormChange("firstName", event.target.value)}
+                          placeholder="First name"
+                        />
+                      </label>
+                      <label>
+                        Last name
+                        <input
+                          value={profileForm.lastName}
+                          onChange={(event) => handleProfileFormChange("lastName", event.target.value)}
+                          placeholder="Last name"
+                        />
+                      </label>
+                      <label>
+                        Phone number
+                        <input
+                          value={profileForm.phoneNumber}
+                          onChange={(event) => handleProfileFormChange("phoneNumber", event.target.value)}
+                          placeholder="+383..."
+                        />
+                      </label>
+                      <label>
+                        Email
+                        <input value={userEmail} readOnly />
+                      </label>
+                      <label>
+                        Profile picture URL
+                        <input
+                          value={profileForm.profilePictureUrl}
+                          onChange={(event) => handleProfileFormChange("profilePictureUrl", event.target.value)}
+                          placeholder="https://..."
+                        />
+                      </label>
+                    </div>
+                  )}
+
+                  <div className="settings-form-footer">
+                    <button className="primary-button" type="submit" disabled={savingProfile || loadingProfile}>
+                      {savingProfile ? "Saving..." : "Save Profile"}
+                    </button>
+                    <span>Updates username, first name, last name, phone, and profile picture URL.</span>
+                  </div>
+                </section>
+              </form>
+
+              <form className="settings-form" onSubmit={handleSaveSettings}>
+                <section className="settings-section">
+                  <div>
+                    <h3>Preferences</h3>
+                    <p>Workspace appearance, notifications, and privacy.</p>
+                  </div>
+
+                  {loadingSettings ? (
+                    <p className="loading-text">Loading settings...</p>
+                  ) : (
+                    <div className="settings-form-grid">
+                      <label>
+                        Theme
+                        <select
+                          value={settingsForm.theme}
+                          onChange={(event) => handleSettingsFormChange("theme", event.target.value)}
+                        >
+                          <option value="light">Light</option>
+                          <option value="dark">Dark</option>
+                          <option value="system">System</option>
+                        </select>
+                      </label>
+                      <label>
+                        Language
+                        <select
+                          value={settingsForm.language}
+                          onChange={(event) => handleSettingsFormChange("language", event.target.value)}
+                        >
+                          <option value="en">English</option>
+                          <option value="sq">Albanian</option>
+                          <option value="de">German</option>
+                        </select>
+                      </label>
+                      <label>
+                        Default view
+                        <select
+                          value={settingsForm.defaultView}
+                          onChange={(event) => handleSettingsFormChange("defaultView", event.target.value)}
+                        >
+                          <option value="list">List</option>
+                          <option value="grid">Grid</option>
+                        </select>
+                      </label>
+                      <label className="toggle-row">
+                        <input
+                          type="checkbox"
+                          checked={settingsForm.emailNotifications}
+                          onChange={(event) => handleSettingsFormChange("emailNotifications", event.target.checked)}
+                        />
+                        Email notifications
+                      </label>
+                      <label className="toggle-row">
+                        <input
+                          type="checkbox"
+                          checked={settingsForm.pushNotifications}
+                          onChange={(event) => handleSettingsFormChange("pushNotifications", event.target.checked)}
+                        />
+                        Push notifications
+                      </label>
+                      <label className="toggle-row">
+                        <input
+                          type="checkbox"
+                          checked={settingsForm.showProfilePicture}
+                          onChange={(event) => handleSettingsFormChange("showProfilePicture", event.target.checked)}
+                        />
+                        Show profile picture
+                      </label>
+                      <label className="toggle-row">
+                        <input
+                          type="checkbox"
+                          checked={settingsForm.showActivityStatus}
+                          onChange={(event) => handleSettingsFormChange("showActivityStatus", event.target.checked)}
+                        />
+                        Show activity status
+                      </label>
+                    </div>
+                  )}
+
+                  <div className="settings-form-footer">
+                    <button className="primary-button" type="submit" disabled={savingSettings || loadingSettings}>
+                      {savingSettings ? "Saving..." : "Save Settings"}
+                    </button>
+                    <span>{userSettings ? "Loaded from your account settings." : "Settings are loading."}</span>
+                  </div>
+                </section>
+              </form>
             </section>
           </section>
         )}

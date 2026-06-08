@@ -15,6 +15,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Driving", "Driving", "{A380
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "api", "adapters\Driving\Api\api.csproj", "{17EB5C5C-AEAC-4E3F-9849-2C8EFBFC4FB9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StorageNode", "adapters\Driving\StorageNode\StorageNode.csproj", "{9A0ECF9A-67E9-4D18-AF9F-55040AAC7ECD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,6 +39,10 @@ Global
 		{17EB5C5C-AEAC-4E3F-9849-2C8EFBFC4FB9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{17EB5C5C-AEAC-4E3F-9849-2C8EFBFC4FB9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{17EB5C5C-AEAC-4E3F-9849-2C8EFBFC4FB9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9A0ECF9A-67E9-4D18-AF9F-55040AAC7ECD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9A0ECF9A-67E9-4D18-AF9F-55040AAC7ECD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9A0ECF9A-67E9-4D18-AF9F-55040AAC7ECD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9A0ECF9A-67E9-4D18-AF9F-55040AAC7ECD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -45,5 +51,6 @@ Global
 		{7197D049-C0F8-46C9-8D72-E458C226E4C8} = {2E8483CD-F3C9-4424-A226-D70150167AE1}
 		{A3802738-A6AD-4605-BB48-B901A248902B} = {2E8483CD-F3C9-4424-A226-D70150167AE1}
 		{17EB5C5C-AEAC-4E3F-9849-2C8EFBFC4FB9} = {A3802738-A6AD-4605-BB48-B901A248902B}
+		{9A0ECF9A-67E9-4D18-AF9F-55040AAC7ECD} = {A3802738-A6AD-4605-BB48-B901A248902B}
 	EndGlobalSection
 EndGlobal
