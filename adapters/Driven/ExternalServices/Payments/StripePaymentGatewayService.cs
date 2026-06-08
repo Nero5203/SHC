@@ -57,6 +57,23 @@ namespace adapters.Driven.ExternalServices.Payments
             };
         }
 
+        public async Task<CheckoutSessionPaymentResult> GetCheckoutSessionPaymentAsync(string checkoutSessionId)
+        {
+            if (string.IsNullOrWhiteSpace(checkoutSessionId))
+            {
+                throw new InvalidOperationException("Checkout session id is missing.");
+            }
+
+            var sessionService = CreateSessionService();
+            var session = await sessionService.GetAsync(checkoutSessionId);
+
+            return new CheckoutSessionPaymentResult
+            {
+                IsPaid = string.Equals(session.PaymentStatus, "paid", StringComparison.OrdinalIgnoreCase),
+                ProviderPaymentIntentId = session.PaymentIntentId
+            };
+        }
+
         public Task<PaymentGatewayWebhookResult> ProcessWebhookAsync(string payload, string signatureHeader)
         {
             EnsureWebhookConfigured();

@@ -5,6 +5,7 @@ namespace application.Ports.Driven.Payments
     public interface IPaymentGatewayService
     {
         Task<CheckoutSessionResult> CreateCheckoutSessionAsync(PaymentCheckoutRequest request);
+        Task<CheckoutSessionPaymentResult> GetCheckoutSessionPaymentAsync(string checkoutSessionId);
         Task<PaymentGatewayWebhookResult> ProcessWebhookAsync(string payload, string signatureHeader);
     }
 
@@ -23,6 +24,12 @@ namespace application.Ports.Driven.Payments
     {
         public string CheckoutSessionId { get; set; } = null!;
         public string CheckoutUrl { get; set; } = null!;
+    }
+
+    public class CheckoutSessionPaymentResult
+    {
+        public bool IsPaid { get; set; }
+        public string? ProviderPaymentIntentId { get; set; }
     }
 
     public class PaymentGatewayWebhookResult

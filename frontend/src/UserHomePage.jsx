@@ -560,27 +560,41 @@ function UserHomePage({ onLogout }) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const checkoutStatus = params.get("checkout");
+    const purchaseId = params.get("purchaseId");
 
     if (!checkoutStatus) {
       return;
     }
 
-    if (checkoutStatus === "success") {
-      setCheckoutMessage("Payment completed. Your subscription will update after Stripe confirms the payment.");
-      fetchSubscriptionData();
-      fetchNotifications();
-    } else if (checkoutStatus === "cancelled") {
-      setCheckoutMessage("Checkout was cancelled. Your subscription remains pending until payment is completed.");
-      fetchSubscriptionData();
-      fetchNotifications();
-    }
+    const handleCheckoutReturn = async () => {
+      if (checkoutStatus === "success") {
+        setCheckoutMessage("Payment completed. Confirming your subscription...");
+
+        try {
+          if (purchaseId) {
+            await postJson(apiUrl, `/api/purchases/${purchaseId}/confirm-checkout`, {});
+          }
+
+          setCheckoutMessage("Payment confirmed. Your subscription is active.");
+        } catch (error) {
+          setCheckoutMessage(`Payment succeeded, but confirmation failed: ${error.message}`);
+        }
+      } else if (checkoutStatus === "cancelled") {
+        setCheckoutMessage("Checkout was cancelled. Your subscription remains pending until payment is completed.");
+      }
+
+      await fetchSubscriptionData();
+      await fetchNotifications();
+    };
+
+    handleCheckoutReturn();
 
     params.delete("checkout");
     params.delete("purchaseId");
     const nextQuery = params.toString();
     const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}`;
     window.history.replaceState({}, "", nextUrl);
-  }, [fetchNotifications, fetchSubscriptionData]);
+  }, [apiUrl, fetchNotifications, fetchSubscriptionData]);
 
   const handleMarkNotificationAsRead = async (notificationId) => {
     if (!notificationId) return;
